@@ -72,7 +72,7 @@ void TIM2_IRQHandler( void )
 {
 	HAL_TIM_IRQHandler( &htim2 );
 
-	status = MS_ST_SIGNAL_L;
+	status = MS_ST_SIGNAL_TIM_DONE;
 	NVIC_EnableIRQ( SENS1_TRG_IRQn );
 }
 
@@ -102,6 +102,7 @@ void EXTI9_5_IRQHandler( void )
 
 			// enable ADC1_BUSY IR
 			NVIC_EnableIRQ( EXTADC1_BUSY_IRQn );
+			status = MS_COUNT_TRG_DONE;
 		}
 	}
 }
@@ -126,6 +127,8 @@ void EXTI2_IRQHandler( void )
 		// clear pending interrupt
 		EXTI->PR1 |= EXTADC1_BUSY_Pin;
 
+		status = MS_READ_ADC;
+
 		// +1 as the first value is not valid
 		if( sens1_buffer.w_idx < MICRO_SPEC_PIXEL + 1 )
 		{
@@ -140,7 +143,7 @@ void EXTI2_IRQHandler( void )
 			// disable ADC IR (this) and disable the ADC itself
 			NVIC_DisableIRQ( EXTADC1_BUSY_IRQn );
 			HAL_GPIO_WritePin( EXTADC_EN_GPIO_Port, EXTADC_EN_Pin, GPIO_PIN_RESET );
-			status = MS_DONE;
+			status = MS_READ_ADC_DONE;
 		}
 	}
 }

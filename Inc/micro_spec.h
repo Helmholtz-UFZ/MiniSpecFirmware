@@ -15,10 +15,13 @@ extern volatile index_buffer_uint16 sens1_buffer;
 typedef enum
 {
 	        MS_CLK_ON,
-	        MS_ST_SIGNAL_H,
-	        MS_ST_SIGNAL_L,
+	        MS_ST_SIGNAL_TIM_STARTED,
+	        MS_ST_SIGNAL_TIM_DONE,
 	        MS_COUNT_TRG,
-	        MS_ADC_,
+	        MS_COUNT_TRG_DONE,
+	        MS_READ_ADC,
+	        MS_READ_ADC_DONE,
+	        MS_POST_PROCESS,
 	        MS_DONE
 } meas_status_t;
 

@@ -88,7 +88,7 @@ void micro_spec_measure_start( void )
 	// 2. After 89th TRG pulse the ADC IR is enabled and the TRG disables itself
 	// 3. After 288 conversions the ADC IR disables itself, we're done.
 	// .. tim IR -> TRG IR -> ADCBUSY IR
-	while( status != MS_DONE )
+	while( status != MS_READ_ADC_DONE )
 	{
 		// busy waiting
 	}
@@ -123,7 +123,7 @@ static void send_st_signal( void )
 
 	HAL_TIM_OnePulse_Start( &htim2, TIM_CHANNEL_1 );
 	HAL_TIM_PWM_Start_IT( &htim2, TIM_CHANNEL_1 );
-	status = MS_ST_SIGNAL_H;
+	status = MS_ST_SIGNAL_TIM_STARTED;
 }
 
 /**
@@ -131,7 +131,9 @@ static void send_st_signal( void )
  */
 static void post_process_values( void )
 {
-
+	status = MS_POST_PROCESS;
+	// ...
+	status = MS_DONE;
 }
 
 /**
