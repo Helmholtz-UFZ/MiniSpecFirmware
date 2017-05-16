@@ -6,19 +6,17 @@
  */
 
 #include "stm32l4xx_hal.h"
-#include "buffer.h"
 #include <string.h>
 #include "micro_spec.h"
+#include "global_include.h"
+#include "tim.h"
 
-volatile meas_status_t status;
 volatile index_buffer_uint16 sens1_buffer;
-uint32_t integrtion_time;
-
-extern TIM_HandleTypeDef htim2;
+static uint32_t integrtion_time;
 
 static void enable_sensor_clk( void );
 static void disable_sensor_clk( void );
-static void send_st_signal( uint32_t integrtion_time );
+static void send_st_signal( void );
 static void post_process_values( void );
 
 /**
@@ -53,13 +51,17 @@ void micro_spec_measure_init( void )
  */
 void micro_spec_measure_deinit( void )
 {
-	// disable ADC and CLK
-	HAL_GPIO_WritePin( EXTADC_EN_GPIO_Port, EXTADC_EN_Pin, GPIO_PIN_RESET );
 	disable_sensor_clk();
 }
 
 /**
- * @brief Set the integration time for the sensor.
+ * @brief 	Set the integration time for the sensor.
+ *
+ * The minimum is defined by MIN_INTERGATION_TIME ( 50 us )
+ * The maximum is (UINT32_MAX / TIM2_SCALER) - MIN_INTERGATION_TIME ( ~53 seconds )
+ *
+ * @param int_time	The integration time in us
+ * @return The integration time value set
  */
 uint32_t micro_spec_set_integration_time( uint32_t int_time )
 {
@@ -80,7 +82,7 @@ uint32_t micro_spec_set_integration_time( uint32_t int_time )
  */
 void micro_spec_measure_start( void )
 {
-	send_st_signal( integrtion_time );
+	send_st_signal();
 	// all further work is done in the ISRs.
 	// 1. The Timer ISR enables the ISR for the TRG and disable itself.
 	// 2. After 89th TRG pulse the ADC IR is enabled and the TRG disables itself
@@ -99,14 +101,29 @@ void micro_spec_measure_start( void )
  * also used to determine the integration time that is used in the
  * following (just started) measurement.
  */
-static void send_st_signal( uint32_t integrtion_time )
+static void send_st_signal( void )
 {
-	UNUSED( integrtion_time );
-	// todo set timer values (intergartion time)
+	uint32_t int_time;
+
+	int_time = MAX( integrtion_time, MIN_INTERGATION_TIME );
+	int_time -= 48;
+
+	// set the period // todo check uint_32 limits
+	TIM2->ARR = (int_time * TIM2_SCALER) + PRE_ST_DELAY;
+
+	// Disable the Channel 1: Reset the CC1E Bit, it is re-enabled
+	// by calling HAL_TIM_xxx_Start()
+	TIM2->CCER &= ~TIM_CCER_CC1E;
+
+	// set the delay to ensure that the CCR1 is not zero
+	TIM2->CCR1 = PRE_ST_DELAY;
+
+	// update shadow regs
+	TIM2->EGR = TIM_EGR_UG;
+
 	HAL_TIM_OnePulse_Start( &htim2, TIM_CHANNEL_1 );
 	HAL_TIM_PWM_Start_IT( &htim2, TIM_CHANNEL_1 );
-	status = MS_ST_SIGNAL;
-
+	status = MS_ST_SIGNAL_H;
 }
 
 /**

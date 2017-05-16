@@ -34,13 +34,12 @@
 #include "stm32l4xx_hal.h"
 #include "stm32l4xx.h"
 #include "stm32l4xx_it.h"
-
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
+#include "micro_spec.h"
+#include "global_include.h"
+#include "buffer.h"
+#include "tim.h"
 
 /* External variables --------------------------------------------------------*/
-extern TIM_HandleTypeDef htim2;
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Interruption and Exception Handlers         */
@@ -51,14 +50,8 @@ extern TIM_HandleTypeDef htim2;
  */
 void SysTick_Handler( void )
 {
-	/* USER CODE BEGIN SysTick_IRQn 0 */
-
-	/* USER CODE END SysTick_IRQn 0 */
 	HAL_IncTick();
 	HAL_SYSTICK_IRQHandler();
-	/* USER CODE BEGIN SysTick_IRQn 1 */
-
-	/* USER CODE END SysTick_IRQn 1 */
 }
 
 /******************************************************************************/
@@ -69,62 +62,99 @@ void SysTick_Handler( void )
 /******************************************************************************/
 
 /**
- * @brief This function handles EXTI line2 interrupt.
- */
-void EXTI2_IRQHandler( void )
+ * @brief This function handles TIM2 global interrupt.
+ *
+ * ST
+ *
+ * This is called when the ST-Signal goes low. We enable the TRG IR. We dont
+ * need to disable this one, as we generate the ST-pulse in OnePulseMode. */
+void TIM2_IRQHandler( void )
 {
-	/* USER CODE BEGIN EXTI2_IRQn 0 */
+	HAL_TIM_IRQHandler( &htim2 );
 
-	/* USER CODE END EXTI2_IRQn 0 */
-	HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_2 );
-	/* USER CODE BEGIN EXTI2_IRQn 1 */
-
-	/* USER CODE END EXTI2_IRQn 1 */
+	status = MS_ST_SIGNAL_L;
+	NVIC_EnableIRQ( SENS1_TRG_IRQn );
 }
 
 /**
  * @brief This function handles EXTI line[9:5] interrupts.
+ *
+ * TRG
+ *
+ * This is enabled in the TIM2_IRQHandler() and react to the TRG signal,
+ * send by the sensor. We enable the ADC1_BUSY IR and disable this IR.
  */
 void EXTI9_5_IRQHandler( void )
 {
-	/* USER CODE BEGIN EXTI9_5_IRQn 0 */
 
-	/* USER CODE END EXTI9_5_IRQn 0 */
-	HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_9 );
-	/* USER CODE BEGIN EXTI9_5_IRQn 1 */
+	if( EXTI->PR1 & SENS_TRG_Pin )
+	{
+		// clear pending interrupt
+		EXTI->PR1 |= SENS_TRG_Pin;
 
-	/* USER CODE END EXTI9_5_IRQn 1 */
+		status = MS_COUNT_TRG;
+		sens_trg_count++;
+
+		if( sens_trg_count == 88 )
+		{
+			//disable this IR
+			NVIC_DisableIRQ( SENS1_TRG_IRQn );
+
+			// enable ADC1_BUSY IR
+			NVIC_EnableIRQ( EXTADC1_BUSY_IRQn );
+		}
+	}
 }
 
 /**
- * @brief This function handles TIM2 global interrupt.
+ * @brief This function handles EXTI line2 interrupt.
+ *
+ * ADC1_BUSY
+ *
+ * With every falling edge we can read curren value of the
+ * (external) ADC conversion on 16 GPIO (self-defined parallel port)
+ *
+ * If we have read all pixels we disable this IR and continue in the
+ * micro_spec_measure_start() function (micro_spec.c).
  */
-void TIM2_IRQHandler( void )
+void EXTI2_IRQHandler( void )
 {
-	/* USER CODE BEGIN TIM2_IRQn 0 */
+	uint16_t value0, value1;
 
-	/* USER CODE END TIM2_IRQn 0 */
-	HAL_TIM_IRQHandler( &htim2 );
-	/* USER CODE BEGIN TIM2_IRQn 1 */
+	if( EXTI->PR1 & EXTADC1_BUSY_Pin )
+	{
+		// clear pending interrupt
+		EXTI->PR1 |= EXTADC1_BUSY_Pin;
 
-	/* USER CODE END TIM2_IRQn 1 */
+		// +1 as the first value is not valid
+		if( sens1_buffer.w_idx < MICRO_SPEC_PIXEL + 1 )
+		{
+			//TODO use DMA
+			// read ADC parallel-port-value
+			value0 = GPIOA->IDR & SENS1_PA_mask;
+			value1 = GPIOC->IDR & SENS1_PC_mask;
+			sens1_buffer.buf[sens1_buffer.w_idx++] = (value1 << 8) | value0;
+		}
+		else
+		{
+			// disable ADC IR (this) and disable the ADC itself
+			NVIC_DisableIRQ( EXTADC1_BUSY_IRQn );
+			HAL_GPIO_WritePin( EXTADC_EN_GPIO_Port, EXTADC_EN_Pin, GPIO_PIN_RESET );
+			status = MS_DONE;
+		}
+	}
 }
 
 /**
  * @brief This function handles EXTI line[15:10] interrupts.
+ *
+ * ADC2_BUSY
+ *
  */
-void EXTI15_10_IRQHandler( void )
-{
-	/* USER CODE BEGIN EXTI15_10_IRQn 0 */
+//void EXTI15_10_IRQHandler( void )
+//{
+//	HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_13 );
+//
+//}
 
-	/* USER CODE END EXTI15_10_IRQn 0 */
-	HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_13 );
-	/* USER CODE BEGIN EXTI15_10_IRQn 1 */
-
-	/* USER CODE END EXTI15_10_IRQn 1 */
-}
-
-/* USER CODE BEGIN 1 */
-
-/* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

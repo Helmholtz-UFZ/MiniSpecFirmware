@@ -34,10 +34,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "tim.h"
-
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
+#include "global_include.h"
 
 TIM_HandleTypeDef htim2;
 
@@ -49,9 +46,9 @@ void MX_TIM2_Init( void )
 	TIM_OC_InitTypeDef sConfigOC;
 
 	htim2.Instance = TIM2;
-	htim2.Init.Prescaler = 80;
+	htim2.Init.Prescaler = 0;
 	htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim2.Init.Period = 60;
+	htim2.Init.Period = (1000 * 80) + 10;
 	htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	if( HAL_TIM_Base_Init( &htim2 ) != HAL_OK )
 	{

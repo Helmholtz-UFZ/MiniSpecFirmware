@@ -8,20 +8,22 @@
 #ifndef MICRO_SPEC_H_
 #define MICRO_SPEC_H_
 
-/** The minimal possible integration time, limited by the sensor.
- * 	Hightime of ST-signal + 48 Clk cycles
- * 	@1Mhz: 1.2us + 48 * 1/10^6 = 49.2 us
- */
-#define MIN_INTERGATION_TIME	50
+#include "buffer.h"
+
+extern volatile index_buffer_uint16 sens1_buffer;
 
 typedef enum
 {
 	        MS_CLK_ON,
-	        MS_ST_SIGNAL,
+	        MS_ST_SIGNAL_H,
+	        MS_ST_SIGNAL_L,
 	        MS_COUNT_TRG,
 	        MS_ADC_,
 	        MS_DONE
 } meas_status_t;
+
+volatile meas_status_t status;
+volatile uint16_t sens_trg_count;
 
 void micro_spec_init( void );
 void micro_spec_deinit( void );
