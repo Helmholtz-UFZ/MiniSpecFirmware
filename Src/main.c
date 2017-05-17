@@ -74,7 +74,7 @@ int main( void )
 		micro_spec_measure_start();
 		micro_spec_measure_deinit();
 
-		HAL_Delay(100);
+		HAL_Delay( 5 );
 	}
 
 }

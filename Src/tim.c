@@ -113,10 +113,6 @@ void HAL_TIM_MspPostInit( TIM_HandleTypeDef* timHandle )
 	GPIO_InitTypeDef GPIO_InitStruct;
 	if( timHandle->Instance == TIM2 )
 	{
-		/* USER CODE BEGIN TIM2_MspPostInit 0 */
-
-		/* USER CODE END TIM2_MspPostInit 0 */
-
 		/**TIM2 GPIO Configuration
 		 PA15     ------> TIM2_CH1
 		 */
@@ -126,10 +122,6 @@ void HAL_TIM_MspPostInit( TIM_HandleTypeDef* timHandle )
 		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 		GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
 		HAL_GPIO_Init( SENS_ST_GPIO_Port, &GPIO_InitStruct );
-
-		/* USER CODE BEGIN TIM2_MspPostInit 1 */
-
-		/* USER CODE END TIM2_MspPostInit 1 */
 	}
 
 }

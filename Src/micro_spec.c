@@ -41,7 +41,8 @@ void micro_spec_init( void )
 void micro_spec_measure_init( void )
 {
 	enable_sensor_clk();
-	HAL_Delay( 1 );
+	sens1_buffer.w_idx = 0; // HACK
+	sens_trg_count = 0;
 	status = MS_CLK_ON;
 }
 
@@ -121,9 +122,14 @@ static void send_st_signal( void )
 	// update shadow regs
 	TIM2->EGR = TIM_EGR_UG;
 
-	HAL_TIM_OnePulse_Start( &htim2, TIM_CHANNEL_1 );
-	HAL_TIM_PWM_Start_IT( &htim2, TIM_CHANNEL_1 );
+	// clear update flag
+	TIM2->SR &= ~TIM_SR_UIF;
+
 	status = MS_ST_SIGNAL_TIM_STARTED;
+	NVIC_EnableIRQ(TIM2_IRQn);
+	HAL_TIM_OnePulse_Start( &htim2, TIM_CHANNEL_1 );
+	HAL_TIM_Base_Start_IT(&htim2);
+//	HAL_TIM_PWM_Start_IT( &htim2, TIM_CHANNEL_1 );
 }
 
 /**

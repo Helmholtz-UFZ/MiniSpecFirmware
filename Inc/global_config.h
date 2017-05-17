@@ -19,7 +19,9 @@
 #define MIN_INTERGATION_TIME	50
 
 /** The number of pixels the sensor provide */
-#define MICRO_SPEC_PIXEL	288
+#define MSPARAM_PIXEL	3
+
+#define MSPARAM_TRG_DELAY_CNT	3
 
 /** defines how many timer clock cycles are 1 us. */
 #define TIM2_SCALER		80

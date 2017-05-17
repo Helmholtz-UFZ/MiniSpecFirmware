@@ -66,15 +66,19 @@ void SysTick_Handler( void )
  *
  * ST
  *
- * This is called when the ST-Signal goes low. We enable the TRG IR. We dont
- * need to disable this one, as we generate the ST-pulse in OnePulseMode. */
+ * This is called when the ST-Signal goes low. We enable the TRG IR
+ * and disable this one. */
 void TIM2_IRQHandler( void )
 {
 	// TODO TIM2_IRQHandler()
-	HAL_TIM_IRQHandler( &htim2 );
-
-	status = MS_ST_SIGNAL_TIM_DONE;
-	NVIC_EnableIRQ( SENS1_TRG_IRQn );
+	/* TIM Update event */
+	if( TIM2->SR & TIM_SR_UIF )
+	{
+		TIM2->SR &= ~TIM_SR_UIF;
+		status = MS_ST_SIGNAL_TIM_DONE;
+		NVIC_DisableIRQ( TIM2_IRQn );
+		NVIC_EnableIRQ( SENS1_TRG_IRQn );
+	}
 }
 
 /**
@@ -96,14 +100,17 @@ void EXTI9_5_IRQHandler( void )
 		status = MS_COUNT_TRG;
 		sens_trg_count++;
 
-		if( sens_trg_count == 88 )
+		if( sens_trg_count == MSPARAM_TRG_DELAY_CNT )
 		{
+
+			// enable external ADC
+			HAL_GPIO_WritePin( EXTADC_EN_GPIO_Port, EXTADC_EN_Pin, GPIO_PIN_SET );
+			// enable ADC1_BUSY IR
+			status = MS_COUNT_TRG_DONE;
+			NVIC_EnableIRQ( EXTADC1_BUSY_IRQn );
+
 			//disable this IR
 			NVIC_DisableIRQ( SENS1_TRG_IRQn );
-
-			// enable ADC1_BUSY IR
-			NVIC_EnableIRQ( EXTADC1_BUSY_IRQn );
-			status = MS_COUNT_TRG_DONE;
 		}
 	}
 }
@@ -131,7 +138,7 @@ void EXTI2_IRQHandler( void )
 		status = MS_READ_ADC;
 
 		// +1 as the first value is not valid
-		if( sens1_buffer.w_idx < MICRO_SPEC_PIXEL + 1 )
+		if( sens1_buffer.w_idx < MSPARAM_PIXEL + 1 )
 		{
 			//TODO use DMA [EXTI2_IRQHandler()]
 			// read ADC parallel-port-value
@@ -160,5 +167,4 @@ void EXTI2_IRQHandler( void )
 //	HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_13 );
 //
 //}
-
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
