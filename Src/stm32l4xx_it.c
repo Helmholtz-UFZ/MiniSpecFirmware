@@ -70,6 +70,7 @@ void SysTick_Handler( void )
  * need to disable this one, as we generate the ST-pulse in OnePulseMode. */
 void TIM2_IRQHandler( void )
 {
+	// TODO TIM2_IRQHandler()
 	HAL_TIM_IRQHandler( &htim2 );
 
 	status = MS_ST_SIGNAL_TIM_DONE;
@@ -132,7 +133,7 @@ void EXTI2_IRQHandler( void )
 		// +1 as the first value is not valid
 		if( sens1_buffer.w_idx < MICRO_SPEC_PIXEL + 1 )
 		{
-			//TODO use DMA
+			//TODO use DMA [EXTI2_IRQHandler()]
 			// read ADC parallel-port-value
 			value0 = GPIOA->IDR & SENS1_PA_mask;
 			value1 = GPIOC->IDR & SENS1_PC_mask;
