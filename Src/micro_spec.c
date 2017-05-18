@@ -12,6 +12,7 @@
 #include "tim.h"
 
 volatile index_buffer_uint16 sens1_buffer;
+volatile meas_status_t status;
 static uint32_t integrtion_time;
 
 static void enable_sensor_clk( void );
@@ -56,7 +57,7 @@ void micro_spec_measure_deinit( void )
 }
 
 /**
- * @brief 	Set the integration time for the sensor.
+ * @brief 	Set the integration time in us for the sensor.
  *
  * The minimum is defined by MIN_INTERGATION_TIME ( 50 us )
  * The maximum is (UINT32_MAX / TIM2_SCALER) - MIN_INTERGATION_TIME ( ~53 seconds )
@@ -109,30 +110,39 @@ static void send_st_signal( void )
 	int_time = MAX( integrtion_time, MIN_INTERGATION_TIME );
 	int_time -= 48;
 
+	// -----configure TIM1 for ST signal------
+
 	// set the period // todo check uint_32 limits
-	TIM2->ARR = (int_time * TIM2_SCALER) + PRE_ST_DELAY;
+	TIM1->ARR = (int_time * TIM2_SCALER) + PRE_ST_DELAY;
 
 	// Disable the Channel 1: Reset the CC1E Bit, it is re-enabled
 	// by calling HAL_TIM_xxx_Start()
-	TIM2->CCER &= ~TIM_CCER_CC1E;
+	TIM1->CCER &= ~TIM_CCER_CC1E;
 
 	// set the delay to ensure that the CCR1 is not zero
-	TIM2->CCR1 = PRE_ST_DELAY;
-
-	// update shadow regs
-	TIM2->EGR = TIM_EGR_UG;
-
+	TIM1->CCR1 = PRE_ST_DELAY;
 
 	status = MS_ST_SIGNAL_TIM_STARTED;
 
-	// clear update flag
-	TIM2->SR &= ~TIM_SR_UIF;
-	NVIC_EnableIRQ(TIM2_IRQn);
+	// ----- ------------------- ------
 
-	HAL_TIM_OnePulse_Start( &htim2, TIM_CHANNEL_1 );
+	// enable TIM channels
+	TIM_CCxChannelCmd( TIM2, TIM_CHANNEL_3, TIM_CCx_ENABLE );
+	TIM_CCxChannelCmd( TIM1, TIM_CHANNEL_2, TIM_CCx_ENABLE );
 
-	HAL_TIM_Base_Start_IT(&htim2);
-//	HAL_TIM_PWM_Start_IT( &htim2, TIM_CHANNEL_1 );
+	// enable TIM 2 IR
+	__HAL_TIM_CLEAR_IT( &htim2, TIM_IT_UPDATE );
+	__HAL_TIM_ENABLE_IT( &htim2, TIM_IT_UPDATE );
+
+	// start TIM1
+	__HAL_TIM_MOE_ENABLE(&htim1);
+	__HAL_TIM_ENABLE(&htim1);
+
+	// TIM1 high for integrationtime then low triggering TIM2
+	// TIM2 channel 3 goes high at the first rising edge of first full pulse of TRG
+	// after ST goes low
+	// and low again at the MSPARAM_TRG_CNT+1'th rising edge (count MSPARAM_TRG_CNT full pulses )
+	// then generate an IR
 }
 
 /**

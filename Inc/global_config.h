@@ -22,6 +22,7 @@
 #define MSPARAM_PIXEL	3
 
 #define MSPARAM_TRG_DELAY_CNT	3
+#define MSPARAM_TRG_CNT		3
 
 /** defines how many timer clock cycles are 1 us. */
 #define TIM2_SCALER		80

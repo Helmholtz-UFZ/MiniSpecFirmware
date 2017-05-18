@@ -98,12 +98,6 @@ void MX_GPIO_Init( void )
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init( EXTADC_EN_GPIO_Port, &GPIO_InitStruct );
 
-	/* TRG */
-	GPIO_InitStruct.Pin = SENS_TRG_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init( SENS_TRG_GPIO_Port, &GPIO_InitStruct );
-
 	/* ADC1_BUSY */
 	GPIO_InitStruct.Pin = EXTADC1_BUSY_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
@@ -116,9 +110,9 @@ void MX_GPIO_Init( void )
 	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 
-	/* SENS_CLK is configured and used in microspec.c */
+	/* SENS_CLK is used as clock output see in microspec.c */
 	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
-	/* SENS_ST is configured and started with TIM2 */
+	/* SENS_ST is used by TIM2 see there */
 	HAL_GPIO_Init( SENS_ST_GPIO_Port, &GPIO_InitStruct );
 
 }

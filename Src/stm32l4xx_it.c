@@ -1,7 +1,7 @@
 /**
  ******************************************************************************
- * @file    stm32l4xx_it.c
  * @brief   Interrupt Service Routines.
+ * @file    stm32l4xx_it.c
  ******************************************************************************
  *
  * COPYRIGHT(c) 2017 STMicroelectronics
@@ -64,56 +64,18 @@ void SysTick_Handler( void )
 /**
  * @brief This function handles TIM2 global interrupt.
  *
- * ST
+ * 89th TRG done
  *
- * This is called when the ST-Signal goes low. We enable the TRG IR
- * and disable this one. */
+ * This is called when we catch the 89th TRG-pulse. We enable the external ADC
+ * and the corosponing IR and wait for TODO EXTADC1Busy to go high/low(?) */
+volatile int check_cnt = 0;
 void TIM2_IRQHandler( void )
 {
 	// TODO TIM2_IRQHandler()
-	/* TIM Update event */
-	if( TIM2->SR & TIM_SR_UIF )
-	{
-		TIM2->SR &= ~TIM_SR_UIF;
-		status = MS_ST_SIGNAL_TIM_DONE;
-		NVIC_DisableIRQ( TIM2_IRQn );
-		NVIC_EnableIRQ( SENS1_TRG_IRQn );
-	}
+	 HAL_TIM_IRQHandler(&htim2);
+	 check_cnt++;
 }
 
-/**
- * @brief This function handles EXTI line[9:5] interrupts.
- *
- * TRG
- *
- * This is enabled in the TIM2_IRQHandler() and react to the TRG signal,
- * send by the sensor. We enable the ADC1_BUSY IR and disable this IR.
- */
-void EXTI9_5_IRQHandler( void )
-{
-
-	if( EXTI->PR1 & SENS_TRG_Pin )
-	{
-		// clear pending interrupt
-		EXTI->PR1 |= SENS_TRG_Pin;
-
-		status = MS_COUNT_TRG;
-		sens_trg_count++;
-
-		if( sens_trg_count == MSPARAM_TRG_DELAY_CNT )
-		{
-
-			// enable external ADC
-			HAL_GPIO_WritePin( EXTADC_EN_GPIO_Port, EXTADC_EN_Pin, GPIO_PIN_SET );
-			// enable ADC1_BUSY IR
-			status = MS_COUNT_TRG_DONE;
-			NVIC_EnableIRQ( EXTADC1_BUSY_IRQn );
-
-			//disable this IR
-			NVIC_DisableIRQ( SENS1_TRG_IRQn );
-		}
-	}
-}
 
 /**
  * @brief This function handles EXTI line2 interrupt.

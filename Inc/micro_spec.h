@@ -25,7 +25,7 @@ typedef enum
 	        MS_DONE
 } meas_status_t;
 
-volatile meas_status_t status;
+extern volatile meas_status_t status;
 volatile uint16_t sens_trg_count;
 
 void micro_spec_init( void );

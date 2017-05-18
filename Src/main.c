@@ -45,7 +45,6 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config( void );
 void Error_Handler( void );
-static void MX_NVIC_Init( void );
 
 int main( void )
 {
@@ -60,13 +59,11 @@ int main( void )
 
 	/* Initialize all configured peripherals */
 	MX_GPIO_Init();
+	MX_TIM1_Init();
 	MX_TIM2_Init();
 
-	/* Initialize interrupts */
-	MX_NVIC_Init();
-
 	micro_spec_init();
-	micro_spec_set_integration_time( 100 );
+	micro_spec_set_integration_time( 213 );
 
 	while( 1 )
 	{
@@ -74,7 +71,7 @@ int main( void )
 		micro_spec_measure_start();
 		micro_spec_measure_deinit();
 
-		HAL_Delay( 5 );
+		HAL_Delay( 30 );
 	}
 
 }
@@ -136,20 +133,6 @@ void SystemClock_Config( void )
 
 	/* SysTick_IRQn interrupt configuration */
 	HAL_NVIC_SetPriority( SysTick_IRQn, 0, 0 );
-}
-
-/** NVIC Configuration
- */
-static void MX_NVIC_Init( void )
-{
-	/* EXTI15_10_IRQn interrupt configuration */
-	HAL_NVIC_SetPriority( EXTI15_10_IRQn, 0, 0 );
-	/* TIM2_IRQn interrupt configuration */
-	HAL_NVIC_SetPriority( TIM2_IRQn, 0, 0 );
-	/* EXTI9_5_IRQn interrupt configuration */
-	HAL_NVIC_SetPriority( EXTI9_5_IRQn, 0, 0 );
-	/* EXTI2_IRQn interrupt configuration */
-	HAL_NVIC_SetPriority( EXTI2_IRQn, 0, 0 );
 }
 
 /**
