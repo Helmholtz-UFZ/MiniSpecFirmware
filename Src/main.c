@@ -62,8 +62,12 @@ int main( void )
 	MX_TIM1_Init();
 	MX_TIM2_Init();
 
+	HAL_NVIC_EnableIRQ( TIM2_IRQn );
+//	HAL_NVIC_EnableIRQ( TIM1_UP_TIM16_IRQn );
+
+
 	micro_spec_init();
-	micro_spec_set_integration_time( 213 );
+	micro_spec_set_integration_time( 100 );
 
 	while( 1 )
 	{

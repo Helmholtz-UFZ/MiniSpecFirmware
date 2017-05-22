@@ -68,14 +68,36 @@ void SysTick_Handler( void )
  *
  * This is called when we catch the 89th TRG-pulse. We enable the external ADC
  * and the corosponing IR and wait for TODO EXTADC1Busy to go high/low(?) */
-volatile int check_cnt = 0;
 void TIM2_IRQHandler( void )
 {
-	// TODO TIM2_IRQHandler()
-	 HAL_TIM_IRQHandler(&htim2);
-	 check_cnt++;
+	TIM_HandleTypeDef *htim = &htim2;
+	HAL_TIM_IRQHandler( &htim2 );
+
+// delay end, pulse start
+//	if( __HAL_TIM_GET_FLAG( htim, TIM_FLAG_CC3 ) )
+//	{
+//		__HAL_TIM_CLEAR_IT( htim, TIM_IT_CC3 );
+//		status = MS_COUNT_TRG;
+//	}
+//
+//	// pulse end
+//	if( __HAL_TIM_GET_FLAG(htim, TIM_FLAG_UPDATE) != RESET )
+//	{
+//		__HAL_TIM_CLEAR_IT( htim, TIM_IT_UPDATE );
+//		status = MS_COUNT_TRG_DONE;
+//	}
+	status = MS_READ_ADC_DONE;
 }
 
+//void TIM1_UP_TIM16_IRQHandler( void )
+//{
+//	TIM_HandleTypeDef *htim = &htim1;
+//	if( __HAL_TIM_GET_FLAG(htim, TIM_FLAG_UPDATE) != RESET )
+//	{
+//		__HAL_TIM_CLEAR_IT( htim, TIM_IT_UPDATE );
+//		status = MS_ST_SIGNAL_TIM_DONE;
+//	}
+//}
 
 /**
  * @brief This function handles EXTI line2 interrupt.

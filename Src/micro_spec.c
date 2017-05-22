@@ -17,7 +17,6 @@ static uint32_t integrtion_time;
 
 static void enable_sensor_clk( void );
 static void disable_sensor_clk( void );
-static void send_st_signal( void );
 static void post_process_values( void );
 
 /**
@@ -60,16 +59,22 @@ void micro_spec_measure_deinit( void )
  * @brief 	Set the integration time in us for the sensor.
  *
  * The minimum is defined by MIN_INTERGATION_TIME ( 50 us )
- * The maximum is (UINT32_MAX / TIM2_SCALER) - MIN_INTERGATION_TIME ( ~53 seconds )
+ * The maximum is (UINT32_MAX / TIM2_SCALER) - PRE_ST_DELAY ( ~53 seconds )
  *
  * @param int_time	The integration time in us
  * @return The integration time value set
  */
 uint32_t micro_spec_set_integration_time( uint32_t int_time )
 {
+	uint64_t max = (int_time * TIM2_SCALER) + PRE_ST_DELAY;
+
 	if( int_time < MIN_INTERGATION_TIME )
 	{
 		integrtion_time = MIN_INTERGATION_TIME;
+	}
+	else if( max > UINT32_MAX )
+	{
+		integrtion_time = (UINT32_MAX - PRE_ST_DELAY) / TIM2_SCALER;
 	}
 	else
 	{
@@ -80,69 +85,57 @@ uint32_t micro_spec_set_integration_time( uint32_t int_time )
 }
 
 /**
- * Start a single measurement.
+ * @ brief Start a single measurement.
+ *
+ *	All further work is done in by the timers TIM1 and TIM2 and in the GPIO ISR.
+ *	1. TIM1 generating the start signal (ST) for the sensor
+ *	2. TIM2 count the trigger pulses (TRG) from the sensor directly after
+ *	ST goes low and throw an IR when MSPARAM_TRG_CNT many pulses occurred.
+ *	TIM2 is started from the update event (UEV) of TIM1.
+ *	3. TIM2 enables the GPIO IR on the EXTADCx_BUSY Pin(s). So if the external
+ *	ADC signals "ready to read" we capture 16 bits on 16 input lines and save.
+ *	4. After MSPARAM_PIXEL conversions the external ADC we disables the IR on the
+ *	EXTADCx_BUSY-PIN and we're done.
+ *	(5. we post process the captured data, if necessary.)
  */
 void micro_spec_measure_start( void )
 {
-	send_st_signal();
-	// all further work is done in the ISRs.
-	// 1. The Timer ISR enables the ISR for the TRG and disable itself.
-	// 2. After 89th TRG pulse the ADC IR is enabled and the TRG disables itself
-	// 3. After 288 conversions the ADC IR disables itself, we're done.
-	// .. tim IR -> TRG IR -> ADCBUSY IR
+	uint32_t int_time_cnt;
+
+	// 48 clock-cycles are added to ST-signal-"high" resulting in integrationtime
+	// (see c12880ma_kacc1226e.pdf)
+	const uint8_t clk_cycl = 48;
+
+	int_time_cnt = MAX( integrtion_time, MIN_INTERGATION_TIME );
+	int_time_cnt -= clk_cycl;
+	int_time_cnt = (int_time_cnt * TIM2_SCALER) + PRE_ST_DELAY;
+
+	__HAL_TIM_SET_AUTORELOAD( &htim1, int_time_cnt );
+	status = MS_ST_SIGNAL_TIM_STARTED;
+
+	// enable TIM channels
+	TIM_CCxChannelCmd( TIM1, TIM_CHANNEL_2, TIM_CCx_ENABLE );
+	TIM_CCxChannelCmd( TIM2, TIM_CHANNEL_3, TIM_CCx_ENABLE );
+
+	// enable TIM IRs
+//	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_UPDATE );
+//	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_UPDATE );
+
+	__HAL_TIM_CLEAR_IT( &htim2, TIM_IT_UPDATE );
+	__HAL_TIM_ENABLE_IT( &htim2, TIM_IT_UPDATE );
+
+//	__HAL_TIM_CLEAR_IT( &htim2, TIM_IT_CC3 );
+//	__HAL_TIM_ENABLE_IT( &htim2, TIM_IT_CC3 );
+
+	// start TIM1
+	__HAL_TIM_MOE_ENABLE( &htim1 );
+	__HAL_TIM_ENABLE( &htim1 );
+
 	while( status != MS_READ_ADC_DONE )
 	{
 		// busy waiting
 	}
 	post_process_values();
-}
-
-/**
- * Set the ST-signal high for a defined time, then back low again.
- * The ST-signal act as the start pulse for the sensor and it is
- * also used to determine the integration time that is used in the
- * following (just started) measurement.
- */
-static void send_st_signal( void )
-{
-	uint32_t int_time;
-
-	int_time = MAX( integrtion_time, MIN_INTERGATION_TIME );
-	int_time -= 48;
-
-	// -----configure TIM1 for ST signal------
-
-	// set the period // todo check uint_32 limits
-	TIM1->ARR = (int_time * TIM2_SCALER) + PRE_ST_DELAY;
-
-	// Disable the Channel 1: Reset the CC1E Bit, it is re-enabled
-	// by calling HAL_TIM_xxx_Start()
-	TIM1->CCER &= ~TIM_CCER_CC1E;
-
-	// set the delay to ensure that the CCR1 is not zero
-	TIM1->CCR1 = PRE_ST_DELAY;
-
-	status = MS_ST_SIGNAL_TIM_STARTED;
-
-	// ----- ------------------- ------
-
-	// enable TIM channels
-	TIM_CCxChannelCmd( TIM2, TIM_CHANNEL_3, TIM_CCx_ENABLE );
-	TIM_CCxChannelCmd( TIM1, TIM_CHANNEL_2, TIM_CCx_ENABLE );
-
-	// enable TIM 2 IR
-	__HAL_TIM_CLEAR_IT( &htim2, TIM_IT_UPDATE );
-	__HAL_TIM_ENABLE_IT( &htim2, TIM_IT_UPDATE );
-
-	// start TIM1
-	__HAL_TIM_MOE_ENABLE(&htim1);
-	__HAL_TIM_ENABLE(&htim1);
-
-	// TIM1 high for integrationtime then low triggering TIM2
-	// TIM2 channel 3 goes high at the first rising edge of first full pulse of TRG
-	// after ST goes low
-	// and low again at the MSPARAM_TRG_CNT+1'th rising edge (count MSPARAM_TRG_CNT full pulses )
-	// then generate an IR
 }
 
 /**

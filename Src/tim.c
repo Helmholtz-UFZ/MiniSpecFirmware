@@ -124,7 +124,7 @@ void MX_TIM2_Init( void )
 	htim2.Instance = TIM2;
 	htim2.Init.Prescaler = 0;
 	htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim2.Init.Period = MSPARAM_TRG_CNT;
+	htim2.Init.Period = MSPARAM_UNUSED_TRG_CNT +1 ;
 	htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	if( HAL_TIM_Base_Init( &htim2 ) != HAL_OK )
 	{
@@ -165,7 +165,7 @@ void MX_TIM2_Init( void )
 	}
 
 	sConfigOC.OCMode = TIM_OCMODE_PWM2;
-	sConfigOC.Pulse = 1;
+	sConfigOC.Pulse = TIM2_LOW;
 	sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
 	sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
 	if( HAL_TIM_PWM_ConfigChannel( &htim2, &sConfigOC, TIM_CHANNEL_3 ) != HAL_OK )
@@ -210,12 +210,6 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
     GPIO_InitStruct.Alternate = GPIO_AF2_TIM2;
     HAL_GPIO_Init(SENS_TRG_GPIO_Port, &GPIO_InitStruct);
 
-    /* Peripheral interrupt init */
-    HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(TIM2_IRQn);
-  /* USER CODE BEGIN TIM2_MspInit 1 */
-
-  /* USER CODE END TIM2_MspInit 1 */
   }
 }
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef* timHandle)
