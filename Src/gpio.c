@@ -106,12 +106,14 @@ void MX_GPIO_Init( void )
 
 	/* ---------------SET TO ANALOG------------------*/
 
-	GPIO_InitStruct.Pin = SENS_CLK_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 
 	/* SENS_CLK is used as clock output see in microspec.c */
+	GPIO_InitStruct.Pin = SENS_CLK_Pin;
 	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
+
+	GPIO_InitStruct.Pin = SENS_ST_Pin;
 	/* SENS_ST is used by TIM2 see there */
 	HAL_GPIO_Init( SENS_ST_GPIO_Port, &GPIO_InitStruct );
 

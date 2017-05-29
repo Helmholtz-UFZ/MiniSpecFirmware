@@ -70,8 +70,14 @@ void SysTick_Handler( void )
  * and the corosponing IR and wait for TODO EXTADC1Busy to go high/low(?) */
 void TIM2_IRQHandler( void )
 {
+	uint16_t value0, value1;
+	volatile uint32_t value = 0;
 	TIM_HandleTypeDef *htim = &htim2;
 	HAL_TIM_IRQHandler( &htim2 );
+
+	value0 = GPIOA->IDR & SENS1_PA_mask;
+	value1 = GPIOC->IDR & SENS1_PC_mask;
+	value = (value1 << 8) | value0;
 
 // delay end, pulse start
 //	if( __HAL_TIM_GET_FLAG( htim, TIM_FLAG_CC3 ) )

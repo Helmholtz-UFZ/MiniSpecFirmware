@@ -67,7 +67,7 @@ int main( void )
 
 
 	micro_spec_init();
-	micro_spec_set_integration_time( 100 );
+	micro_spec_set_integration_time( 100000 );
 
 	while( 1 )
 	{

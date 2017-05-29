@@ -18,15 +18,17 @@
  * 	@1Mhz: 1.2us + 48 * 1/10^6 = 49.2 us*/
 #define MIN_INTERGATION_TIME	50
 
-/** The number of pixels the sensor provide */
-#define MSPARAM_PIXEL	3
+/** The number of pixels the sensor provide. This defines also the number of
+ * TRG pulses between MSPARAM_UNUSED_TRG_CNT and the rising edge of SENS_EOS. */
+#define MSPARAM_PIXEL	80
 
-/** The number of 'unused' TRG pulses befor the sensor putting out the
+/** The number of 'unused' TRG pulses before the sensor putting out the
  * video data */
-#define MSPARAM_UNUSED_TRG_CNT	10
+#define MSPARAM_UNUSED_TRG_CNT	89
 
-#define TIM2_HIGH	(MSPARAM_UNUSED_TRG_CNT + TIM2_LOW)
-#define TIM2_LOW	4
+
+#define TIM2_HIGH	MSPARAM_PIXEL
+#define TIM2_LOW	MSPARAM_UNUSED_TRG_CNT
 
 //#define MSPARAM_TRG_DELAY_CNT	3
 

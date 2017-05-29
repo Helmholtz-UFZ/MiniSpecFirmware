@@ -2883,8 +2883,6 @@ void HAL_TIM_IRQHandler(TIM_HandleTypeDef *htim)
     {
       __HAL_TIM_CLEAR_IT(htim, TIM_IT_UPDATE);
       HAL_TIM_PeriodElapsedCallback(htim);
-#include "micro_spec.h"
-      status = MS_READ_ADC_DONE; // HACK
     }
   }
   /* TIM Break input event */

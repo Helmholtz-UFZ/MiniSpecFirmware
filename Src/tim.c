@@ -124,7 +124,7 @@ void MX_TIM2_Init( void )
 	htim2.Instance = TIM2;
 	htim2.Init.Prescaler = 0;
 	htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim2.Init.Period = MSPARAM_UNUSED_TRG_CNT +1 ;
+	htim2.Init.Period = TIM2_LOW + TIM2_HIGH ;
 	htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	if( HAL_TIM_Base_Init( &htim2 ) != HAL_OK )
 	{
@@ -226,7 +226,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* timHandle)
     */
     GPIO_InitStruct.Pin = SENS_ST_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
     HAL_GPIO_Init(SENS_ST_GPIO_Port, &GPIO_InitStruct);
@@ -246,7 +246,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* timHandle)
     */
     GPIO_InitStruct.Pin = TEST_PIN_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
     HAL_GPIO_Init(TEST_PIN_GPIO_Port, &GPIO_InitStruct);
