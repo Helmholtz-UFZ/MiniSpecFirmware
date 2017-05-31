@@ -70,7 +70,7 @@ void SysTick_Handler( void )
  * and the corosponing IR and wait for TODO EXTADC1Busy to go high/low(?) */
 void TIM2_IRQHandler( void )
 {
-	uint16_t value0, value1;
+	volatile uint16_t value0, value1; //todo kill volatile
 	volatile uint32_t value = 0;
 	TIM_HandleTypeDef *htim = &htim2;
 	HAL_TIM_IRQHandler( &htim2 );

@@ -117,6 +117,10 @@ void MX_GPIO_Init( void )
 	/* SENS_ST is used by TIM2 see there */
 	HAL_GPIO_Init( SENS_ST_GPIO_Port, &GPIO_InitStruct );
 
+	//hack
+//	GPIO_InitStruct.Pin = GPIO_PIN_9;
+//	HAL_GPIO_Init( GPIOC, &GPIO_InitStruct );
+
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
