@@ -156,12 +156,13 @@ static void post_process_values( void )
  */
 void enable_sensor_clk( void )
 {
+	HAL_GPIO_WritePin(SENS_CLK_GPIO_Port,SENS_CLK_Pin,GPIO_PIN_RESET);
 	GPIO_InitTypeDef GPIO_InitStruct;
 	/*Configure GPIO pin for the Sensors CLK
 	 * STM32 --> SENS1 & SENS2*/
 	GPIO_InitStruct.Pin = SENS_CLK_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
 	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
@@ -172,12 +173,13 @@ void enable_sensor_clk( void )
  */
 void disable_sensor_clk( void )
 {
+	HAL_GPIO_WritePin(SENS_CLK_GPIO_Port,SENS_CLK_Pin,GPIO_PIN_RESET);
 	GPIO_InitTypeDef GPIO_InitStruct;
 	/*Configure GPIO pin for the Sensors CLK
 	 * STM32 --> SENS1 & SENS2*/
 	GPIO_InitStruct.Pin = SENS_CLK_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
 }
 
