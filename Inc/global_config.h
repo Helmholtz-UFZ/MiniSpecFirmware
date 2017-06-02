@@ -24,11 +24,11 @@
 
 /** The number of 'unused' TRG pulses before the sensor putting out the
  * video data */
-#define MSPARAM_UNUSED_TRG_CNT	89
+#define MSPARAM_UNUSED_TRG_CNT	88
 
 
-#define TIM2_HIGH	MSPARAM_PIXEL
-#define TIM2_LOW	MSPARAM_UNUSED_TRG_CNT
+#define TIM2_HIGH	(MSPARAM_PIXEL)
+#define TIM2_LOW	(MSPARAM_UNUSED_TRG_CNT-1)
 
 //#define MSPARAM_TRG_DELAY_CNT	3
 
