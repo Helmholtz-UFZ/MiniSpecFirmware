@@ -41,6 +41,7 @@ void micro_spec_init( void )
 void micro_spec_measure_init( void )
 {
 	enable_sensor_clk();
+	HAL_Delay(1);
 	sens1_buffer.w_idx = 0; // HACK
 	sens_trg_count = 0;
 	status = MS_CLK_ON;
@@ -52,6 +53,7 @@ void micro_spec_measure_init( void )
  */
 void micro_spec_measure_deinit( void )
 {
+	HAL_Delay(1);
 	disable_sensor_clk();
 }
 
@@ -114,7 +116,9 @@ void micro_spec_measure_start( void )
 	status = MS_ST_SIGNAL_TIM_STARTED;
 
 	// enable TIM channels
-	TIM_CCxChannelCmd( TIM1, TIM_CHANNEL_2, TIM_CCx_ENABLE );
+
+	TIM1->CCER |= TIM_CCER_CC2E;
+//	TIM_CCxChannelCmd( TIM1, TIM_CHANNEL_2, TIM_CCx_ENABLE );
 	TIM_CCxChannelCmd( TIM2, TIM_CHANNEL_3, TIM_CCx_ENABLE );
 
 	// enable TIM IRs
@@ -166,6 +170,7 @@ void enable_sensor_clk( void )
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
 	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
+
 }
 /**
  * Disable the sensor clock. When the CLK-signal is deactivated,
@@ -178,8 +183,10 @@ void disable_sensor_clk( void )
 	/*Configure GPIO pin for the Sensors CLK
 	 * STM32 --> SENS1 & SENS2*/
 	GPIO_InitStruct.Pin = SENS_CLK_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
+
+
 }
 

@@ -106,7 +106,7 @@ void MX_GPIO_Init( void )
 
 	/* ---------------SET TO ANALOG------------------*/
 
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 
 	/* SENS_CLK is used as clock output see in microspec.c */
