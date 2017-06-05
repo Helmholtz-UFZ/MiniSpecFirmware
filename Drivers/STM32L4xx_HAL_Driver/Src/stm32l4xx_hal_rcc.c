@@ -1066,13 +1066,7 @@ void HAL_RCC_MCOConfig( uint32_t RCC_MCOx, uint32_t RCC_MCOSource, uint32_t RCC_
   /* MCO Clock Enable */
   __MCO1_CLK_ENABLE();
 
-  /* Configue the MCO1 pin in alternate function mode */
-  GPIO_InitStruct.Pin = MCO1_PIN;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
-  HAL_GPIO_Init(MCO1_GPIO_PORT, &GPIO_InitStruct);
+  // no gpio config, as we don't want to output the clk immediately!
 
   /* Mask MCOSEL[] and MCOPRE[] bits then set MCO1 clock source and prescaler */
   MODIFY_REG(RCC->CFGR, (RCC_CFGR_MCOSEL | RCC_CFGR_MCOPRE), (RCC_MCOSource | RCC_MCODiv ));

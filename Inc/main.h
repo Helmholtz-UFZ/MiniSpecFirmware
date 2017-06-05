@@ -43,24 +43,43 @@
 
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
+#define TEST_PIN_Pin GPIO_PIN_10
+#define TEST_PIN_GPIO_Port GPIOB
 #define EXTADC_EN_Pin GPIO_PIN_8
 #define EXTADC_EN_GPIO_Port GPIOC
-#define SENS_TRG_Pin GPIO_PIN_9
-#define SENS_TRG_GPIO_Port GPIOC
 #define SENS_CLK_Pin GPIO_PIN_8
 #define SENS_CLK_GPIO_Port GPIOA
+#define SENS_ST_Pin GPIO_PIN_9
+#define SENS_ST_GPIO_Port GPIOA
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
-#define SENS_ST_Pin GPIO_PIN_15
-#define SENS_ST_GPIO_Port GPIOA
+#define SENS_TRG_Pin GPIO_PIN_15
+#define SENS_TRG_GPIO_Port GPIOA
 #define EXTADC1_BUSY_Pin GPIO_PIN_2
 #define EXTADC1_BUSY_GPIO_Port GPIOD
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+// Corresponding ISRs
+#define EXTADC1_BUSY_IRQn	EXTI2_IRQn
+#define EXTADC2_BUSY_IRQn	EXTI15_10_IRQn
+
+// sensor1/adc1:
+//	PA pin 0-7
+//	PB pin 0-7
+#define SENS1_PA_mask	( 0xFF )
+#define SENS1_PC_mask	( 0xFF )
+
+// sensor2/adc2:
+//	PB pin 0-2 and 4-11
+//	PC pin 10-13
+#define SENS_PB_mask	( GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 )
+#define SENS_PC_mask	( GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 )
+
+
 
 /* USER CODE END Private defines */
 
