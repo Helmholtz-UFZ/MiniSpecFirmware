@@ -22,7 +22,9 @@ typedef enum
 	        MS_READ_ADC,
 	        MS_READ_ADC_DONE,
 	        MS_POST_PROCESS,
-	        MS_DONE
+	        MS_DONE,
+	        MS_FAIL
+
 } meas_status_t;
 
 extern volatile meas_status_t status;

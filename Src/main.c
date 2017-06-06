@@ -62,8 +62,9 @@ int main( void )
 	MX_TIM1_Init();
 	MX_TIM2_Init();
 
-	HAL_NVIC_EnableIRQ( TIM2_IRQn );
-//	HAL_NVIC_EnableIRQ( TIM1_UP_TIM16_IRQn );
+//	NVIC_EnableIRQ( SENS_EOS_IRQn );
+//	NVIC_EnableIRQ( EXTADC1_BUSY_IRQn );
+//	NVIC_EnableIRQ( TIM2_IRQn );
 
 
 	micro_spec_init();

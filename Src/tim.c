@@ -135,7 +135,7 @@ void MX_TIM2_Init( void )
 	}
 
 	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_ETRMODE2;
-	sClockSourceConfig.ClockPolarity = TIM_CLOCKPOLARITY_NONINVERTED;
+	sClockSourceConfig.ClockPolarity = TIM_CLOCKPOLARITY_INVERTED;
 	sClockSourceConfig.ClockPrescaler = TIM_CLOCKPRESCALER_DIV1;
 	sClockSourceConfig.ClockFilter = 0;
 	if( HAL_TIM_ConfigClockSource( &htim2, &sClockSourceConfig ) != HAL_OK )

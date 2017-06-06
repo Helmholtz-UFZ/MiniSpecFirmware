@@ -42,8 +42,10 @@ void micro_spec_measure_init( void )
 {
 	enable_sensor_clk();
 	HAL_Delay(1);
-	sens1_buffer.w_idx = 0; // HACK
+	memset( sens1_buffer.buf, 0, sizeof(uint16_t) * sens1_buffer.size );
+	sens1_buffer.w_idx = 0;
 	sens_trg_count = 0;
+	NVIC_EnableIRQ( TIM2_IRQn );
 	status = MS_CLK_ON;
 }
 
@@ -112,24 +114,22 @@ void micro_spec_measure_start( void )
 	int_time_cnt -= clk_cycl;
 	int_time_cnt = (int_time_cnt * TIM2_SCALER) + PRE_ST_DELAY;
 
-	__HAL_TIM_SET_AUTORELOAD( &htim1, 0xFFFF ); //hack
+	int_time_cnt = 0xffff; // hack integrationtime
+	__HAL_TIM_SET_AUTORELOAD( &htim1, int_time_cnt );
 	status = MS_ST_SIGNAL_TIM_STARTED;
 
 	// enable TIM channels
+	// Don't use TIM_CCxChannelCmd() because it will generate a short
+	// uncertain state, which will result in a high with an external
+	// pull-up resistor.
 
+	// tim1ch2 and tim2ch3
 	TIM1->CCER |= TIM_CCER_CC2E;
-//	TIM_CCxChannelCmd( TIM1, TIM_CHANNEL_2, TIM_CCx_ENABLE );
-	TIM_CCxChannelCmd( TIM2, TIM_CHANNEL_3, TIM_CCx_ENABLE );
+	TIM2->CCER |= TIM_CCER_CC3E;
 
-	// enable TIM IRs
-//	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_UPDATE );
-//	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_UPDATE );
-
+	// enable TIM2 IR
 	__HAL_TIM_CLEAR_IT( &htim2, TIM_IT_UPDATE );
 	__HAL_TIM_ENABLE_IT( &htim2, TIM_IT_UPDATE );
-
-//	__HAL_TIM_CLEAR_IT( &htim2, TIM_IT_CC3 );
-//	__HAL_TIM_ENABLE_IT( &htim2, TIM_IT_CC3 );
 
 	// start TIM1
 	__HAL_TIM_MOE_ENABLE( &htim1 );

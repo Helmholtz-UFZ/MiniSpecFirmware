@@ -64,57 +64,51 @@ void SysTick_Handler( void )
 /**
  * @brief This function handles TIM2 global interrupt.
  *
- * 89th TRG done
+ * TRG
  *
- * This is called when we catch the 89th TRG-pulse. We enable the external ADC
- * and the corosponing IR and wait for TODO EXTADC1Busy to go high/low(?) */
+ * This is called when we catch the MSPARAM_UNUSED_TRG_CNTth TRG-pulse. We
+ * enable the IR for the EXTADC_BUSY pin and the EOS.*/
 void TIM2_IRQHandler( void )
 {
-	volatile uint16_t value0, value1; //todo kill volatile
-	volatile uint32_t value = 0;
-	TIM_HandleTypeDef *htim = &htim2;
-	HAL_TIM_IRQHandler( &htim2 );
+//	volatile uint16_t value0, value1; //todo kill volatile
+//	volatile uint32_t value = 0;
+//	TIM_HandleTypeDef *htim = &htim2;
+//	HAL_TIM_IRQHandler( &htim2 );
 
-	value0 = GPIOA->IDR & SENS1_PA_mask;
-	value1 = GPIOC->IDR & SENS1_PC_mask;
-	value = (value1 << 8) | value0;
+//	value0 = GPIOA->IDR & SENS1_PA_mask;
+//	value1 = GPIOC->IDR & SENS1_PC_mask;
+//	value = (value1 << 8) | value0;
 
-// delay end, pulse start
-//	if( __HAL_TIM_GET_FLAG( htim, TIM_FLAG_CC3 ) )
-//	{
-//		__HAL_TIM_CLEAR_IT( htim, TIM_IT_CC3 );
-//		status = MS_COUNT_TRG;
-//	}
-//
-//	// pulse end
-//	if( __HAL_TIM_GET_FLAG(htim, TIM_FLAG_UPDATE) != RESET )
-//	{
-//		__HAL_TIM_CLEAR_IT( htim, TIM_IT_UPDATE );
-//		status = MS_COUNT_TRG_DONE;
-//	}
-	status = MS_READ_ADC_DONE;
+	if( TIM2->SR & TIM_SR_CC3IF )
+	{
+		// clear IR flag
+		TIM2->SR &= ~TIM_SR_CC3IF;
+		status = MS_COUNT_TRG;
+		__HAL_GPIO_EXTI_CLEAR_IT(EXTADC1_BUSY_Pin);
+		__HAL_GPIO_EXTI_CLEAR_IT(SENS_EOS_Pin);
+		NVIC_EnableIRQ( EXTADC1_BUSY_IRQn );
+		NVIC_EnableIRQ( SENS_EOS_IRQn );
+	}
+
+	if( TIM2->SR & TIM_SR_UIF )
+	{
+		// clear IR flag
+		TIM2->SR &= ~TIM_SR_UIF;
+		status = MS_FAIL;
+	}
 }
-
-//void TIM1_UP_TIM16_IRQHandler( void )
-//{
-//	TIM_HandleTypeDef *htim = &htim1;
-//	if( __HAL_TIM_GET_FLAG(htim, TIM_FLAG_UPDATE) != RESET )
-//	{
-//		__HAL_TIM_CLEAR_IT( htim, TIM_IT_UPDATE );
-//		status = MS_ST_SIGNAL_TIM_DONE;
-//	}
-//}
 
 /**
  * @brief This function handles EXTI line2 interrupt.
  *
  * ADC1_BUSY
  *
- * With every falling edge we can read curren value of the
- * (external) ADC conversion on 16 GPIO (self-defined parallel port)
+ * With every falling edge we can read the current data value of the
+ * (external) ADC conversion on 16 GPIO pins (self-defined parallel port)
  *
- * If we have read all pixels we disable this IR and continue in the
- * micro_spec_measure_start() function (micro_spec.c).
+ * This IR is enabled by the TRG IR and disabled by the EOS IR.
+ *
+ * TODO use DMA instead of manually save values
  */
 void EXTI2_IRQHandler( void )
 {
@@ -127,10 +121,8 @@ void EXTI2_IRQHandler( void )
 
 		status = MS_READ_ADC;
 
-		// +1 as the first value is not valid
-		if( sens1_buffer.w_idx < MSPARAM_PIXEL + 1 )
+		if( sens1_buffer.w_idx < sens1_buffer.size )
 		{
-			//TODO use DMA [EXTI2_IRQHandler()]
 			// read ADC parallel-port-value
 			value0 = GPIOA->IDR & SENS1_PA_mask;
 			value1 = GPIOC->IDR & SENS1_PC_mask;
@@ -138,23 +130,40 @@ void EXTI2_IRQHandler( void )
 		}
 		else
 		{
-			// disable ADC IR (this) and disable the ADC itself
-			NVIC_DisableIRQ( EXTADC1_BUSY_IRQn );
-			HAL_GPIO_WritePin( EXTADC_EN_GPIO_Port, EXTADC_EN_Pin, GPIO_PIN_RESET );
-			status = MS_READ_ADC_DONE;
+			status = MS_FAIL;
 		}
 	}
 }
 
 /**
- * @brief This function handles EXTI line[15:10] interrupts.
+ * @brief This function handles External Line[9:5] Interrupts.
  *
- * ADC2_BUSY
+ * EOS
+ *
+ * When every sample/pixel was sended by the sensor, it generates the EOS signal.
+ *
+ * We disable the ADC1_BUSY IR, the EOS IR (this) and the TRG IR. We also read
+ * the current TRG count.
  *
  */
-//void EXTI15_10_IRQHandler( void )
-//{
-//	HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_13 );
-//
-//}
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+void EXTI9_5_IRQHandler( void )
+{
+	volatile uint16_t trg_count;
+	uint32_t v1,v2,v3;
+	if( EXTI->PR1 & SENS_EOS_Pin )
+	{
+		// clear pending IR
+		EXTI->PR1 |= SENS_EOS_Pin;
+		NVIC_DisableIRQ( EXTADC1_BUSY_IRQn );
+//		NVIC_DisableIRQ( TIM2_IRQn );
+		NVIC_DisableIRQ( SENS_EOS_IRQn );
+		v1 = TIM2->CNT;
+		v2 = TIM2->CNT;
+		v3 = TIM2->CNT;
+
+		if(v2 == v1){}
+
+		status = MS_READ_ADC_DONE;
+	}
+}
+
