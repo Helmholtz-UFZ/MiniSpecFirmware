@@ -73,28 +73,37 @@ void TIM2_IRQHandler( void )
 //	volatile uint16_t value0, value1; //todo kill volatile
 //	volatile uint32_t value = 0;
 //	TIM_HandleTypeDef *htim = &htim2;
-//	HAL_TIM_IRQHandler( &htim2 );
+//	HAL_TIM_IRQHandler( htim );
 
 //	value0 = GPIOA->IDR & SENS1_PA_mask;
 //	value1 = GPIOC->IDR & SENS1_PC_mask;
 //	value = (value1 << 8) | value0;
 
-	if( TIM2->SR & TIM_SR_CC3IF )
+//	if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC3)){
+//		if(__HAL_TIM_GET_IT_SOURCE(htim, TIM_IT_CC3)){
+//
+//		}
+//	}
+	if( (TIM2->SR & TIM_SR_CC3IF) && (TIM2->DIER & TIM_DIER_CC3IE) )
 	{
 		// clear IR flag
 		TIM2->SR &= ~TIM_SR_CC3IF;
-		status = MS_COUNT_TRG;
-		__HAL_GPIO_EXTI_CLEAR_IT(EXTADC1_BUSY_Pin);
-		__HAL_GPIO_EXTI_CLEAR_IT(SENS_EOS_Pin);
+		status = MS_TIM2_CC;
+		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
+		__HAL_GPIO_EXTI_CLEAR_IT( SENS_EOS_Pin );
 		NVIC_EnableIRQ( EXTADC1_BUSY_IRQn );
 		NVIC_EnableIRQ( SENS_EOS_IRQn );
 	}
 
-	if( TIM2->SR & TIM_SR_UIF )
+	if( (TIM2->SR & TIM_SR_UIF) && (TIM2->DIER & TIM_DIER_UIE) )
 	{
 		// clear IR flag
 		TIM2->SR &= ~TIM_SR_UIF;
-		status = MS_FAIL;
+		status = MS_TIM2_UPDATE;
+		NVIC_DisableIRQ( EXTADC1_BUSY_IRQn );
+		NVIC_DisableIRQ( SENS_EOS_IRQn );
+
+		status = MS_EOS;
 	}
 }
 
@@ -112,26 +121,28 @@ void TIM2_IRQHandler( void )
  */
 void EXTI2_IRQHandler( void )
 {
-	uint16_t value0, value1;
+	uint8_t value0, value1;
 
-	if( EXTI->PR1 & EXTADC1_BUSY_Pin )
+//	HAL_GPIO_EXTI_IRQHandler()
+	if( __HAL_GPIO_EXTI_GET_IT(EXTADC1_BUSY_Pin) != RESET )
 	{
-		// clear pending interrupt
-		EXTI->PR1 |= EXTADC1_BUSY_Pin;
+		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
 
-		status = MS_READ_ADC;
 
-		if( sens1_buffer.w_idx < sens1_buffer.size )
+
+		if( sens1_buffer.w_idx < BUFFER_SIZE )
 		{
+			status = MS_READ_DATA;
 			// read ADC parallel-port-value
-			value0 = GPIOA->IDR & SENS1_PA_mask;
-			value1 = GPIOC->IDR & SENS1_PC_mask;
+			value0 = GPIOA->IDR;
+			value1 = GPIOC->IDR;
+
 			sens1_buffer.buf[sens1_buffer.w_idx++] = (value1 << 8) | value0;
 		}
-		else
-		{
-			status = MS_FAIL;
-		}
+//		else // hack dont work with this uncommented -- WHY?? race condidion ?
+//		{
+//			status = MS_BUFFER_FULL;
+//		}
 	}
 }
 
@@ -149,21 +160,30 @@ void EXTI2_IRQHandler( void )
 void EXTI9_5_IRQHandler( void )
 {
 	volatile uint16_t trg_count;
-	uint32_t v1,v2,v3;
-	if( EXTI->PR1 & SENS_EOS_Pin )
+	volatile uint32_t v1, v2, v3;
+	v1 = TIM2->CNT;
+	v2 = TIM2->CNT;
+	v3 = TIM2->CNT;
+	if( __HAL_GPIO_EXTI_GET_IT(SENS_EOS_Pin) != RESET )
 	{
+		__HAL_GPIO_EXTI_CLEAR_IT( SENS_EOS_Pin );
+//	if( EXTI->PR1 & SENS_EOS_Pin )
+//	{
 		// clear pending IR
-		EXTI->PR1 |= SENS_EOS_Pin;
+//		EXTI->PR1 |= SENS_EOS_Pin;
 		NVIC_DisableIRQ( EXTADC1_BUSY_IRQn );
-//		NVIC_DisableIRQ( TIM2_IRQn );
+		__HAL_TIM_DISABLE_IT( &htim2, TIM_IT_UPDATE );
 		NVIC_DisableIRQ( SENS_EOS_IRQn );
-		v1 = TIM2->CNT;
-		v2 = TIM2->CNT;
-		v3 = TIM2->CNT;
 
-		if(v2 == v1){}
+		if( v2 == v1 && v2 == v3 )
+		{
+		}
+		else
+		{
+			v1;
+		}
 
-		status = MS_READ_ADC_DONE;
+		status = MS_EOS;
 	}
 }
 

@@ -65,6 +65,9 @@ int main( void )
 //	NVIC_EnableIRQ( SENS_EOS_IRQn );
 //	NVIC_EnableIRQ( EXTADC1_BUSY_IRQn );
 //	NVIC_EnableIRQ( TIM2_IRQn );
+//	HAL_NVIC_SetPriority(SENS_EOS_IRQn, 0, 0);
+//	HAL_NVIC_SetPriority(EXTADC1_BUSY_IRQn, 5, 0);
+//	HAL_NVIC_SetPriority(TIM2_IRQn, 10, 0);
 
 
 	micro_spec_init();

@@ -25,14 +25,14 @@ static void post_process_values( void );
 void micro_spec_init( void )
 {
 	integrtion_time = 1000;
-	uint16_t sz = 300;
-	uint16_t x[sz];
-	memset( x, 0, sizeof(uint16_t) * sz );
+	uint16_t x[BUFFER_SIZE];
+	memset( x, 0, sizeof(uint16_t) * BUFFER_SIZE );
 
 	sens1_buffer.buf = x;
-	sens1_buffer.size = sz;
+	sens1_buffer.size = BUFFER_SIZE;
 	sens1_buffer.r_idx = 0;
 	sens1_buffer.w_idx = 0;
+	status = MS_INIT;
 }
 
 /**
@@ -41,12 +41,12 @@ void micro_spec_init( void )
 void micro_spec_measure_init( void )
 {
 	enable_sensor_clk();
-	HAL_Delay(1);
+	HAL_Delay( 1 );
 	memset( sens1_buffer.buf, 0, sizeof(uint16_t) * sens1_buffer.size );
 	sens1_buffer.w_idx = 0;
 	sens_trg_count = 0;
 	NVIC_EnableIRQ( TIM2_IRQn );
-	status = MS_CLK_ON;
+	status = MS_MEASURE_INIT;
 }
 
 /**
@@ -55,7 +55,7 @@ void micro_spec_measure_init( void )
  */
 void micro_spec_measure_deinit( void )
 {
-	HAL_Delay(1);
+	HAL_Delay( 1 );
 	disable_sensor_clk();
 }
 
@@ -116,7 +116,6 @@ void micro_spec_measure_start( void )
 
 	int_time_cnt = 0xffff; // hack integrationtime
 	__HAL_TIM_SET_AUTORELOAD( &htim1, int_time_cnt );
-	status = MS_ST_SIGNAL_TIM_STARTED;
 
 	// enable TIM channels
 	// Don't use TIM_CCxChannelCmd() because it will generate a short
@@ -127,15 +126,18 @@ void micro_spec_measure_start( void )
 	TIM1->CCER |= TIM_CCER_CC2E;
 	TIM2->CCER |= TIM_CCER_CC3E;
 
-	// enable TIM2 IR
+	// enable TIM2 IRs
 	__HAL_TIM_CLEAR_IT( &htim2, TIM_IT_UPDATE );
+	__HAL_TIM_CLEAR_IT( &htim2, TIM_IT_CC3 );
 	__HAL_TIM_ENABLE_IT( &htim2, TIM_IT_UPDATE );
+	__HAL_TIM_ENABLE_IT( &htim2, TIM_IT_CC3 );
 
 	// start TIM1
 	__HAL_TIM_MOE_ENABLE( &htim1 );
 	__HAL_TIM_ENABLE( &htim1 );
+	status = MS_TIM1_STARTED;
 
-	while( status != MS_READ_ADC_DONE )
+	while( status != MS_EOS )
 	{
 		// busy waiting
 	}
@@ -160,7 +162,7 @@ static void post_process_values( void )
  */
 void enable_sensor_clk( void )
 {
-	HAL_GPIO_WritePin(SENS_CLK_GPIO_Port,SENS_CLK_Pin,GPIO_PIN_RESET);
+	HAL_GPIO_WritePin( SENS_CLK_GPIO_Port, SENS_CLK_Pin, GPIO_PIN_RESET );
 	GPIO_InitTypeDef GPIO_InitStruct;
 	/*Configure GPIO pin for the Sensors CLK
 	 * STM32 --> SENS1 & SENS2*/
@@ -178,7 +180,7 @@ void enable_sensor_clk( void )
  */
 void disable_sensor_clk( void )
 {
-	HAL_GPIO_WritePin(SENS_CLK_GPIO_Port,SENS_CLK_Pin,GPIO_PIN_RESET);
+	HAL_GPIO_WritePin( SENS_CLK_GPIO_Port, SENS_CLK_Pin, GPIO_PIN_RESET );
 	GPIO_InitTypeDef GPIO_InitStruct;
 	/*Configure GPIO pin for the Sensors CLK
 	 * STM32 --> SENS1 & SENS2*/
@@ -186,7 +188,6 @@ void disable_sensor_clk( void )
 	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
-
 
 }
 

@@ -8,7 +8,7 @@
 #ifndef BUFFER_H_
 #define BUFFER_H_
 
-#define BUFFER_SIZE
+#define BUFFER_SIZE	500
 
 typedef struct
 {

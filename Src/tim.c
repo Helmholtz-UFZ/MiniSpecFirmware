@@ -111,8 +111,8 @@ void MX_TIM1_Init( void )
 	}
 
 	// prevent high output when enabling pin
-	TIM_CCxChannelCmd( TIM1, TIM_CHANNEL_2, TIM_CCx_ENABLE );
-	__HAL_TIM_MOE_ENABLE( &htim1 );
+//	TIM_CCxChannelCmd( TIM1, TIM_CHANNEL_2, TIM_CCx_ENABLE ); //todo
+//	__HAL_TIM_MOE_ENABLE( &htim1 );
 	HAL_TIM_MspPostInit( &htim1 );
 
 }
