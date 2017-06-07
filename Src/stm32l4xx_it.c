@@ -93,6 +93,8 @@ void TIM2_IRQHandler( void )
 		__HAL_GPIO_EXTI_CLEAR_IT( SENS_EOS_Pin );
 		NVIC_EnableIRQ( EXTADC1_BUSY_IRQn );
 		NVIC_EnableIRQ( SENS_EOS_IRQn );
+		__HAL_TIM_SET_AUTORELOAD( &htim5, 0xFFFFFFFF );
+		__HAL_TIM_ENABLE( &htim5 );
 	}
 
 	if( (TIM2->SR & TIM_SR_UIF) && (TIM2->DIER & TIM_DIER_UIE) )
@@ -119,8 +121,10 @@ void TIM2_IRQHandler( void )
  *
  * TODO use DMA instead of manually save values
  */
+volatile uint32_t cnt0=0, cnt1=0, cnt2=0;
 void EXTI2_IRQHandler( void )
 {
+	cnt0 = TIM5->CNT;
 	uint8_t value0, value1;
 
 //	HAL_GPIO_EXTI_IRQHandler()
@@ -140,10 +144,12 @@ void EXTI2_IRQHandler( void )
 			sens1_buffer.buf[sens1_buffer.w_idx++] = (value1 << 8) | value0;
 		}
 //		else // hack dont work with this uncommented -- WHY?? race condidion ?
-//		{
-//			status = MS_BUFFER_FULL;
-//		}
+		{
+			status = MS_BUFFER_FULL;
+		}
 	}
+	cnt1 = TIM5->CNT;
+	__NOP();
 }
 
 /**

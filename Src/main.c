@@ -61,7 +61,21 @@ int main( void )
 	MX_GPIO_Init();
 	MX_TIM1_Init();
 	MX_TIM2_Init();
+	MX_TIM5_Init();
 
+//	volatile uint32_t cnt0=0, cnt1=0, cnt2=0;
+
+
+//	__HAL_TIM_SET_AUTORELOAD( &htim5, 0xFFFFFFFF );
+
+//	__HAL_TIM_ENABLE( &htim5 );
+//	cnt0 = TIM5->CNT;
+//	__NOP();__NOP();
+//	cnt1 = TIM5->CNT;
+//	cnt2 = TIM5->CNT;
+
+//	__NOP();
+//
 //	NVIC_EnableIRQ( SENS_EOS_IRQn );
 //	NVIC_EnableIRQ( EXTADC1_BUSY_IRQn );
 //	NVIC_EnableIRQ( TIM2_IRQn );
