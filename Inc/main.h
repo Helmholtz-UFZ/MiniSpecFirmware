@@ -47,6 +47,8 @@
 #define TEST_PIN_GPIO_Port GPIOB
 #define EXTADC_EN_Pin GPIO_PIN_8
 #define EXTADC_EN_GPIO_Port GPIOC
+#define SENS_EOS_Pin GPIO_PIN_9
+#define SENS_EOS_GPIO_Port GPIOC
 #define SENS_CLK_Pin GPIO_PIN_8
 #define SENS_CLK_GPIO_Port GPIOA
 #define SENS_ST_Pin GPIO_PIN_9
@@ -62,10 +64,12 @@
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
 
+
 /* USER CODE BEGIN Private defines */
 // Corresponding ISRs
 #define EXTADC1_BUSY_IRQn	EXTI2_IRQn
-#define EXTADC2_BUSY_IRQn	EXTI15_10_IRQn
+#define SENS_EOS_IRQn		EXTI9_5_IRQn
+#define SENS_TRG_IRQn		TIM2_IRQn
 
 // sensor1/adc1:
 //	PA pin 0-7

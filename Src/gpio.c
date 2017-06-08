@@ -79,13 +79,13 @@ void MX_GPIO_Init( void )
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init( B1_GPIO_Port, &GPIO_InitStruct );
 
-	/* PC 0-7 (sens1 higher bits) */
+	/* DATA - PC 0-7 (sens1 higher bits) */
 	GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init( GPIOC, &GPIO_InitStruct );
 
-	/* PA 0-7 (sens1 lower bits) */
+	/* DATA - PA 0-7 (sens1 lower bits) */
 	GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -104,6 +104,12 @@ void MX_GPIO_Init( void )
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init( EXTADC1_BUSY_GPIO_Port, &GPIO_InitStruct );
 
+	/* EOS */
+	GPIO_InitStruct.Pin = SENS_EOS_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init( SENS_EOS_GPIO_Port, &GPIO_InitStruct );
+
 	/* ---------------SET TO ANALOG------------------*/
 
 	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
@@ -118,11 +124,6 @@ void MX_GPIO_Init( void )
 	GPIO_InitStruct.Pin = SENS_ST_Pin;
 	HAL_GPIO_WritePin(SENS_ST_GPIO_Port,SENS_ST_Pin,GPIO_PIN_RESET);
 	HAL_GPIO_Init( SENS_ST_GPIO_Port, &GPIO_InitStruct );
-
-	//hack
-//	GPIO_InitStruct.Pin = GPIO_PIN_9;
-//	HAL_GPIO_Init( GPIOC, &GPIO_InitStruct );
-
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
