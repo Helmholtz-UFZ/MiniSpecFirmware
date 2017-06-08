@@ -20,14 +20,14 @@
 
 /** The number of pixels the sensor provide. This defines also the number of
  * TRG pulses between MSPARAM_UNUSED_TRG_CNT and the rising edge of SENS_EOS. */
-#define MSPARAM_PIXEL	(288+10)
+#define MSPARAM_PIXEL	(287)
 
 /** The number of 'unused' TRG pulses before the sensor putting out the
  * video data */
-#define MSPARAM_UNUSED_TRG_CNT	(88-10)
+#define MSPARAM_UNUSED_TRG_CNT	(88-4)
 
 
-#define TIM2_HIGH	(MSPARAM_PIXEL-1)
+#define TIM2_HIGH	(MSPARAM_PIXEL+10)
 #define TIM2_LOW	(MSPARAM_UNUSED_TRG_CNT)
 
 //#define MSPARAM_TRG_DELAY_CNT	3

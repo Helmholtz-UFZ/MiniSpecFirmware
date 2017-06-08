@@ -18,7 +18,7 @@ typedef enum
 	        MS_MEASURE_INIT,
 	        MS_TIM1_STARTED,
 	        MS_TIM2_CC,
-	        MS_TIM2_UPDATE,
+	        MS_TIM2_DONE,
 	        MS_COUNT_TRG_DONE,
 	        MS_READ_DATA,
 	        MS_BUFFER_FULL,

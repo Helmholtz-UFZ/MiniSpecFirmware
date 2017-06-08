@@ -137,7 +137,7 @@ void micro_spec_measure_start( void )
 	__HAL_TIM_ENABLE( &htim1 );
 	status = MS_TIM1_STARTED;
 
-	while( status != MS_EOS )
+	while( status != MS_TIM2_DONE )
 	{
 		// busy waiting
 	}
@@ -149,7 +149,36 @@ void micro_spec_measure_start( void )
  */
 static void post_process_values( void )
 {
+	// PC[7..0] PA[7..0]
+	// 76543210 76543210
 	status = MS_POST_PROCESS;
+	uint16_t res, val, i;
+
+	for( i = 0; i < sens1_buffer.size; ++i )
+	{
+		res = 0;
+		val = sens1_buffer.buf[i];
+
+		res |= (val >> 11) & BIT0; //PC3
+		res |= (val >> 9) & BIT1;  //PC2
+		res |= (val << 2) & BIT2;  //PA0
+		res |= (val << 2) & BIT3;  //PA1
+		res |= (val << 0) & BIT4;  //PA4
+		res |= (val >> 4) & BIT5;  //PC1
+		res |= (val >> 2) & BIT6;  //PC0
+		res |= (val << 4) & BIT7;  //PA3
+		res |= (val << 6) & BIT8;  //PA2
+		res |= (val >> 6) & BIT9;  //PC7
+		res |= (val << 3) & BIT10; //PA7
+		res |= (val << 5) & BIT11; //PA6
+		res |= (val << 7) & BIT12; //PA5
+		res |= (val >> 1) & BIT13; //PC6
+		res |= (val << 1) & BIT14; //PC5
+		res |= (val << 3) & BIT15; //PC4
+
+		sens1_buffer.buf[i] = res;
+	}
+
 	// ...
 	status = MS_DONE;
 }

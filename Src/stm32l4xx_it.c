@@ -45,6 +45,8 @@
 /*            Cortex-M4 Processor Interruption and Exception Handlers         */
 /******************************************************************************/
 
+volatile uint16_t eos_trg_count;
+
 /**
  * @brief This function handles System tick timer.
  */
@@ -101,11 +103,12 @@ void TIM2_IRQHandler( void )
 	{
 		// clear IR flag
 		TIM2->SR &= ~TIM_SR_UIF;
-		status = MS_TIM2_UPDATE;
+
 		NVIC_DisableIRQ( EXTADC1_BUSY_IRQn );
 		NVIC_DisableIRQ( SENS_EOS_IRQn );
+		__HAL_TIM_DISABLE_IT( &htim2, TIM_IT_UPDATE );
 
-		status = MS_EOS;
+		status = MS_TIM2_DONE;
 	}
 }
 
@@ -121,10 +124,10 @@ void TIM2_IRQHandler( void )
  *
  * TODO use DMA instead of manually save values
  */
-volatile uint32_t cnt0=0, cnt1=0, cnt2=0;
+volatile uint32_t cnt0 = 0, cnt1 = 0, cnt2 = 0;
 void EXTI2_IRQHandler( void )
 {
-	cnt0 = TIM5->CNT;
+//	cnt0 = TIM5->CNT;
 	uint8_t value0, value1;
 
 //	HAL_GPIO_EXTI_IRQHandler()
@@ -132,24 +135,22 @@ void EXTI2_IRQHandler( void )
 	{
 		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
 
-
-
 		if( sens1_buffer.w_idx < BUFFER_SIZE )
 		{
-			status = MS_READ_DATA;
+//			status = MS_READ_DATA;
 			// read ADC parallel-port-value
 			value0 = GPIOA->IDR;
 			value1 = GPIOC->IDR;
-
+//			sens1_buffer.w_idx++;
 			sens1_buffer.buf[sens1_buffer.w_idx++] = (value1 << 8) | value0;
 		}
 //		else // hack dont work with this uncommented -- WHY?? race condidion ?
-		{
-			status = MS_BUFFER_FULL;
-		}
+//		{
+//			status = MS_BUFFER_FULL;
+//		}
 	}
-	cnt1 = TIM5->CNT;
-	__NOP();
+//	cnt1 = TIM5->CNT;
+//	__NOP();
 }
 
 /**
@@ -165,31 +166,33 @@ void EXTI2_IRQHandler( void )
  */
 void EXTI9_5_IRQHandler( void )
 {
-	volatile uint16_t trg_count;
-	volatile uint32_t v1, v2, v3;
-	v1 = TIM2->CNT;
-	v2 = TIM2->CNT;
-	v3 = TIM2->CNT;
+	volatile uint32_t tmp;
+	tmp = TIM2->CNT;
+//	v1 = TIM2->CNT;
+//	v2 = TIM2->CNT;
+//	v3 = TIM2->CNT;
 	if( __HAL_GPIO_EXTI_GET_IT(SENS_EOS_Pin) != RESET )
 	{
 		__HAL_GPIO_EXTI_CLEAR_IT( SENS_EOS_Pin );
+		eos_trg_count = tmp;
+
 //	if( EXTI->PR1 & SENS_EOS_Pin )
 //	{
 		// clear pending IR
 //		EXTI->PR1 |= SENS_EOS_Pin;
-		NVIC_DisableIRQ( EXTADC1_BUSY_IRQn );
-		__HAL_TIM_DISABLE_IT( &htim2, TIM_IT_UPDATE );
-		NVIC_DisableIRQ( SENS_EOS_IRQn );
+//		NVIC_DisableIRQ( EXTADC1_BUSY_IRQn );
+//		__HAL_TIM_DISABLE_IT( &htim2, TIM_IT_UPDATE );
+//		NVIC_DisableIRQ( SENS_EOS_IRQn );
 
-		if( v2 == v1 && v2 == v3 )
-		{
-		}
-		else
-		{
-			v1;
-		}
+//		if( v2 == v1 && v2 == v3 )
+//		{
+//		}
+//		else
+//		{
+//			v1;
+//		}
 
-		status = MS_EOS;
+//		status = MS_EOS;
 	}
 }
 
