@@ -38,6 +38,8 @@
 #include "global_include.h"
 #include "micro_spec.h"
 #include "usart.h"
+#include "stdio.h"
+#include "string.h"
 
 /* Private variables ---------------------------------------------------------*/
 
@@ -84,16 +86,43 @@ int main( void )
 //	HAL_NVIC_SetPriority(EXTADC1_BUSY_IRQn, 5, 0);
 //	HAL_NVIC_SetPriority(TIM2_IRQn, 10, 0);
 
+	/* rs232 prepareation */
+	uint8_t recv_buf[51];
+	memset( recv_buf, '#', 50 );
+	recv_buf[50] = '\0';
+	HAL_UART_Receive_IT( &huart3, recv_buf, 50 );
+
 	micro_spec_init();
 	micro_spec_set_integration_time( 100000 );
 
+	__NOP();
+
 	while( 1 )
 	{
-		micro_spec_measure_init();
-		micro_spec_measure_start();
-		micro_spec_measure_deinit();
 
-		HAL_Delay( 30 );
+		if( strstr( (char *) recv_buf, (char *) "start" ) != NULL )
+		{
+			//PRE
+			HAL_UART_Transmit( &huart3, (uint8_t *) "started\n", 8, 100 );
+
+			// MEASURE
+//			micro_spec_measure_init();
+//			micro_spec_measure_start();
+//			micro_spec_measure_deinit();
+
+			// SEND
+			HAL_UART_Transmit( &huart3, (uint8_t *) "\n", 1, 100 );
+			memset( recv_buf, '#', 50 );
+			HAL_UART_Receive_IT( &huart3, recv_buf, 50 );
+			HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.size, 1000 );
+
+			HAL_UART_Transmit( &huart3, (uint8_t *) "\n", 1, 100 );
+
+			HAL_UART_Transmit( &huart3, (uint8_t *) "transmit done\n", 14, 100 );
+		}
+
+
+		HAL_Delay( 100 );
 	}
 
 }

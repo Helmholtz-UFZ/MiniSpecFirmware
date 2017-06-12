@@ -136,7 +136,7 @@ void EXTI2_IRQHandler( void )
 	{
 		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
 
-		if( sens1_buffer.w_idx < BUFFER_SIZE )
+		if( sens1_buffer.w_idx < BUFFER_MAX_IDX )
 		{
 //			status = MS_READ_DATA;
 			// read ADC parallel-port-value

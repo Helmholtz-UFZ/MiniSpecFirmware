@@ -25,14 +25,15 @@ static void post_process_values( void );
 void micro_spec_init( void )
 {
 	integrtion_time = 1000;
-	uint16_t x[BUFFER_SIZE];
-	memset( x, 0, sizeof(uint16_t) * BUFFER_SIZE );
-
+	static uint16_t x[BUFFER_MAX_IDX];
 	sens1_buffer.buf = x;
 	sens1_buffer.size = BUFFER_SIZE;
 	sens1_buffer.r_idx = 0;
 	sens1_buffer.w_idx = 0;
 	status = MS_INIT;
+
+	// hack debug
+//	memset( sens1_buffer.buf, 's', sens1_buffer.size );
 }
 
 /**
@@ -42,7 +43,7 @@ void micro_spec_measure_init( void )
 {
 	enable_sensor_clk();
 	HAL_Delay( 1 );
-	memset( sens1_buffer.buf, 0, sizeof(uint16_t) * sens1_buffer.size );
+	memset( sens1_buffer.buf, 0, sens1_buffer.size );
 	sens1_buffer.w_idx = 0;
 	sens_trg_count = 0;
 	NVIC_EnableIRQ( TIM2_IRQn );
@@ -145,7 +146,7 @@ void micro_spec_measure_start( void )
 }
 
 /**
- * TODO post_process_values()
+ * post_process_values()
  */
 static void post_process_values( void )
 {
@@ -154,7 +155,7 @@ static void post_process_values( void )
 	status = MS_POST_PROCESS;
 	uint16_t res, val, i;
 
-	for( i = 0; i < sens1_buffer.size; ++i )
+	for( i = 0; i < BUFFER_MAX_IDX; ++i )
 	{
 		res = 0;
 		val = sens1_buffer.buf[i];
