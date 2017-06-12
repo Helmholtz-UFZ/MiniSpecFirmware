@@ -37,6 +37,7 @@
 #include "gpio.h"
 #include "global_include.h"
 #include "micro_spec.h"
+#include "usart.h"
 
 /* Private variables ---------------------------------------------------------*/
 
@@ -62,9 +63,9 @@ int main( void )
 	MX_TIM1_Init();
 	MX_TIM2_Init();
 	MX_TIM5_Init();
+	MX_USART3_UART_Init();
 
 //	volatile uint32_t cnt0=0, cnt1=0, cnt2=0;
-
 
 //	__HAL_TIM_SET_AUTORELOAD( &htim5, 0xFFFFFFFF );
 
@@ -82,7 +83,6 @@ int main( void )
 //	HAL_NVIC_SetPriority(SENS_EOS_IRQn, 0, 0);
 //	HAL_NVIC_SetPriority(EXTADC1_BUSY_IRQn, 5, 0);
 //	HAL_NVIC_SetPriority(TIM2_IRQn, 10, 0);
-
 
 	micro_spec_init();
 	micro_spec_set_integration_time( 100000 );
@@ -105,6 +105,7 @@ void SystemClock_Config( void )
 
 	RCC_OscInitTypeDef RCC_OscInitStruct;
 	RCC_ClkInitTypeDef RCC_ClkInitStruct;
+	RCC_PeriphCLKInitTypeDef PeriphClkInit;
 
 	/**Initializes the CPU, AHB and APB busses clocks
 	 */
@@ -132,6 +133,13 @@ void SystemClock_Config( void )
 	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
 	if( HAL_RCC_ClockConfig( &RCC_ClkInitStruct, FLASH_LATENCY_4 ) != HAL_OK )
+	{
+		Error_Handler();
+	}
+
+	PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART3;
+	PeriphClkInit.Usart3ClockSelection = RCC_USART3CLKSOURCE_PCLK1;
+	if( HAL_RCCEx_PeriphCLKConfig( &PeriphClkInit ) != HAL_OK )
 	{
 		Error_Handler();
 	}

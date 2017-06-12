@@ -38,6 +38,7 @@
 #include "global_include.h"
 #include "buffer.h"
 #include "tim.h"
+#include "usart.h"
 
 /* External variables --------------------------------------------------------*/
 
@@ -194,5 +195,13 @@ void EXTI9_5_IRQHandler( void )
 
 //		status = MS_EOS;
 	}
+}
+
+/**
+ * @brief This function handles USART3 global interrupt.
+ */
+void USART3_IRQHandler( void )
+{
+	HAL_UART_IRQHandler( &huart3 );
 }
 
