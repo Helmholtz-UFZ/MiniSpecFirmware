@@ -1,6 +1,6 @@
 Configuration	minispec_v_alpha_3_CUBE_ONLY
 STM32CubeMX 	4.20.1
-Date	06/07/2017
+Date	06/12/2017
 MCU	STM32L476RGTx
 
 
@@ -19,6 +19,8 @@ TIM2	ETR2	TIM2_ETR	PA15
 TIM2	PWM Generation CH3	TIM2_CH3	PB10
 TIM2	One pulse	TIM2_VS_OPM	VP_TIM2_VS_OPM
 TIM5	Internal Clock	TIM5_VS_ClockSourceINT	VP_TIM5_VS_ClockSourceINT
+USART3	Asynchronous	USART3_RX	PB11
+USART3	Asynchronous	USART3_TX	PC10
 
 
 
@@ -43,6 +45,7 @@ Pin Nb	PINs	FUNCTIONs	LABELs
 24	PC4	GPIO_Input	
 25	PC5	GPIO_Input	
 29	PB10	TIM2_CH3	TEST_PIN
+30	PB11	USART3_RX	
 37	PC6	GPIO_Input	
 38	PC7	GPIO_Input	
 39	PC8	GPIO_Output	EXTADC_EN
@@ -52,6 +55,7 @@ Pin Nb	PINs	FUNCTIONs	LABELs
 46	PA13*	SYS_JTMS-SWDIO	TMS
 49	PA14*	SYS_JTCK-SWCLK	TCK
 50	PA15	TIM2_ETR	SENS_TRG
+51	PC10	USART3_TX	
 54	PD2	GPIO_EXTI2	EXTADC1_BUSY
 55	PB3*	SYS_JTDO-SWO	SWO
 
@@ -61,7 +65,7 @@ SOFTWARE PROJECT
 
 Project Settings : 
 Project Name : minispec_v_alpha_3_CUBE_ONLY
-Project Folder : /home/rg/ufz/1 MICRO SPEC 2.0/software_devl/minispec_v_alpha_3_CUBE_ONLY
+Project Folder : /home/rg/ufz/1 MICRO SPEC 2.0/software_devl/CUBE_ONLY
 Toolchain / IDE : SW4STM32
 Firmware Package Name and Version : STM32Cube FW_L4 V1.7.0
 
