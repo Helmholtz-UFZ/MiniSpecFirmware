@@ -8,11 +8,11 @@
 #ifndef BUFFER_H_
 #define BUFFER_H_
 
-#define BUFFER_SIZE
+#define BUFFER_SIZE	500
 
 typedef struct
 {
-	uint32_t size;
+	uint16_t size;
 	volatile uint16_t w_idx;
 	volatile uint16_t r_idx;
 	volatile uint16_t* buf;

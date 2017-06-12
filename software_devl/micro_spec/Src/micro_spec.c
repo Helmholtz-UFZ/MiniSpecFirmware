@@ -25,14 +25,14 @@ static void post_process_values( void );
 void micro_spec_init( void )
 {
 	integrtion_time = 1000;
-	uint16_t sz = 300;
-	uint16_t x[sz];
-	memset( x, 0, sizeof(uint16_t) * sz );
+	uint16_t x[BUFFER_SIZE];
+	memset( x, 0, sizeof(uint16_t) * BUFFER_SIZE );
 
 	sens1_buffer.buf = x;
-	sens1_buffer.size = sz;
+	sens1_buffer.size = BUFFER_SIZE;
 	sens1_buffer.r_idx = 0;
 	sens1_buffer.w_idx = 0;
+	status = MS_INIT;
 }
 
 /**
@@ -41,10 +41,12 @@ void micro_spec_init( void )
 void micro_spec_measure_init( void )
 {
 	enable_sensor_clk();
-	HAL_Delay(1);
-	sens1_buffer.w_idx = 0; // HACK
+	HAL_Delay( 1 );
+	memset( sens1_buffer.buf, 0, sizeof(uint16_t) * sens1_buffer.size );
+	sens1_buffer.w_idx = 0;
 	sens_trg_count = 0;
-	status = MS_CLK_ON;
+	NVIC_EnableIRQ( TIM2_IRQn );
+	status = MS_MEASURE_INIT;
 }
 
 /**
@@ -53,7 +55,7 @@ void micro_spec_measure_init( void )
  */
 void micro_spec_measure_deinit( void )
 {
-	HAL_Delay(1);
+	HAL_Delay( 1 );
 	disable_sensor_clk();
 }
 
@@ -112,30 +114,30 @@ void micro_spec_measure_start( void )
 	int_time_cnt -= clk_cycl;
 	int_time_cnt = (int_time_cnt * TIM2_SCALER) + PRE_ST_DELAY;
 
-	__HAL_TIM_SET_AUTORELOAD( &htim1, 0xFFFF ); //hack
-	status = MS_ST_SIGNAL_TIM_STARTED;
+	int_time_cnt = 0xffff; // hack integrationtime
+	__HAL_TIM_SET_AUTORELOAD( &htim1, int_time_cnt );
 
 	// enable TIM channels
+	// Don't use TIM_CCxChannelCmd() because it will generate a short
+	// uncertain state, which will result in a high with an external
+	// pull-up resistor.
 
+	// tim1ch2 and tim2ch3
 	TIM1->CCER |= TIM_CCER_CC2E;
-//	TIM_CCxChannelCmd( TIM1, TIM_CHANNEL_2, TIM_CCx_ENABLE );
-	TIM_CCxChannelCmd( TIM2, TIM_CHANNEL_3, TIM_CCx_ENABLE );
+	TIM2->CCER |= TIM_CCER_CC3E;
 
-	// enable TIM IRs
-//	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_UPDATE );
-//	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_UPDATE );
-
+	// enable TIM2 IRs
 	__HAL_TIM_CLEAR_IT( &htim2, TIM_IT_UPDATE );
+	__HAL_TIM_CLEAR_IT( &htim2, TIM_IT_CC3 );
 	__HAL_TIM_ENABLE_IT( &htim2, TIM_IT_UPDATE );
-
-//	__HAL_TIM_CLEAR_IT( &htim2, TIM_IT_CC3 );
-//	__HAL_TIM_ENABLE_IT( &htim2, TIM_IT_CC3 );
+	__HAL_TIM_ENABLE_IT( &htim2, TIM_IT_CC3 );
 
 	// start TIM1
 	__HAL_TIM_MOE_ENABLE( &htim1 );
 	__HAL_TIM_ENABLE( &htim1 );
+	status = MS_TIM1_STARTED;
 
-	while( status != MS_READ_ADC_DONE )
+	while( status != MS_TIM2_DONE )
 	{
 		// busy waiting
 	}
@@ -147,7 +149,36 @@ void micro_spec_measure_start( void )
  */
 static void post_process_values( void )
 {
+	// PC[7..0] PA[7..0]
+	// 76543210 76543210
 	status = MS_POST_PROCESS;
+	uint16_t res, val, i;
+
+	for( i = 0; i < sens1_buffer.size; ++i )
+	{
+		res = 0;
+		val = sens1_buffer.buf[i];
+
+		res |= (val >> 11) & BIT0; //PC3
+		res |= (val >> 9) & BIT1;  //PC2
+		res |= (val << 2) & BIT2;  //PA0
+		res |= (val << 2) & BIT3;  //PA1
+		res |= (val << 0) & BIT4;  //PA4
+		res |= (val >> 4) & BIT5;  //PC1
+		res |= (val >> 2) & BIT6;  //PC0
+		res |= (val << 4) & BIT7;  //PA3
+		res |= (val << 6) & BIT8;  //PA2
+		res |= (val >> 6) & BIT9;  //PC7
+		res |= (val << 3) & BIT10; //PA7
+		res |= (val << 5) & BIT11; //PA6
+		res |= (val << 7) & BIT12; //PA5
+		res |= (val >> 1) & BIT13; //PC6
+		res |= (val << 1) & BIT14; //PC5
+		res |= (val << 3) & BIT15; //PC4
+
+		sens1_buffer.buf[i] = res;
+	}
+
 	// ...
 	status = MS_DONE;
 }
@@ -160,7 +191,7 @@ static void post_process_values( void )
  */
 void enable_sensor_clk( void )
 {
-	HAL_GPIO_WritePin(SENS_CLK_GPIO_Port,SENS_CLK_Pin,GPIO_PIN_RESET);
+	HAL_GPIO_WritePin( SENS_CLK_GPIO_Port, SENS_CLK_Pin, GPIO_PIN_RESET );
 	GPIO_InitTypeDef GPIO_InitStruct;
 	/*Configure GPIO pin for the Sensors CLK
 	 * STM32 --> SENS1 & SENS2*/
@@ -178,7 +209,7 @@ void enable_sensor_clk( void )
  */
 void disable_sensor_clk( void )
 {
-	HAL_GPIO_WritePin(SENS_CLK_GPIO_Port,SENS_CLK_Pin,GPIO_PIN_RESET);
+	HAL_GPIO_WritePin( SENS_CLK_GPIO_Port, SENS_CLK_Pin, GPIO_PIN_RESET );
 	GPIO_InitTypeDef GPIO_InitStruct;
 	/*Configure GPIO pin for the Sensors CLK
 	 * STM32 --> SENS1 & SENS2*/
@@ -186,7 +217,6 @@ void disable_sensor_clk( void )
 	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
-
 
 }
 
