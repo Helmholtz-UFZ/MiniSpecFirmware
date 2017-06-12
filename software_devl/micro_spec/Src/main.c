@@ -100,15 +100,15 @@ int main( void )
 	while( 1 )
 	{
 
-		if( strstr( (char *) recv_buf, (char *) "start" ) != NULL )
+		if( strstr( (char *) recv_buf, (char *) "S" ) != NULL )
 		{
 			//PRE
 			HAL_UART_Transmit( &huart3, (uint8_t *) "started\n", 8, 100 );
 
 			// MEASURE
-//			micro_spec_measure_init();
-//			micro_spec_measure_start();
-//			micro_spec_measure_deinit();
+			micro_spec_measure_init();
+			micro_spec_measure_start();
+			micro_spec_measure_deinit();
 
 			// SEND
 			HAL_UART_Transmit( &huart3, (uint8_t *) "\n", 1, 100 );
