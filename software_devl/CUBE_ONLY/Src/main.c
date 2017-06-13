@@ -59,7 +59,8 @@ void Error_Handler(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+volatile uint8_t cmd_flag;
+volatile uint16_t cmd_bytes;
 /* USER CODE END 0 */
 
 int main(void)
@@ -85,11 +86,28 @@ int main(void)
   MX_USART3_UART_Init();
 
   /* USER CODE BEGIN 2 */
-	uint8_t recv_buf[51];
-	uint8_t send_buf[51];
-	memset( recv_buf, '#', 50 );
-	memset( send_buf, 'a', 50 );
+
+	//modbus activation
+	uint32_t cr1 = 0;
+	char c;
+	//save cr1 status + reset RE and UE bit for modifying ADD[7:0]
+	cr1 = USART3->CR1;
+	USART3->CR1 &= ~(USART_CR1_RE | USART_CR1_UE);
+
+	c = '\r';
+	USART3->CR2 = (USART_CR2_ADD_Msk & (c << USART_CR2_ADD_Pos));
+
+	// restore RE and UE bit
+	USART3->CR1 = cr1;
+	//enable char match IR
+	USART3->CR1 |= USART_CR1_CMIE;
+
+	static uint8_t recv_buf[51];
+	memset( recv_buf, 0, 50 );
 	recv_buf[50] = '\0';
+
+	static uint8_t send_buf[51];
+	memset( send_buf, 'a', 50 );
 	send_buf[50] = '\0';
 	HAL_UART_Receive_IT( &huart3, recv_buf, 50 );
   /* USER CODE END 2 */
@@ -111,16 +129,21 @@ int main(void)
 //		HAL_Delay( 50 );
 		/* UART TEST*/
 
-		if( strstr( (char *) recv_buf, (char *) "start" ) != NULL )
+		if( cmd_flag != 0 )
 		{
+			cmd_flag = 0;
 
-			HAL_UART_Transmit( &huart3, (uint8_t *) "\n", 1, 100 );
-			memset( recv_buf, '#', 50 );
+			if( memchr( (const void *) recv_buf, 'S', cmd_bytes ) != NULL )
+			{
+
+//				HAL_UART_Transmit( &huart3, (uint8_t *) "\n", 1, 100 );
+				HAL_UART_Transmit( &huart3, (uint8_t *) send_buf, sizeof(send_buf), 8000000 );
+//				HAL_UART_Transmit( &huart3, (uint8_t *) "\n", 1, 100 );
+				HAL_Delay( 50 );
+			}
+			memset( recv_buf, 0, cmd_bytes );
+			cmd_bytes = 0;
 			HAL_UART_Receive_IT( &huart3, recv_buf, 50 );
-			HAL_UART_Transmit( &huart3, send_buf, strlen( (char *) send_buf ), 100 );
-
-			HAL_UART_Transmit( &huart3, (uint8_t *) "\n", 1, 100 );
-			HAL_Delay( 50 );
 		}
 
 	}

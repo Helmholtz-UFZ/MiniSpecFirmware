@@ -36,11 +36,14 @@
 #include "stm32l4xx_it.h"
 
 /* USER CODE BEGIN 0 */
+extern volatile uint8_t cmd_flag;
+extern volatile uint16_t cmd_bytes;
 
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
 extern TIM_HandleTypeDef htim2;
+extern UART_HandleTypeDef huart3;
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
@@ -108,6 +111,27 @@ void TIM2_IRQHandler(void)
   /* USER CODE BEGIN TIM2_IRQn 1 */
 
   /* USER CODE END TIM2_IRQn 1 */
+}
+
+/**
+* @brief This function handles USART3 global interrupt.
+*/
+void USART3_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART3_IRQn 0 */
+
+  /* USER CODE END USART3_IRQn 0 */
+  HAL_UART_IRQHandler(&huart3);
+  /* USER CODE BEGIN USART3_IRQn 1 */
+  // catch carriage return as 'end of cmd'-flag
+  if(((USART3->ISR & USART_ISR_CMF) != RESET) && ((USART3->CR1 & USART_CR1_CMIE) != RESET))
+     {
+       __HAL_UART_CLEAR_IT(&huart3, USART_ISR_CMF);
+       cmd_flag = 1;
+       cmd_bytes = huart3.RxXferSize - huart3.RxXferCount;
+     }
+
+  /* USER CODE END USART3_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
