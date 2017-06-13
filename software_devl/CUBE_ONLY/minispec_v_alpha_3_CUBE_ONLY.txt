@@ -1,6 +1,6 @@
 Configuration	minispec_v_alpha_3_CUBE_ONLY
 STM32CubeMX 	4.20.1
-Date	06/12/2017
+Date	06/13/2017
 MCU	STM32L476RGTx
 
 
