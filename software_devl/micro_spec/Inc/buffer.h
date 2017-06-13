@@ -23,7 +23,7 @@ typedef struct
 
 typedef struct
 {
-	uint8_t size;
+	uint16_t size;
 	void *base;
 } simple_buffer;
 

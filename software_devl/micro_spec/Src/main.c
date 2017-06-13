@@ -117,8 +117,11 @@ int main( void )
 				micro_spec_measure_deinit();
 				HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.size, 1000 );
 			}
+
+			// restart listening
 			memset( uart3_recv_buffer.base, 0, MIN( uart3_cmd_bytes, uart3_recv_buffer.size ) );
 			uart3_cmd_bytes = RESET;
+			HAL_UART_AbortReceive_IT(&huart3);
 			HAL_UART_Receive_IT( &huart3, uart3_recv_buffer.base, uart3_recv_buffer.size );
 		}
 
