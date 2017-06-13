@@ -35,4 +35,7 @@
 /** defines how many timer clock cycles are 1 us. */
 #define TIM2_SCALER		80
 
+#define SERIAL_RX_BUF_SZ	256
+
+
 #endif /* GLOBAL_CONFIG_H_ */

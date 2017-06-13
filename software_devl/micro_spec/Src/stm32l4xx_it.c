@@ -94,8 +94,8 @@ void TIM2_IRQHandler( void )
 		status = MS_TIM2_CC;
 		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
 		__HAL_GPIO_EXTI_CLEAR_IT( SENS_EOS_Pin );
-		NVIC_EnableIRQ( EXTADC1_BUSY_IRQn );
-		NVIC_EnableIRQ( SENS_EOS_IRQn );
+		NVIC_EnableIRQ( EXTI2_IRQn_BUSY1 );
+		NVIC_EnableIRQ( EXTI9_5_IRQn_EOS );
 		__HAL_TIM_SET_AUTORELOAD( &htim5, 0xFFFFFFFF );
 		__HAL_TIM_ENABLE( &htim5 );
 	}
@@ -105,8 +105,8 @@ void TIM2_IRQHandler( void )
 		// clear IR flag
 		TIM2->SR &= ~TIM_SR_UIF;
 
-		NVIC_DisableIRQ( EXTADC1_BUSY_IRQn );
-		NVIC_DisableIRQ( SENS_EOS_IRQn );
+		NVIC_DisableIRQ( EXTI2_IRQn_BUSY1 );
+		NVIC_DisableIRQ( EXTI9_5_IRQn_EOS );
 		__HAL_TIM_DISABLE_IT( &htim2, TIM_IT_UPDATE );
 
 		status = MS_TIM2_DONE;
@@ -203,5 +203,13 @@ void EXTI9_5_IRQHandler( void )
 void USART3_IRQHandler( void )
 {
 	HAL_UART_IRQHandler( &huart3 );
+	// catch carriage return as 'end of cmd'-flag
+	if( ((USART3->ISR & USART_ISR_CMF) != RESET) && ((USART3->CR1 & USART_CR1_CMIE) != RESET) )
+	{
+		__HAL_UART_CLEAR_IT( &huart3, USART_ISR_CMF );
+		uart3_cmd_bytes = huart3.RxXferSize - huart3.RxXferCount;
+		uart3_cmd_received = true;
+	}
+
 }
 

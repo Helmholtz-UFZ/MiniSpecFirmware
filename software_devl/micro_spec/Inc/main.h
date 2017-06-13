@@ -67,9 +67,9 @@
 
 /* USER CODE BEGIN Private defines */
 // Corresponding ISRs
-#define EXTADC1_BUSY_IRQn	EXTI2_IRQn
-#define SENS_EOS_IRQn		EXTI9_5_IRQn
-#define SENS_TRG_IRQn		TIM2_IRQn
+#define EXTI2_IRQn_BUSY1	EXTI2_IRQn
+#define EXTI9_5_IRQn_EOS	EXTI9_5_IRQn
+#define TIM2_IRQn_TRG		TIM2_IRQn
 
 // sensor1/adc1:
 //	PA pin 0-7

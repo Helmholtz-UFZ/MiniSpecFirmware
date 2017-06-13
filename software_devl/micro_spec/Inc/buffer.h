@@ -21,4 +21,10 @@ typedef struct
 	volatile uint16_t* buf;
 } index_buffer_uint16;
 
+typedef struct
+{
+	uint8_t size;
+	void *base;
+} simple_buffer;
+
 #endif /* BUFFER_H_ */

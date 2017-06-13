@@ -48,6 +48,7 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config( void );
 void Error_Handler( void );
+static void MX_NVIC_Init( void );
 
 int main( void )
 {
@@ -61,11 +62,19 @@ int main( void )
 	SystemClock_Config();
 
 	/* Initialize all configured peripherals */
-	MX_GPIO_Init();
-	MX_TIM1_Init();
-	MX_TIM2_Init();
-	MX_TIM5_Init();
+	// HAL inits.
+	// Mark all functions (!) that differ from the CUBE_ONLY project.
+	MX_GPIO_Init(); 	// modified
+	MX_TIM1_Init();		// todo modified
+	MX_TIM2_Init();	// todo modified
+	MX_TIM5_Init();	// todo modified
 	MX_USART3_UART_Init();
+
+	// our own inits
+	USART3_Init();
+
+	/* Initialize interrupts */
+	MX_NVIC_Init(); 	//modified
 
 //	volatile uint32_t cnt0=0, cnt1=0, cnt2=0;
 
@@ -86,45 +95,46 @@ int main( void )
 //	HAL_NVIC_SetPriority(EXTADC1_BUSY_IRQn, 5, 0);
 //	HAL_NVIC_SetPriority(TIM2_IRQn, 10, 0);
 
-	/* rs232 prepareation */
-	uint8_t recv_buf[51];
-	memset( recv_buf, '#', 50 );
-	recv_buf[50] = '\0';
-	HAL_UART_Receive_IT( &huart3, recv_buf, 50 );
-
 	micro_spec_init();
 	micro_spec_set_integration_time( 100000 );
 
-	__NOP();
+	HAL_UART_Receive_IT( &huart3, uart3_recv_buffer.base, uart3_recv_buffer.size );
 
 	while( 1 )
 	{
 
-		if( strstr( (char *) recv_buf, (char *) "S" ) != NULL )
+		// usr pushed enter
+		if( uart3_cmd_received )
 		{
-			//PRE
-			HAL_UART_Transmit( &huart3, (uint8_t *) "started\n", 8, 100 );
+			uart3_cmd_received = RESET;
 
-			// MEASURE
-			micro_spec_measure_init();
-			micro_spec_measure_start();
-			micro_spec_measure_deinit();
-
-			// SEND
-			HAL_UART_Transmit( &huart3, (uint8_t *) "\n", 1, 100 );
-			memset( recv_buf, '#', 50 );
-			HAL_UART_Receive_IT( &huart3, recv_buf, 50 );
-			HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.size, 1000 );
-
-			HAL_UART_Transmit( &huart3, (uint8_t *) "\n", 1, 100 );
-
-			HAL_UART_Transmit( &huart3, (uint8_t *) "transmit done\n", 14, 100 );
+			// usr pushed 'S'
+			if( memchr( uart3_recv_buffer.base, 'S', uart3_cmd_bytes ) != NULL )
+			{
+				// MEASURE
+				micro_spec_measure_init();
+				micro_spec_measure_start();
+				micro_spec_measure_deinit();
+				HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.size, 1000 );
+			}
+			memset( uart3_recv_buffer.base, 0, MIN( uart3_cmd_bytes, uart3_recv_buffer.size ) );
+			uart3_cmd_bytes = RESET;
+			HAL_UART_Receive_IT( &huart3, uart3_recv_buffer.base, uart3_recv_buffer.size );
 		}
 
-
-		HAL_Delay( 100 );
+		HAL_Delay( 10 );
 	}
+}
 
+/** NVIC Configuration
+ */
+static void MX_NVIC_Init( void )
+{
+	HAL_NVIC_EnableIRQ( TIM2_IRQn_TRG );
+	HAL_NVIC_EnableIRQ( USART3_IRQn );
+
+// EXTI9_5_IRQn_EOS:	en/dis in ISR
+// EXTI2_IRQn_BUSY1:	 en/dis in ISR
 }
 
 /** System Clock Configuration
