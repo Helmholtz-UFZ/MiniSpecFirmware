@@ -155,6 +155,12 @@ static void post_process_values( void )
 	status = MS_POST_PROCESS;
 	uint16_t res, val, i;
 
+	if(DBG_SIMULATE_SENSOR)
+	{
+		status = MS_DONE;
+		return;
+	}
+
 	for( i = 0; i < BUFFER_MAX_IDX; ++i )
 	{
 		res = 0;

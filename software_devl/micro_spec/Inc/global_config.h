@@ -38,4 +38,14 @@
 #define SERIAL_RX_BUF_SZ	256
 
 
+#define ON	1
+#define OFF	0
+
+/** If ON: connect pysically SENS_CLK with ADC1_BUSY, then everything will work,
+ * except EOS (not needed). The data is generated random or static.*/
+#define DBG_SIMULATE_SENSOR	ON
+
+#define DBG_SIMULATE_ALL	ON
+
+
 #endif /* GLOBAL_CONFIG_H_ */
