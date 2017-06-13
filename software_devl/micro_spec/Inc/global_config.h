@@ -27,7 +27,7 @@
 #define MSPARAM_UNUSED_TRG_CNT	(88-4)
 
 
-#define TIM2_HIGH	(MSPARAM_PIXEL+10)
+#define TIM2_HIGH	(MSPARAM_PIXEL+20)
 #define TIM2_LOW	(MSPARAM_UNUSED_TRG_CNT)
 
 //#define MSPARAM_TRG_DELAY_CNT	3
@@ -43,9 +43,9 @@
 
 /** If ON: connect pysically SENS_CLK with ADC1_BUSY, then everything will work,
  * except EOS (not needed). The data is generated random or static.*/
-#define DBG_SIMULATE_SENSOR	ON
+#define DBG_SIMULATE_SENSOR	OFF
 
-#define DBG_SIMULATE_ALL	ON
+#define DBG_SIMULATE_ALL	OFF
 
 
 #endif /* GLOBAL_CONFIG_H_ */
