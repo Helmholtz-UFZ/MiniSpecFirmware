@@ -41,7 +41,7 @@
 
 #define SERIAL_RX_BUF_SZ	256
 
-#define CONTINIOUS_MODE		ON
+#define CONTINIOUS_MODE		OFF
 
 
 #define ON	1

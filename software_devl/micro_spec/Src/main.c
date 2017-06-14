@@ -104,14 +104,6 @@ int main( void )
 
 	while( 1 )
 	{
-		micro_spec_measure_init();
-		micro_spec_measure_start();
-		micro_spec_measure_deinit();
-		HAL_Delay( 5 );
-	}
-
-	while( 1 )
-	{
 		if( CONTINIOUS_MODE )
 		{
 			goto l_ignore_uart;
