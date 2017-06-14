@@ -97,7 +97,7 @@ void TIM1_CC_IRQHandler( void )
 void TIM1_UP_TIM16_IRQHandler( void )
 {
 	// clear IR flag
-	TIM2->SR &= ~TIM_SR_UIF;
+	TIM1->SR &= ~TIM_SR_UIF;
 
 	NVIC_DisableIRQ( EXTI2_IRQn_BUSY1 );
 

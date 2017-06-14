@@ -24,7 +24,7 @@ static void post_process_values( void );
  */
 void micro_spec_init( void )
 {
-	integrtion_time = 1000;
+	integrtion_time = MSPARAM_DEFAULT_INTTIME;
 	static uint16_t x[BUFFER_MAX_IDX];
 	sens1_buffer.buf = x;
 	sens1_buffer.bytes = BUFFER_SIZE;
@@ -46,7 +46,6 @@ void micro_spec_measure_init( void )
 	memset( sens1_buffer.buf, 0, sens1_buffer.bytes );
 	sens1_buffer.w_idx = 0;
 	sens_trg_count = 0;
-	NVIC_EnableIRQ( TIM2_IRQn );
 	status = MS_MEASURE_INIT;
 }
 
@@ -64,22 +63,17 @@ void micro_spec_measure_deinit( void )
  * @brief 	Set the integration time in us for the sensor.
  *
  * The minimum is defined by MIN_INTERGATION_TIME ( 50 us )
- * The maximum is (UINT32_MAX / TIM2_SCALER) - PRE_ST_DELAY ( ~53 seconds )
+ * The maximum is (UINT32_MAX / TIM2_SCALER) - PRE_ST_DELAY ( ~4200 sec )
  *
  * @param int_time	The integration time in us
  * @return The integration time value set
  */
 uint32_t micro_spec_set_integration_time( uint32_t int_time )
 {
-	uint64_t max = (int_time * TIM2_SCALER) + PRE_ST_DELAY;
 
 	if( int_time < MIN_INTERGATION_TIME )
 	{
 		integrtion_time = MIN_INTERGATION_TIME;
-	}
-	else if( max > UINT32_MAX )
-	{
-		integrtion_time = (UINT32_MAX - PRE_ST_DELAY) / TIM2_SCALER;
 	}
 	else
 	{
@@ -113,7 +107,6 @@ void micro_spec_measure_start( void )
 
 	int_time_cnt = MAX( integrtion_time, MIN_INTERGATION_TIME );
 	int_time_cnt -= clk_cycl;
-	int_time_cnt = (int_time_cnt * TIM2_SCALER) + PRE_ST_DELAY;
 
 	__HAL_TIM_SET_AUTORELOAD( &htim2, int_time_cnt );
 
@@ -128,11 +121,15 @@ void micro_spec_measure_start( void )
 	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC4 );
 	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC4 );
 
-	// enable output on tim1 channel 4 (TEST)
+	// prepare tim1 channel 2 for capturing EOS
+	TIM1->CCER |= TIM_CCER_CC2E;
+	TIM1->CCR2 = 0;
+
+	// enable tim1 channel 4 to output TEST
 	TIM1->CCER |= TIM_CCER_CC4E;
 	__HAL_TIM_MOE_ENABLE( &htim1 );
 
-	// enable output on tim2 channel 3 (ST) and start tim2
+	// enable tim2 channel 3 to output ST and start tim2
 	TIM2->CCER |= TIM_CCER_CC3E;
 	TIM2->CR1 |= TIM_CR1_CEN;
 	status = MS_TIM2_STARTED;

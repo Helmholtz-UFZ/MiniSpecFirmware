@@ -104,6 +104,14 @@ int main( void )
 
 	while( 1 )
 	{
+		micro_spec_measure_init();
+		micro_spec_measure_start();
+		micro_spec_measure_deinit();
+		HAL_Delay( 5 );
+	}
+
+	while( 1 )
+	{
 		if( CONTINIOUS_MODE )
 		{
 			goto l_ignore_uart;
@@ -144,7 +152,7 @@ int main( void )
 			HAL_UART_Receive_IT( &huart3, uart3_recv_buffer.base, uart3_recv_buffer.size );
 		}
 
-		HAL_Delay( 10 );
+		HAL_Delay( 5 );
 	}
 }
 
@@ -154,7 +162,7 @@ static void MX_NVIC_Init( void )
 {
 	HAL_NVIC_EnableIRQ( TIM1_UP_TIM16_IRQn_TRG_DONE );
 	HAL_NVIC_EnableIRQ( USART3_IRQn );
-	HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);
+	HAL_NVIC_EnableIRQ( TIM1_CC_IRQn );
 
 // EXTI9_5_IRQn_EOS:	en/dis in ISR
 // EXTI2_IRQn_BUSY1:	 en/dis in ISR
