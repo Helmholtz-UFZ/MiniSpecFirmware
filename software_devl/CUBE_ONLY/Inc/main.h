@@ -40,28 +40,18 @@
 
 /* Private define ------------------------------------------------------------*/
 
-#define B1_Pin GPIO_PIN_13
-#define B1_GPIO_Port GPIOC
-#define TEST_PIN_Pin GPIO_PIN_10
-#define TEST_PIN_GPIO_Port GPIOB
-#define EXTADC_EN_Pin GPIO_PIN_8
-#define EXTADC_EN_GPIO_Port GPIOC
-#define SENS_EOS_Pin GPIO_PIN_9
-#define SENS_EOS_GPIO_Port GPIOC
+#define SENS_ST_Pin GPIO_PIN_10
+#define SENS_ST_GPIO_Port GPIOB
 #define SENS_CLK_Pin GPIO_PIN_8
 #define SENS_CLK_GPIO_Port GPIOA
-#define SENS_ST_Pin GPIO_PIN_9
-#define SENS_ST_GPIO_Port GPIOA
-#define TMS_Pin GPIO_PIN_13
-#define TMS_GPIO_Port GPIOA
-#define TCK_Pin GPIO_PIN_14
-#define TCK_GPIO_Port GPIOA
-#define SENS_TRG_Pin GPIO_PIN_15
+#define SENS_EOS_Pin GPIO_PIN_9
+#define SENS_EOS_GPIO_Port GPIOA
+#define TEST_PIN_Pin GPIO_PIN_11
+#define TEST_PIN_GPIO_Port GPIOA
+#define SENS_TRG_Pin GPIO_PIN_12
 #define SENS_TRG_GPIO_Port GPIOA
 #define EXTADC1_BUSY_Pin GPIO_PIN_2
 #define EXTADC1_BUSY_GPIO_Port GPIOD
-#define SWO_Pin GPIO_PIN_3
-#define SWO_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
