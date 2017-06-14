@@ -27,7 +27,7 @@ void micro_spec_init( void )
 	integrtion_time = 1000;
 	static uint16_t x[BUFFER_MAX_IDX];
 	sens1_buffer.buf = x;
-	sens1_buffer.size = BUFFER_SIZE;
+	sens1_buffer.bytes = BUFFER_SIZE;
 	sens1_buffer.r_idx = 0;
 	sens1_buffer.w_idx = 0;
 	status = MS_INIT;
@@ -43,7 +43,7 @@ void micro_spec_measure_init( void )
 {
 	enable_sensor_clk();
 	HAL_Delay( 1 );
-	memset( sens1_buffer.buf, 0, sens1_buffer.size );
+	memset( sens1_buffer.buf, 0, sens1_buffer.bytes );
 	sens1_buffer.w_idx = 0;
 	sens_trg_count = 0;
 	NVIC_EnableIRQ( TIM2_IRQn );
@@ -93,9 +93,9 @@ uint32_t micro_spec_set_integration_time( uint32_t int_time )
  * @ brief Start a single measurement.
  *
  *	All further work is done in by the timers TIM1 and TIM2 and in the GPIO ISR.
- *	1. TIM1 generating the start signal (ST) for the sensor
- *	2. TIM2 count the trigger pulses (TRG) from the sensor directly after
- *	ST goes low and throw an IR when MSPARAM_TRG_CNT many pulses occurred.
+ *	1. TIM2 generating the start signal (ST) for the sensor
+ *	2. TIM1 count the trigger pulses (TRG) from the sensor directly after
+ * todo	ST goes low and throw an IR when MSPARAM_TRG_CNT many pulses occurred.
  *	TIM2 is started from the update event (UEV) of TIM1.
  *	3. TIM2 enables the GPIO IR on the EXTADCx_BUSY Pin(s). So if the external
  *	ADC signals "ready to read" we capture 16 bits on 16 input lines and save.
@@ -115,30 +115,29 @@ void micro_spec_measure_start( void )
 	int_time_cnt -= clk_cycl;
 	int_time_cnt = (int_time_cnt * TIM2_SCALER) + PRE_ST_DELAY;
 
-	int_time_cnt = 0xffff; // hack integrationtime
-	__HAL_TIM_SET_AUTORELOAD( &htim1, int_time_cnt );
+	__HAL_TIM_SET_AUTORELOAD( &htim2, int_time_cnt );
 
 	// enable TIM channels
 	// Don't use TIM_CCxChannelCmd() because it will generate a short
 	// uncertain state, which will result in a high with an external
 	// pull-up resistor.
 
-	// tim1ch2 and tim2ch3
-	TIM1->CCER |= TIM_CCER_CC2E;
-	TIM2->CCER |= TIM_CCER_CC3E;
+	// enable TIM1 IRs: update and channel 4
+	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_UPDATE );
+	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_UPDATE );
+	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC4 );
+	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC4 );
 
-	// enable TIM2 IRs
-	__HAL_TIM_CLEAR_IT( &htim2, TIM_IT_UPDATE );
-	__HAL_TIM_CLEAR_IT( &htim2, TIM_IT_CC3 );
-	__HAL_TIM_ENABLE_IT( &htim2, TIM_IT_UPDATE );
-	__HAL_TIM_ENABLE_IT( &htim2, TIM_IT_CC3 );
-
-	// start TIM1
+	// enable output on tim1 channel 4 (TEST)
+	TIM1->CCER |= TIM_CCER_CC4E;
 	__HAL_TIM_MOE_ENABLE( &htim1 );
-	__HAL_TIM_ENABLE( &htim1 );
-	status = MS_TIM1_STARTED;
 
-	while( status != MS_TIM2_DONE )
+	// enable output on tim2 channel 3 (ST) and start tim2
+	TIM2->CCER |= TIM_CCER_CC3E;
+	TIM2->CR1 |= TIM_CR1_CEN;
+	status = MS_TIM2_STARTED;
+
+	while( status != MS_TIM1_DONE )
 	{
 		// busy waiting
 	}
@@ -155,7 +154,7 @@ static void post_process_values( void )
 	status = MS_POST_PROCESS;
 	uint16_t res, val, i;
 
-	if(DBG_SIMULATE_SENSOR)
+	if( DBG_SIMULATE_SENSOR )
 	{
 		status = MS_DONE;
 		return;

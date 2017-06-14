@@ -65,52 +65,43 @@ void SysTick_Handler( void )
 /******************************************************************************/
 
 /**
- * @brief This function handles TIM2 global interrupt.
+ * @brief This function handles TIM1 capture compare interrupt.
+ *
+ * TEST
+ *
+ * CCRx
+ *
+ * We enable the IR for (ADC1_BUSY) the ADC-trigger.
+ *
+ */
+void TIM1_CC_IRQHandler( void )
+{
+	// channel 4 compare IR
+	if( (TIM1->SR & TIM_SR_CC4IF) && (TIM1->DIER & TIM_DIER_CC4IE) )
+	{
+		// clear IR flag
+		TIM1->SR &= ~TIM_SR_CC4IF;
+		status = MS_TIM1_CC;
+		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
+		NVIC_EnableIRQ( EXTI2_IRQn_BUSY1 );
+	}
+}
+
+/**
+ * @brief This function handles TIM1 update interrupt
  *
  * TRG
  *
- * This is called when we catch the MSPARAM_UNUSED_TRG_CNTth TRG-pulse. We
- * enable the IR for the EXTADC_BUSY pin and the EOS.*/
-void TIM2_IRQHandler( void )
+ * This is called when we catch the MSPARAM_CAPTURE_PXL_ENDth TRG-pulse. We
+ * disable everything as we are done.*/
+void TIM1_UP_TIM16_IRQHandler( void )
 {
-//	volatile uint16_t value0, value1; //todo kill volatile
-//	volatile uint32_t value = 0;
-//	TIM_HandleTypeDef *htim = &htim2;
-//	HAL_TIM_IRQHandler( htim );
+	// clear IR flag
+	TIM2->SR &= ~TIM_SR_UIF;
 
-//	value0 = GPIOA->IDR & SENS1_PA_mask;
-//	value1 = GPIOC->IDR & SENS1_PC_mask;
-//	value = (value1 << 8) | value0;
+	NVIC_DisableIRQ( EXTI2_IRQn_BUSY1 );
 
-//	if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC3)){
-//		if(__HAL_TIM_GET_IT_SOURCE(htim, TIM_IT_CC3)){
-//
-//		}
-//	}
-	if( (TIM2->SR & TIM_SR_CC3IF) && (TIM2->DIER & TIM_DIER_CC3IE) )
-	{
-		// clear IR flag
-		TIM2->SR &= ~TIM_SR_CC3IF;
-		status = MS_TIM2_CC;
-		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
-		__HAL_GPIO_EXTI_CLEAR_IT( SENS_EOS_Pin );
-		NVIC_EnableIRQ( EXTI2_IRQn_BUSY1 );
-		NVIC_EnableIRQ( EXTI9_5_IRQn_EOS );
-		__HAL_TIM_SET_AUTORELOAD( &htim5, 0xFFFFFFFF );
-		__HAL_TIM_ENABLE( &htim5 );
-	}
-
-	if( (TIM2->SR & TIM_SR_UIF) && (TIM2->DIER & TIM_DIER_UIE) )
-	{
-		// clear IR flag
-		TIM2->SR &= ~TIM_SR_UIF;
-
-		NVIC_DisableIRQ( EXTI2_IRQn_BUSY1 );
-		NVIC_DisableIRQ( EXTI9_5_IRQn_EOS );
-		__HAL_TIM_DISABLE_IT( &htim2, TIM_IT_UPDATE );
-
-		status = MS_TIM2_DONE;
-	}
+	status = MS_TIM1_DONE;
 }
 
 /**
@@ -165,37 +156,6 @@ void EXTI2_IRQHandler( void )
  * the current TRG count.
  *
  */
-void EXTI9_5_IRQHandler( void )
-{
-	volatile uint32_t tmp;
-	tmp = TIM2->CNT;
-//	v1 = TIM2->CNT;
-//	v2 = TIM2->CNT;
-//	v3 = TIM2->CNT;
-	if( __HAL_GPIO_EXTI_GET_IT(SENS_EOS_Pin) != RESET )
-	{
-		__HAL_GPIO_EXTI_CLEAR_IT( SENS_EOS_Pin );
-		eos_trg_count = tmp;
-
-//	if( EXTI->PR1 & SENS_EOS_Pin )
-//	{
-		// clear pending IR
-//		EXTI->PR1 |= SENS_EOS_Pin;
-//		NVIC_DisableIRQ( EXTADC1_BUSY_IRQn );
-//		__HAL_TIM_DISABLE_IT( &htim2, TIM_IT_UPDATE );
-//		NVIC_DisableIRQ( SENS_EOS_IRQn );
-
-//		if( v2 == v1 && v2 == v3 )
-//		{
-//		}
-//		else
-//		{
-//			v1;
-//		}
-
-//		status = MS_EOS;
-	}
-}
 
 /**
  * @brief This function handles USART3 global interrupt.

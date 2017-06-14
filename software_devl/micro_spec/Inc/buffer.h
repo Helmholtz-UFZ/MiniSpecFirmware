@@ -15,7 +15,7 @@
 
 typedef struct
 {
-	uint16_t size;
+	uint16_t bytes;
 	volatile uint16_t w_idx;
 	volatile uint16_t r_idx;
 	volatile uint16_t* buf;

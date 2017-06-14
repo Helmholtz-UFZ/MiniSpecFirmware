@@ -72,6 +72,8 @@ int main( void )
 
 	// our own inits
 	USART3_Init();
+	TIM1_Init();
+	TIM2_Init();
 
 	/* Initialize interrupts */
 	MX_NVIC_Init(); 	//modified
@@ -102,6 +104,10 @@ int main( void )
 
 	while( 1 )
 	{
+		if( CONTINIOUS_MODE )
+		{
+			goto l_ignore_uart;
+		}
 
 		// usr pushed enter
 		if( uart3_cmd_received )
@@ -115,18 +121,20 @@ int main( void )
 				if( DBG_SIMULATE_ALL )
 				{
 					int i;
-					for (i = 0; i < BUFFER_MAX_IDX; i += 1) {
+					for( i = 0; i < BUFFER_MAX_IDX; i += 1 )
+					{
 						sens1_buffer.buf[i] = 0xDEAD;
 					}
 
 				}
 				else
 				{
+					l_ignore_uart: __NOP();
 					micro_spec_measure_init();
 					micro_spec_measure_start();
 					micro_spec_measure_deinit();
 				}
-				HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.size, 1000 );
+				HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.bytes, 1000 );
 			}
 
 			// restart listening
@@ -144,8 +152,9 @@ int main( void )
  */
 static void MX_NVIC_Init( void )
 {
-	HAL_NVIC_EnableIRQ( TIM2_IRQn_TRG );
+	HAL_NVIC_EnableIRQ( TIM1_UP_TIM16_IRQn_TRG_DONE );
 	HAL_NVIC_EnableIRQ( USART3_IRQn );
+	HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);
 
 // EXTI9_5_IRQn_EOS:	en/dis in ISR
 // EXTI2_IRQn_BUSY1:	 en/dis in ISR

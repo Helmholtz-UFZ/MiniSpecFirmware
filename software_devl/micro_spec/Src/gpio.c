@@ -70,8 +70,7 @@ void MX_GPIO_Init( void )
 	__HAL_RCC_GPIOB_CLK_ENABLE()
 	;
 
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin( EXTADC_EN_GPIO_Port, EXTADC_EN_Pin, GPIO_PIN_RESET );
+
 
 	/*Blue Push Button */
 	GPIO_InitStruct.Pin = B1_Pin;
@@ -90,13 +89,6 @@ void MX_GPIO_Init( void )
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init( GPIOA, &GPIO_InitStruct );
-
-	/* ADC EN*/
-	GPIO_InitStruct.Pin = EXTADC_EN_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init( EXTADC_EN_GPIO_Port, &GPIO_InitStruct );
 
 	/* ADC1_BUSY */
 	GPIO_InitStruct.Pin = EXTADC1_BUSY_Pin;

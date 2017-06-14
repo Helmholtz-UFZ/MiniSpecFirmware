@@ -37,6 +37,7 @@
 
 #include "gpio.h"
 #include "global_config.h"
+#include "string.h"
 
 UART_HandleTypeDef huart3;
 

@@ -24,8 +24,12 @@
 
 /** The number of 'unused' TRG pulses before the sensor putting out the
  * video data */
-#define MSPARAM_UNUSED_TRG_CNT	(88-4)
+#define MSPARAM_UNUSED_TRG_CNT	(87)
 
+#define MSPARAM_CAPTURE_PXL_ST	(MSPARAM_UNUSED_TRG_CNT - 5)
+#define MSPARAM_CAPTURE_PXL_END	(MSPARAM_CAPTURE_PXL_ST + MSPARAM_PIXEL + 5)
+
+#define MSPARAM_DEFAULT_INTTIME	(1100000)
 
 #define TIM2_HIGH	(MSPARAM_PIXEL+20)
 #define TIM2_LOW	(MSPARAM_UNUSED_TRG_CNT)
@@ -36,6 +40,8 @@
 #define TIM2_SCALER		80
 
 #define SERIAL_RX_BUF_SZ	256
+
+#define CONTINIOUS_MODE		ON
 
 
 #define ON	1
