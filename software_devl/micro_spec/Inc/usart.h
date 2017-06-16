@@ -47,15 +47,27 @@ extern "C"
 
 extern UART_HandleTypeDef huart3;
 extern simple_buffer uart3_recv_buffer;
-extern volatile bool uart3_cmd_received;
-extern volatile uint16_t uart3_cmd_bytes;
+
+typedef enum usr_cmd_enum {
+	USR_CMD_UNKNOWN,
+	USR_CMD_WRITE_INTEGRATION_TIME,
+	USR_CMD_READ_INTEGRATION_TIME,
+	USR_CMD_SINGLE_MEASURE_START,
+	USR_CMD_CONTINUOUS_MEASURE_START,
+	USR_CMD_CONTINUOUS_MEASURE_END
+}usr_cmd_t;
+
+extern usr_cmd_t usr_cmd;
+extern uint32_t usr_cmd_data;
 
 
 extern void Error_Handler( void );
 
 void MX_USART3_UART_Init( void );
 
-void USART3_Init( void );
+void usart3_init( void );
+
+void usart3_receive_handler( void );
 
 #ifdef __cplusplus
 }

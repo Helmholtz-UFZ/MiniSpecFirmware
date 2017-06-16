@@ -38,6 +38,7 @@
 #include "gpio.h"
 #include "global_config.h"
 #include "string.h"
+#include "stdlib.h"
 
 UART_HandleTypeDef huart3;
 
@@ -45,6 +46,10 @@ simple_buffer uart3_recv_buffer;
 
 volatile bool uart3_cmd_received;
 volatile uint16_t uart3_cmd_bytes;
+
+usr_cmd_t usr_cmd = USR_CMD_UNKNOWN;
+
+uint32_t usr_cmd_data = 0;
 
 /* USART3 init function */
 
@@ -132,7 +137,7 @@ void HAL_UART_MspDeInit( UART_HandleTypeDef* uartHandle )
 	}
 }
 
-void USART3_Init( void )
+void usart3_init( void )
 {
 	/* Cmd activation
 	 * We enable the automatic character recognition for the carriage return (CR) char.*/
@@ -162,6 +167,70 @@ void USART3_Init( void )
 
 	uart3_recv_buffer.size = SERIAL_RX_BUF_SZ;
 	uart3_recv_buffer.base = recv_mem_block;
+}
+
+void usart3_receive_handler( void )
+{
+	usr_cmd = USR_CMD_UNKNOWN;
+
+	// usr pushed enter
+	if( uart3_cmd_received )
+	{
+		uart3_cmd_received = 0;
+
+		// usr pressed 'S'
+		if( memcmp( uart3_recv_buffer.base, "start single", uart3_cmd_bytes ) == 0 )
+		{
+			usr_cmd = USR_CMD_SINGLE_MEASURE_START;
+		}
+
+		else if( memcmp( uart3_recv_buffer.base, "start continuous", uart3_cmd_bytes ) == 0 )
+		{
+			usr_cmd = USR_CMD_CONTINUOUS_MEASURE_START;
+		}
+
+		else if( memcmp( uart3_recv_buffer.base, "end continuous", uart3_cmd_bytes ) == 0 )
+		{
+			usr_cmd = USR_CMD_CONTINUOUS_MEASURE_END;
+		}
+
+		else if( memcmp( uart3_recv_buffer.base, "write_int_time=\"", 16 ) == 0 )
+		{
+			// find first "
+			char *num_st = memchr( uart3_recv_buffer.base, '\"', 16 );
+			// find second ", max value: 4 294 967 295 = 10 chars
+			char *num_end = memchr( num_st, '\"', 10 );
+
+			if( num_end == NULL )
+			{
+				goto l_invalid;
+			}
+
+			//check for unwanted chars
+			if( strcspn( num_st, "0123456789" ) != 0 )
+			{
+				goto l_invalid;
+			}
+
+			// set the value
+			usr_cmd_data = strtol( num_st, NULL, 10 );
+			usr_cmd = USR_CMD_WRITE_INTEGRATION_TIME;
+		}
+
+		else if( memcmp( uart3_recv_buffer.base, "read_int_time", uart3_cmd_bytes ) == 0 )
+		{
+			usr_cmd = USR_CMD_READ_INTEGRATION_TIME;
+		}
+
+		// if something goes wrong we come here
+		l_invalid:
+
+		// restart listening
+		memset( uart3_recv_buffer.base, 0, MIN( uart3_cmd_bytes, uart3_recv_buffer.size ) );
+		uart3_cmd_bytes = 0;
+		HAL_UART_AbortReceive_IT( &huart3 );
+		HAL_UART_Receive_IT( &huart3, uart3_recv_buffer.base, uart3_recv_buffer.size );
+	}
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

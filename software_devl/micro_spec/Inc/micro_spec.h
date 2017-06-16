@@ -30,7 +30,9 @@ typedef enum
 } meas_status_t;
 
 extern volatile meas_status_t status;
+extern uint32_t integrtion_time;
 volatile uint16_t sens_trg_count;
+
 
 void micro_spec_init( void );
 void micro_spec_deinit( void );

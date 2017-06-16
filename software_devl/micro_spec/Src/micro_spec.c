@@ -13,14 +13,14 @@
 
 volatile index_buffer_uint16 sens1_buffer;
 volatile meas_status_t status;
-static uint32_t integrtion_time;
+uint32_t integrtion_time;
 
 static void enable_sensor_clk( void );
 static void disable_sensor_clk( void );
 static void post_process_values( void );
 
 /**
- * Init the sensor and all necessary HW.
+ *@brief Init all internal data structs and buffer for the sensor.
  */
 void micro_spec_init( void )
 {
@@ -31,9 +31,6 @@ void micro_spec_init( void )
 	sens1_buffer.r_idx = 0;
 	sens1_buffer.w_idx = 0;
 	status = MS_INIT;
-
-	// hack debug
-//	memset( sens1_buffer.buf, 's', sens1_buffer.size );
 }
 
 /**

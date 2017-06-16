@@ -42,6 +42,9 @@
 
 /* External variables --------------------------------------------------------*/
 
+extern volatile bool uart3_cmd_received;
+extern volatile uint16_t uart3_cmd_bytes;
+
 /******************************************************************************/
 /*            Cortex-M4 Processor Interruption and Exception Handlers         */
 /******************************************************************************/
@@ -119,30 +122,22 @@ void TIM1_UP_TIM16_IRQHandler( void )
 volatile uint32_t cnt0 = 0, cnt1 = 0, cnt2 = 0;
 void EXTI2_IRQHandler( void )
 {
-//	cnt0 = TIM5->CNT;
 	uint8_t value0, value1;
 
-//	HAL_GPIO_EXTI_IRQHandler()
+	// -------------- nomore code here !! --------------
 	if( __HAL_GPIO_EXTI_GET_IT(EXTADC1_BUSY_Pin) != RESET )
 	{
 		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
 
 		if( sens1_buffer.w_idx < BUFFER_MAX_IDX )
 		{
-//			status = MS_READ_DATA;
 			// read ADC parallel-port-value
 			value0 = GPIOA->IDR;
 			value1 = GPIOC->IDR;
-//			sens1_buffer.w_idx++;
 			sens1_buffer.buf[sens1_buffer.w_idx++] = (value1 << 8) | value0;
 		}
-//		else // hack dont work with this uncommented -- WHY?? race condidion ?
-//		{
-//			status = MS_BUFFER_FULL;
-//		}
 	}
-//	cnt1 = TIM5->CNT;
-//	__NOP();
+	// -------------- nomore code here !! --------------
 }
 
 /**

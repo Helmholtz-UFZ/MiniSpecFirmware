@@ -10,7 +10,7 @@
 
 #define BUFFER_MAX_IDX		350
 
-/**size in bytes*/
+/**todo size in bytes*/
 #define BUFFER_SIZE		(BUFFER_MAX_IDX *2)
 
 typedef struct

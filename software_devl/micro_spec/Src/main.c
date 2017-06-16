@@ -48,10 +48,10 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config( void );
 void Error_Handler( void );
-static void MX_NVIC_Init( void );
 
 int main( void )
 {
+
 
 	/* MCU Configuration----------------------------------------------------------*/
 
@@ -61,103 +61,77 @@ int main( void )
 	/* Configure the system clock */
 	SystemClock_Config();
 
-	/* Initialize all configured peripherals */
-	// HAL inits.
-	// Mark all functions (!) that differ from the CUBE_ONLY project.
+	/* Initialize all configured peripherals by the HAL.
+	 * Mark all functions (!) that differ from the CUBE_ONLY project.*/
 	MX_GPIO_Init(); 	// modified
-	MX_TIM1_Init();		// todo modified
-	MX_TIM2_Init();	// todo modified
-	MX_TIM5_Init();	// todo modified
+	MX_TIM1_Init();
+	MX_TIM2_Init();
 	MX_USART3_UART_Init();
 
-	// our own inits
-	USART3_Init();
-	TIM1_Init();
-	TIM2_Init();
+	/* Here we initialize the system to our wishes */
+	usart3_init();
+	tim1_Init();
+	tim2_Init();
+	micro_spec_init();
 
 	/* Initialize interrupts */
-	MX_NVIC_Init(); 	//modified
+	NVIC_EnableIRQ( TIM1_UP_TIM16_IRQn_TRG_DONE );
+	NVIC_EnableIRQ( USART3_IRQn );
+	NVIC_EnableIRQ( TIM1_CC_IRQn );
+	// EXTI2_IRQn_BUSY1:	 en/dis in TIM1 ISR
 
-//	volatile uint32_t cnt0=0, cnt1=0, cnt2=0;
 
-//	__HAL_TIM_SET_AUTORELOAD( &htim5, 0xFFFFFFFF );
+	/* Run the system ------------------------------------------------------------*/
 
-//	__HAL_TIM_ENABLE( &htim5 );
-//	cnt0 = TIM5->CNT;
-//	__NOP();__NOP();
-//	cnt1 = TIM5->CNT;
-//	cnt2 = TIM5->CNT;
-
-//	__NOP();
-//
-//	NVIC_EnableIRQ( SENS_EOS_IRQn );
-//	NVIC_EnableIRQ( EXTADC1_BUSY_IRQn );
-//	NVIC_EnableIRQ( TIM2_IRQn );
-//	HAL_NVIC_SetPriority(SENS_EOS_IRQn, 0, 0);
-//	HAL_NVIC_SetPriority(EXTADC1_BUSY_IRQn, 5, 0);
-//	HAL_NVIC_SetPriority(TIM2_IRQn, 10, 0);
-
-	micro_spec_init();
-	micro_spec_set_integration_time( 100000 );
-
+	// enabling usart receiving
 	HAL_UART_Receive_IT( &huart3, uart3_recv_buffer.base, uart3_recv_buffer.size );
 
+	bool continiuos_mode = 0;
 	while( 1 )
 	{
-		if( CONTINIOUS_MODE )
-		{
-			goto l_ignore_uart;
+		// check if we received a usr command
+		usart3_receive_handler();
+
+		switch( usr_cmd ) {
+		case USR_CMD_SINGLE_MEASURE_START:
+			micro_spec_measure_init();
+			micro_spec_measure_start();
+			micro_spec_measure_deinit();
+			//send data
+			HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.bytes, 1000 );
+			break;
+
+		case USR_CMD_WRITE_INTEGRATION_TIME:
+			micro_spec_set_integration_time( usr_cmd_data );
+			break;
+
+		case USR_CMD_READ_INTEGRATION_TIME:
+			HAL_UART_Transmit( &huart3, (uint8_t *) integrtion_time, 4, 1000 );
+			break;
+
+		case USR_CMD_CONTINUOUS_MEASURE_START:
+			micro_spec_measure_init();
+			continiuos_mode = 1;
+			break;
+
+		case USR_CMD_CONTINUOUS_MEASURE_END:
+			micro_spec_measure_deinit();
+			continiuos_mode = 0;
+			break;
+
+		default:
+			break;
 		}
 
-		// usr pushed enter
-		if( uart3_cmd_received )
+		if( continiuos_mode )
 		{
-			uart3_cmd_received = RESET;
-
-			// usr pressed 'S'
-			if( memchr( uart3_recv_buffer.base, 'S', uart3_cmd_bytes ) != NULL )
-			{
-				// MEASURE
-				if( DBG_SIMULATE_ALL )
-				{
-					int i;
-					for( i = 0; i < BUFFER_MAX_IDX; i += 1 )
-					{
-						sens1_buffer.buf[i] = 0xDEAD;
-					}
-
-				}
-				else
-				{
-					l_ignore_uart: __NOP();
-					micro_spec_measure_init();
-					micro_spec_measure_start();
-					micro_spec_measure_deinit();
-				}
-				HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.bytes, 1000 );
-			}
-
-			// restart listening
-			memset( uart3_recv_buffer.base, 0, MIN( uart3_cmd_bytes, uart3_recv_buffer.size ) );
-			uart3_cmd_bytes = RESET;
-			HAL_UART_AbortReceive_IT( &huart3 );
-			HAL_UART_Receive_IT( &huart3, uart3_recv_buffer.base, uart3_recv_buffer.size );
+			micro_spec_measure_start();
+			//send data
+			HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.bytes, 1000 );
 		}
 
 		HAL_Delay( 5 );
 	}
-}
-
-/** NVIC Configuration
- */
-static void MX_NVIC_Init( void )
-{
-	HAL_NVIC_EnableIRQ( TIM1_UP_TIM16_IRQn_TRG_DONE );
-	HAL_NVIC_EnableIRQ( USART3_IRQn );
-	HAL_NVIC_EnableIRQ( TIM1_CC_IRQn );
-
-// EXTI9_5_IRQn_EOS:	en/dis in ISR
-// EXTI2_IRQn_BUSY1:	 en/dis in ISR
 }
 
 /** System Clock Configuration
@@ -229,14 +203,13 @@ void SystemClock_Config( void )
 
 /**
  * @brief  This function is executed in case of error occurrence.
- * @param  None
- * @retval None
  */
 void Error_Handler( void )
 {
 	/* User can add his own implementation to report the HAL error return state */
 	while( 1 )
 	{
+
 	}
 }
 
