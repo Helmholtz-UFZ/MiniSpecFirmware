@@ -52,7 +52,6 @@ void Error_Handler( void );
 int main( void )
 {
 
-
 	/* MCU Configuration----------------------------------------------------------*/
 
 	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
@@ -80,7 +79,6 @@ int main( void )
 	NVIC_EnableIRQ( TIM1_CC_IRQn );
 	// EXTI2_IRQn_BUSY1:	 en/dis in TIM1 ISR
 
-
 	/* Run the system ------------------------------------------------------------*/
 
 	// enabling usart receiving
@@ -106,7 +104,7 @@ int main( void )
 			break;
 
 		case USR_CMD_READ_INTEGRATION_TIME:
-			HAL_UART_Transmit( &huart3, (uint8_t *) integrtion_time, 4, 1000 );
+			HAL_UART_Transmit( &huart3, (uint8_t *) &integrtion_time, 4, 1000 );
 			break;
 
 		case USR_CMD_CONTINUOUS_MEASURE_START:
@@ -125,9 +123,13 @@ int main( void )
 
 		if( continiuos_mode )
 		{
+			uint8_t delim[16] =
+			{ 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF };
 			micro_spec_measure_start();
 			//send data
-			HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.bytes, 1000 );
+			HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.bytes, 100 );
+			//send delimiter
+			HAL_UART_Transmit( &huart3, delim, sizeof(delim), 100 );
 		}
 
 		HAL_Delay( 5 );

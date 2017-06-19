@@ -10,7 +10,7 @@ xtitle("sin(t) versus t");
 
 while(1)
 
-    writeserial(hserial,"S"+ascii(13));
+    writeserial(hserial,"start single!"+ascii(13));
     sleep(100);
 //    serialstatus(hserial);
 //    sleep(100);
