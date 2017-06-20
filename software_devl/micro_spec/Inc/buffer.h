@@ -16,6 +16,7 @@
 typedef struct
 {
 	uint16_t bytes;
+	volatile uint16_t last_valid;
 	volatile uint16_t w_idx;
 	volatile uint16_t* buf;
 } microspec_buffer;

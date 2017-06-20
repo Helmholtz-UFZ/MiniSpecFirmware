@@ -145,7 +145,8 @@ static void post_process_values( void )
 	// PC[7..0] PA[7..0]
 	// 76543210 76543210
 	status = MS_POST_PROCESS;
-	uint16_t res, val, i;
+	uint16_t res, val;
+	int16_t i;
 
 	if( DBG_SIMULATE_SENSOR )
 	{
@@ -175,11 +176,11 @@ static void post_process_values( void )
 		res |= (val << 1) & BIT14; //PC5
 		res |= (val << 3) & BIT15; //PC4
 
-		sens1_buffer.buf[i + 1] = res;
+		sens1_buffer.buf[i] = res;
 	}
 
 	// put the last-valid-pixel index to the beginning of the data
-	sens1_buffer.buf[0] = TIM1->CCR2;
+	sens1_buffer.last_valid = TIM1->CCR2;
 
 	// ...
 	status = MS_DONE;

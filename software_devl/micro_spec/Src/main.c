@@ -99,8 +99,13 @@ int main( void )
 			micro_spec_measure_init();
 			micro_spec_measure_start();
 			micro_spec_measure_deinit();
+
+			uint16_t cap_st = MSPARAM_CAPTURE_PXL_ST;
 			//send data
-			HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.bytes, 1000 );
+			HAL_UART_Transmit( &huart3, (uint8_t *) &cap_st, 2, 100 );
+			HAL_UART_Transmit( &huart3, (uint8_t *) &sens1_buffer.w_idx, 2, 100 );
+			HAL_UART_Transmit( &huart3, (uint8_t *) &sens1_buffer.last_valid, 2, 100 );
+			HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.bytes, 100 );
 			break;
 
 		case USR_CMD_WRITE_INTEGRATION_TIME:

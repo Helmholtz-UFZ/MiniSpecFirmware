@@ -26,8 +26,11 @@
  * video data */
 #define MSPARAM_UNUSED_TRG_CNT	(88)
 
+// captured pixel 85,86,87,88 are not valid
 #define MSPARAM_CAPTURE_PXL_ST	(85)
-#define MSPARAM_CAPTURE_PXL_END	(85+290)
+
+//288 + 88 = 376 => 4 to much
+#define MSPARAM_CAPTURE_PXL_END	(380)
 
 #define MSPARAM_DEFAULT_INTTIME	(1100)
 
