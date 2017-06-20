@@ -75,9 +75,13 @@ int main( void )
 
 	/* Initialize interrupts */
 	NVIC_EnableIRQ( TIM1_UP_TIM16_IRQn_TRG_DONE );
-	NVIC_EnableIRQ( USART3_IRQn );
 	NVIC_EnableIRQ( TIM1_CC_IRQn );
+
 	// EXTI2_IRQn_BUSY1:	 en/dis in TIM1 ISR
+//	HAL_NVIC_SetPriority(EXTI2_IRQn_BUSY1,1,0);
+
+	NVIC_EnableIRQ( USART3_IRQn );
+//	HAL_NVIC_SetPriority(EXTI2_IRQn_BUSY1,2,0);
 
 	/* Run the system ------------------------------------------------------------*/
 

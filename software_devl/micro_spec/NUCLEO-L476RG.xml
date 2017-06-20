@@ -3,8 +3,8 @@
   <board id="nucleo-l476rg">
     <name>NUCLEO-L476RG</name>
     <mcuId>stm32l476rgtx</mcuId>
-    <dbgIF>SWD</dbgIF>
     <dbgIF>JTAG</dbgIF>
+    <dbgIF>SWD</dbgIF>
     <dbgDEV>ST-Link</dbgDEV>
   </board>
 </targetDefinitions>

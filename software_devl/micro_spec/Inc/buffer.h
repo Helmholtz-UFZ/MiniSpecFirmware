@@ -17,9 +17,8 @@ typedef struct
 {
 	uint16_t bytes;
 	volatile uint16_t w_idx;
-	volatile uint16_t r_idx;
 	volatile uint16_t* buf;
-} index_buffer_uint16;
+} microspec_buffer;
 
 typedef struct
 {

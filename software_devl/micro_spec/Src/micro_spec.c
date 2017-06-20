@@ -11,7 +11,7 @@
 #include "global_include.h"
 #include "tim.h"
 
-volatile index_buffer_uint16 sens1_buffer;
+volatile microspec_buffer sens1_buffer;
 volatile meas_status_t status;
 uint32_t integrtion_time;
 
@@ -25,10 +25,9 @@ static void post_process_values( void );
 void micro_spec_init( void )
 {
 	integrtion_time = MSPARAM_DEFAULT_INTTIME;
-	static uint16_t x[BUFFER_MAX_IDX];
+	static uint16_t x[BUFFER_MAX_IDX+1];
 	sens1_buffer.buf = x;
 	sens1_buffer.bytes = BUFFER_SIZE;
-	sens1_buffer.r_idx = 0;
 	sens1_buffer.w_idx = 0;
 	status = MS_INIT;
 }
@@ -40,7 +39,7 @@ void micro_spec_measure_init( void )
 {
 	enable_sensor_clk();
 	HAL_Delay( 1 );
-	memset( sens1_buffer.buf, 0, sens1_buffer.bytes );
+	memset(  sens1_buffer.buf, 0, sens1_buffer.bytes );
 	sens1_buffer.w_idx = 0;
 	sens_trg_count = 0;
 	status = MS_MEASURE_INIT;
@@ -154,7 +153,7 @@ static void post_process_values( void )
 		return;
 	}
 
-	for( i = 0; i < BUFFER_MAX_IDX; ++i )
+	for( i = 0; i < sens1_buffer.w_idx; ++i )
 	{
 		res = 0;
 		val = sens1_buffer.buf[i];
@@ -176,8 +175,11 @@ static void post_process_values( void )
 		res |= (val << 1) & BIT14; //PC5
 		res |= (val << 3) & BIT15; //PC4
 
-		sens1_buffer.buf[i] = res;
+		sens1_buffer.buf[i + 1] = res;
 	}
+
+	// put the last-valid-pixel index to the beginning of the data
+	sens1_buffer.buf[0] = TIM1->CCR2;
 
 	// ...
 	status = MS_DONE;

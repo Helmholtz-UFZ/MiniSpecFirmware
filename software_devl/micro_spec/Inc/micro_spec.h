@@ -10,7 +10,7 @@
 
 #include "buffer.h"
 
-extern volatile index_buffer_uint16 sens1_buffer;
+extern volatile microspec_buffer sens1_buffer;
 
 typedef enum
 {
