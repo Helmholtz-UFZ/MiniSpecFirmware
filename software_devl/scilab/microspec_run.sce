@@ -32,7 +32,7 @@ end
 pix = [1:288];
 wavelength = a0 + b1.*pix + b2.*pix.^2 + b3.*pix.^3 + b4.*pix.^4 + b5.*pix.^5;
 
-scf();
+scf(1);
 
 
 while(1)
@@ -56,10 +56,18 @@ while(1)
     B = B(first_valid:last_valid);
     
     clf();
+    subplot(211)
     plot2d(wavelength,B,style=[2],rect=[300,0,900,2^16]);
-//    x = [1:length(B)];
-//    plot2d(wavelength,B,style=[2]);
+    xtitle("with wavelength correction")
     xlabel("wavelegth[nm]");
+    ylabel("ADC count [-]");
+
+    x = [1:length(B)];
+//    plot2d(wavelength,B,style=[2]);
+    subplot(212)
+    plot2d(x,B,style=[2],rect=[-20,0,300,2^16]);
+    xtitle("raw data")
+    xlabel("pxl [#]");
     ylabel("ADC count [-]");
 
     sleep(500);
