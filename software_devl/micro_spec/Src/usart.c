@@ -47,7 +47,7 @@ simple_buffer uart3_recv_buffer;
 volatile bool uart3_cmd_received;
 volatile uint16_t uart3_cmd_bytes;
 
-usr_cmd_t usr_cmd = USR_CMD_UNKNOWN;
+usr_cmd_enum_t usrcmd = USR_CMD_UNKNOWN;
 
 uint32_t usr_cmd_data = 0;
 
@@ -162,16 +162,16 @@ void usart3_init( void )
 	/* set up buffer */
 
 	// memory allocation
-	static uint8_t recv_mem_block[SERIAL_RX_BUF_SZ];
-	memset( recv_mem_block, 0, SERIAL_RX_BUF_SZ );
+	static uint8_t recv_mem_block[EXTERNAL_COMMUNICATION_UART_BUFFER_SIZE];
+	memset( recv_mem_block, 0, EXTERNAL_COMMUNICATION_UART_BUFFER_SIZE );
 
-	uart3_recv_buffer.size = SERIAL_RX_BUF_SZ;
+	uart3_recv_buffer.size = EXTERNAL_COMMUNICATION_UART_BUFFER_SIZE;
 	uart3_recv_buffer.base = recv_mem_block;
 }
 
 void usart3_receive_handler( void )
 {
-	usr_cmd = USR_CMD_UNKNOWN;
+	usrcmd = USR_CMD_UNKNOWN;
 
 	// usr pushed enter
 	if( uart3_cmd_received )
@@ -179,35 +179,35 @@ void usart3_receive_handler( void )
 		uart3_cmd_received = 0;
 
 		// usr pressed 'S'
-		if( memcmp( uart3_recv_buffer.base, "start single!", 13 ) == 0 )
+		if( memcmp( uart3_recv_buffer.base, "measure", 7 ) == 0 )
 		{
-			usr_cmd = USR_CMD_SINGLE_MEASURE_START;
+			usrcmd = USR_CMD_SINGLE_MEASURE_START;
 		}
 
-		else if( memcmp( uart3_recv_buffer.base, "start continuous!", 17 ) == 0 )
+		else if( memcmp( uart3_recv_buffer.base, "stream", 6 ) == 0 )
 		{
-			usr_cmd = USR_CMD_CONTINUOUS_MEASURE_START;
+			usrcmd = USR_CMD_CONTINUOUS_MEASURE_START;
 		}
 
-		else if( memcmp( uart3_recv_buffer.base, "end continuous!", 15 ) == 0 )
+		else if( memcmp( uart3_recv_buffer.base, "endstream", 9 ) == 0 )
 		{
-			usr_cmd = USR_CMD_CONTINUOUS_MEASURE_END;
+			usrcmd = USR_CMD_CONTINUOUS_MEASURE_END;
 		}
 
-		else if( memcmp( uart3_recv_buffer.base, "integrationtime=\"", 17 ) == 0 )
+		else if( memcmp( uart3_recv_buffer.base, "itime=", 6 ) == 0 )
 		{
 			// ignore the pre-string than read as unsigned long int.
-			sscanf(uart3_recv_buffer.base,"%*17c%lu",&usr_cmd_data);
-			usr_cmd = USR_CMD_WRITE_INTEGRATION_TIME;
+			sscanf(uart3_recv_buffer.base,"%*6c%lu%*c",&usr_cmd_data);
+			usrcmd = USR_CMD_WRITE_INTEGRATION_TIME;
 		}
 
-		else if( memcmp( uart3_recv_buffer.base, "integrationtime?", 16 ) == 0 )
+		else if( memcmp( uart3_recv_buffer.base, "itime?", 6 ) == 0 )
 		{
-			usr_cmd = USR_CMD_READ_INTEGRATION_TIME;
+			usrcmd = USR_CMD_READ_INTEGRATION_TIME;
 		}
 
 		// restart listening
-		HAL_UART_AbortReceive_IT( &huart3 );
+		HAL_UART_AbortReceive( &huart3 );
 		memset( uart3_recv_buffer.base, 0, MIN( uart3_cmd_bytes, uart3_recv_buffer.size ) );
 		uart3_cmd_bytes = 0;
 		HAL_UART_Receive_IT( &huart3, uart3_recv_buffer.base, uart3_recv_buffer.size );

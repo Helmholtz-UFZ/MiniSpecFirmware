@@ -55,9 +55,9 @@ typedef enum usr_cmd_enum {
 	USR_CMD_SINGLE_MEASURE_START,
 	USR_CMD_CONTINUOUS_MEASURE_START,
 	USR_CMD_CONTINUOUS_MEASURE_END
-}usr_cmd_t;
+}usr_cmd_enum_t;
 
-extern usr_cmd_t usr_cmd;
+extern usr_cmd_enum_t usrcmd;
 extern uint32_t usr_cmd_data;
 
 

@@ -42,7 +42,7 @@
 /** defines how many timer clock cycles are 1 us. */
 #define TIM2_SCALER		80
 
-#define SERIAL_RX_BUF_SZ	256
+#define EXTERNAL_COMMUNICATION_UART_BUFFER_SIZE	256
 
 #define CONTINIOUS_MODE		OFF
 

@@ -94,7 +94,7 @@ int main( void )
 		// check if we received a usr command
 		usart3_receive_handler();
 
-		switch( usr_cmd ) {
+		switch( usrcmd ) {
 		case USR_CMD_SINGLE_MEASURE_START:
 			micro_spec_measure_init();
 			micro_spec_measure_start();
