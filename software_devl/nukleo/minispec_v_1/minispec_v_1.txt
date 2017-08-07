@@ -1,0 +1,84 @@
+Configuration	minispec_v_1
+STM32CubeMX 	4.21.0
+Date	08/07/2017
+MCU	STM32L476RGTx
+
+
+
+PERIPHERALS	MODES	FUNCTIONS	PINS
+RCC	Crystal/Ceramic Resonator	RCC_OSC32_IN	PC14-OSC32_IN (PC14)
+RCC	Crystal/Ceramic Resonator	RCC_OSC32_OUT	PC15-OSC32_OUT (PC15)
+RCC	Clock-out	RCC_MCO	PA8
+SYS	SysTick	SYS_VS_Systick	VP_SYS_VS_Systick
+TIM1	Trigger Mode	TIM1_VS_ControllerModeTrigger	VP_TIM1_VS_ControllerModeTrigger
+TIM1	ITR1	TIM1_VS_ClockSourceITR	VP_TIM1_VS_ClockSourceITR
+TIM1	ETR2	TIM1_ETR	PA12
+TIM1	Input Capture direct mode	TIM1_CH2	PA9
+TIM1	PWM Generation CH4	TIM1_CH4	PA11
+TIM1	One pulse	TIM1_VS_OPM	VP_TIM1_VS_OPM
+TIM2	Internal Clock	TIM2_VS_ClockSourceINT	VP_TIM2_VS_ClockSourceINT
+TIM2	PWM Generation CH3	TIM2_CH3	PB10
+TIM2	One pulse	TIM2_VS_OPM	VP_TIM2_VS_OPM
+TIM5	Internal Clock	TIM5_VS_ClockSourceINT	VP_TIM5_VS_ClockSourceINT
+USART3	Asynchronous	USART3_RX	PB11
+USART3	Asynchronous	USART3_TX	PC10
+
+
+
+Pin Nb	PINs	FUNCTIONs	LABELs
+2	PC13	GPIO_EXTI13	
+3	PC14-OSC32_IN (PC14)	RCC_OSC32_IN	
+4	PC15-OSC32_OUT (PC15)	RCC_OSC32_OUT	
+8	PC0	GPIO_Input	
+9	PC1	GPIO_Input	
+10	PC2	GPIO_Input	
+11	PC3	GPIO_Input	
+14	PA0	GPIO_Input	
+15	PA1	GPIO_Input	
+16	PA2	GPIO_Input	
+17	PA3	GPIO_Input	
+20	PA4	GPIO_Input	
+21	PA5	GPIO_Input	
+22	PA6	GPIO_Input	
+23	PA7	GPIO_Input	
+24	PC4	GPIO_Input	
+25	PC5	GPIO_Input	
+29	PB10	TIM2_CH3	SENS_ST
+30	PB11	USART3_RX	
+37	PC6	GPIO_Input	
+38	PC7	GPIO_Input	
+39	PC8	GPIO_Output	
+41	PA8	RCC_MCO	SENS_CLK
+42	PA9	TIM1_CH2	SENS_EOS
+44	PA11	TIM1_CH4	TEST_PIN
+45	PA12	TIM1_ETR	SENS_TRG
+51	PC10	USART3_TX	
+54	PD2	GPIO_EXTI2	EXTADC1_BUSY
+
+
+
+SOFTWARE PROJECT
+
+Project Settings : 
+Project Name : minispec_v_1
+Project Folder : /home/rg/ufz/projects/micro_spec/software_devl/nukleo/minispec_v_1
+Toolchain / IDE : SW4STM32
+Firmware Package Name and Version : STM32Cube FW_L4 V1.8.1
+
+
+Code Generation Settings : 
+STM32Cube Firmware Library Package : Copy only the necessary library files
+Generate peripheral initialization as a pair of '.c/.h' files per peripheral : Yes
+Backup previously generated files when re-generating : No
+Delete previously generated files when not re-generated : Yes
+Set all free pins as analog (to optimize the power consumption) : No
+
+
+Toolchains Settings : 
+Compiler Optimizations : Balanced Size/Speed
+
+
+
+
+
+
