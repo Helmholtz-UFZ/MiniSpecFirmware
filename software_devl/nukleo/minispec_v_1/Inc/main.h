@@ -61,7 +61,7 @@
 #define EXTADC1_BUSY_EXTI_IRQn EXTI2_IRQn
 
 /* USER CODE BEGIN Private defines */
-
+int usr_main( void );
 /* USER CODE END Private defines */
 
 void _Error_Handler(char *, int);

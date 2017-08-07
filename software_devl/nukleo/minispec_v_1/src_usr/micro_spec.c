@@ -17,7 +17,6 @@ uint32_t integrtion_time;
 
 static void enable_sensor_clk( void );
 static void disable_sensor_clk( void );
-static void post_process_values( void );
 
 /**
  *@brief Init all internal data structs and buffer for the sensor.
@@ -25,8 +24,8 @@ static void post_process_values( void );
 void micro_spec_init( void )
 {
 	integrtion_time = MSPARAM_DEFAULT_INTTIME;
-	static uint16_t mem_block[BUFFER_MAX_IDX+1];
-	sens1_buffer.buf = mem_block;
+	static uint16_t x[BUFFER_MAX_IDX + 1];
+	sens1_buffer.buf = x;
 	sens1_buffer.bytes = BUFFER_SIZE;
 	sens1_buffer.w_idx = 0;
 	status = MS_INIT;
@@ -129,21 +128,34 @@ void micro_spec_measure_start( void )
 	TIM2->CCER |= TIM_CCER_CC3E;
 	TIM2->CR1 |= TIM_CR1_CEN;
 	status = MS_TIM2_STARTED;
+}
 
+void micro_spec_wait_for_measurement_done( void )
+{
 	while( status != MS_TIM1_DONE )
 	{
 		// busy waiting
 	}
-	post_process_values();
 }
 
 /**
- * post_process_values()
+ * micro_spec_post_process_values()
+ *
+ *
+ * Insitu reorder values, as the single bits are not in the correct order.
+ *
  */
-static void post_process_values( void )
+void micro_spec_post_process_values( void )
 {
-	// PC[7..0] PA[7..0]
-	// 76543210 76543210
+	/*
+	 * before ordering:
+	 *   PC[7..0] PA[7..0]
+	 *   c7 c6 c5 c4 c3 c2 c1 c0 a7 a6 a5 a4 a3 a2 a1 a0
+	 *
+	 * after ordering:
+	 *   c3 c2 a0 a1 a4 c1 c0 a3 a2 c7 a7 a6 a5 c6 c5 c4
+	 *
+	 */
 	status = MS_POST_PROCESS;
 	uint16_t res, val;
 	int16_t i;

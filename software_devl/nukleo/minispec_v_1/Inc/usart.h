@@ -48,12 +48,28 @@
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
+#include "buffer.h"
+#include "global_include.h"
 
 /* USER CODE END Includes */
 
 extern UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN Private defines */
+typedef enum usr_cmd_enum
+{
+	USR_CMD_UNKNOWN,
+	USR_CMD_WRITE_INTEGRATION_TIME,
+	USR_CMD_READ_INTEGRATION_TIME,
+	USR_CMD_SINGLE_MEASURE_START,
+	USR_CMD_CONTINUOUS_MEASURE_START,
+	USR_CMD_CONTINUOUS_MEASURE_END
+} usr_cmd_enum_t;
+
+extern UART_HandleTypeDef huart3;
+extern simple_buffer uart3_recv_buffer;
+extern usr_cmd_enum_t usrcmd;
+extern uint32_t usr_cmd_data;
 
 /* USER CODE END Private defines */
 
@@ -62,6 +78,8 @@ extern void _Error_Handler(char *, int);
 void MX_USART3_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
+void usart3_init( void );
+void usart3_receive_handler( void );
 
 /* USER CODE END Prototypes */
 
