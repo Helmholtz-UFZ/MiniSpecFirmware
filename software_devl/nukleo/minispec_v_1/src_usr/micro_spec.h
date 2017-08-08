@@ -29,10 +29,11 @@ volatile uint16_t sens_trg_count;
 
 void micro_spec_init( void );
 void micro_spec_deinit( void );
+
 void micro_spec_measure_init( void );
-uint32_t micro_spec_set_integration_time( uint32_t int_time );
 void micro_spec_measure_start( void );
 void micro_spec_wait_for_measurement_done( void );
-void micro_spec_measure_deinit( void );
+
+uint32_t micro_spec_set_integration_time( uint32_t int_time );
 
 #endif /* MICRO_SPEC_H_ */

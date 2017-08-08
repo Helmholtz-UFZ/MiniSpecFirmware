@@ -1,6 +1,6 @@
 Configuration	minispec_v_1
 STM32CubeMX 	4.21.0
-Date	08/07/2017
+Date	08/08/2017
 MCU	STM32L476RGTx
 
 

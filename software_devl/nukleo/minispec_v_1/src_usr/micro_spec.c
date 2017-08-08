@@ -64,15 +64,6 @@ void micro_spec_measure_init( void )
 }
 
 /**
- * Deinit the sensor and all related (Hardware) Modules. Call when all (repetitive)
- * measurements are done.
- */
-void micro_spec_measure_deinit( void )
-{
-	status = MS_INITIALIZED;
-}
-
-/**
  * @brief 	Set the integration time in us for the sensor.
  *
  * The minimum is defined by MIN_INTERGATION_TIME ( 50 us )

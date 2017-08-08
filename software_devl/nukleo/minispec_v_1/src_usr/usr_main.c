@@ -12,7 +12,7 @@
 #include "tim.h"
 
 static const uint8_t delim[16] =
-{ 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF };
+        { 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF };
 
 int usr_main( void )
 {
@@ -21,17 +21,10 @@ int usr_main( void )
 	tim1_Init();
 	tim2_Init();
 
-
-
-	// EXTI2_IRQn_BUSY1:	 en/dis in TIM1 ISR
-	//	HAL_NVIC_SetPriority(EXTI2_IRQn_BUSY1,1,0);
-
-	NVIC_EnableIRQ( USART3_IRQn );
-	//	HAL_NVIC_SetPriority(EXTI2_IRQn_BUSY1,2,0);
-
 	/* Run the system ------------------------------------------------------------*/
 
 	// enabling usart receiving
+	NVIC_EnableIRQ( USART3_IRQn );
 	HAL_UART_Receive_IT( &huart3, uart3_recv_buffer.base, uart3_recv_buffer.size );
 
 	bool continiuos_mode = 0;
@@ -46,7 +39,6 @@ int usr_main( void )
 			micro_spec_measure_init();
 			micro_spec_measure_start();
 			micro_spec_wait_for_measurement_done();
-			micro_spec_measure_deinit();
 			micro_spec_deinit();
 
 			uint16_t cap_st = MSPARAM_CAPTURE_PXL_ST;
@@ -66,12 +58,12 @@ int usr_main( void )
 			break;
 
 		case USR_CMD_CONTINUOUS_MEASURE_START:
-			micro_spec_measure_init();
+			micro_spec_init();
 			continiuos_mode = 1;
 			break;
 
 		case USR_CMD_CONTINUOUS_MEASURE_END:
-			micro_spec_measure_deinit();
+			micro_spec_deinit();
 			continiuos_mode = 0;
 			break;
 
@@ -81,9 +73,9 @@ int usr_main( void )
 
 		if( continiuos_mode )
 		{
+			micro_spec_measure_init();
 			micro_spec_measure_start();
 			micro_spec_wait_for_measurement_done();
-
 
 			//send data
 			HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.bytes, 100 );
@@ -91,8 +83,9 @@ int usr_main( void )
 			HAL_UART_Transmit( &huart3, (uint8_t *) delim, sizeof(delim), 100 );
 		}
 
-		HAL_Delay( 5 );
+		HAL_Delay( 1 );
 	}
+	
 
 	return 0;
 }
