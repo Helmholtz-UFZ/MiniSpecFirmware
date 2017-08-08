@@ -27,10 +27,13 @@
 #define MSPARAM_UNUSED_TRG_CNT	(88)
 
 // captured pixel 85,86,87,88 are not valid
-#define MSPARAM_CAPTURE_PXL_ST	(85)
+//#define MSPARAM_CAPTURE_PXL_ST	(85)
+#define MSPARAM_CAPTURE_PXL_ST	(89)
 
-//288 + 88 = 376 => 4 to much
-#define MSPARAM_CAPTURE_PXL_END	(380)
+
+//288 + 88 = 376 => 4 we make it 4 more
+//#define MSPARAM_CAPTURE_PXL_END	(380)
+#define MSPARAM_CAPTURE_PXL_END	(MSPARAM_PIXEL + MSPARAM_CAPTURE_PXL_ST)
 
 #define MSPARAM_DEFAULT_INTTIME	(1100)
 

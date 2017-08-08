@@ -167,7 +167,7 @@ void TIM1_UP_TIM16_IRQHandler( void )
 	// Disable IR for ADC-busy-line.
 	NVIC_DisableIRQ( EXTI2_IRQn );
 
-	status = MS_TIM1_DONE;
+	status = MS_MEASUREMENT_ONGOING_TIM1_UP;
 	/* USER CODE END TIM1_UP_TIM16_IRQn 1 */
 }
 
@@ -201,7 +201,7 @@ void TIM1_CC_IRQHandler( void )
 	{
 		// clear IR flag
 		TIM1->SR &= ~TIM_SR_CC4IF;
-		status = MS_TIM1_CC;
+		status = MS_MEASUREMENT_ONGOING_TIM1_CC;
 		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
 
 		// Enable IR for ADC-busy-line.

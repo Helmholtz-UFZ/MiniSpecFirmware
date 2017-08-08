@@ -13,22 +13,43 @@
 
 volatile microspec_buffer sens1_buffer;
 volatile meas_status_t status;
-uint32_t integrtion_time;
+uint32_t integrtion_time = 0;
+static uint16_t mem_block0[BUFFER_MAX_IDX + 1];
 
 static void enable_sensor_clk( void );
 static void disable_sensor_clk( void );
+static void post_process_values( void );
 
 /**
  *@brief Init all internal data structs and buffer for the sensor.
  */
 void micro_spec_init( void )
 {
+	// Enable TIM1 IRs
+	NVIC_ClearPendingIRQ( TIM1_UP_TIM16_IRQn );
+	NVIC_ClearPendingIRQ( TIM1_CC_IRQn );
+	NVIC_EnableIRQ( TIM1_UP_TIM16_IRQn );
+	NVIC_EnableIRQ( TIM1_CC_IRQn );
+
 	integrtion_time = MSPARAM_DEFAULT_INTTIME;
-	static uint16_t x[BUFFER_MAX_IDX + 1];
-	sens1_buffer.buf = x;
+	sens1_buffer.buf = mem_block0;
 	sens1_buffer.bytes = BUFFER_SIZE;
 	sens1_buffer.w_idx = 0;
-	status = MS_INIT;
+
+	enable_sensor_clk();
+	HAL_Delay( 1 );
+	status = MS_INITIALIZED;
+}
+
+void micro_spec_deinit( void )
+{
+	HAL_Delay( 1 );
+	disable_sensor_clk();
+
+	// Enable TIM1 IRs
+	NVIC_DisableIRQ( TIM1_UP_TIM16_IRQn );
+	NVIC_DisableIRQ( TIM1_CC_IRQn );
+	status = MS_UNINITIALIZED;
 }
 
 /**
@@ -36,12 +57,10 @@ void micro_spec_init( void )
  */
 void micro_spec_measure_init( void )
 {
-	enable_sensor_clk();
-	HAL_Delay( 1 );
 	memset( (microspec_buffer*) sens1_buffer.buf, 0, sens1_buffer.bytes );
 	sens1_buffer.w_idx = 0;
 	sens_trg_count = 0;
-	status = MS_MEASURE_INIT;
+	status = MS_MEASUREMENT_READY;
 }
 
 /**
@@ -50,8 +69,7 @@ void micro_spec_measure_init( void )
  */
 void micro_spec_measure_deinit( void )
 {
-	HAL_Delay( 1 );
-	disable_sensor_clk();
+	status = MS_INITIALIZED;
 }
 
 /**
@@ -127,15 +145,18 @@ void micro_spec_measure_start( void )
 	// enable tim2 channel 3 to output ST and start tim2
 	TIM2->CCER |= TIM_CCER_CC3E;
 	TIM2->CR1 |= TIM_CR1_CEN;
-	status = MS_TIM2_STARTED;
+	status = MS_MEASUREMENT_STARTED;
 }
 
 void micro_spec_wait_for_measurement_done( void )
 {
-	while( status != MS_TIM1_DONE )
+	while( status != MS_MEASUREMENT_ONGOING_TIM1_UP )
 	{
 		// busy waiting
 	}
+
+	post_process_values();
+	status = MS_MEASUREMENT_DONE;
 }
 
 /**
@@ -145,7 +166,7 @@ void micro_spec_wait_for_measurement_done( void )
  * Insitu reorder values, as the single bits are not in the correct order.
  *
  */
-void micro_spec_post_process_values( void )
+static void post_process_values( void )
 {
 	/*
 	 * before ordering:
@@ -156,21 +177,19 @@ void micro_spec_post_process_values( void )
 	 *   c3 c2 a0 a1 a4 c1 c0 a3 a2 c7 a7 a6 a5 c6 c5 c4
 	 *
 	 */
-	status = MS_POST_PROCESS;
 	uint16_t res, val;
 	int16_t i;
 
 	if( DBG_SIMULATE_SENSOR )
 	{
-		status = MS_DONE;
 		return;
 	}
 
 	for( i = 0; i < sens1_buffer.w_idx; ++i )
 	{
-		res = 0;
 		val = sens1_buffer.buf[i];
 
+		res = 0;
 		res |= (val >> 11) & BIT0; //PC3
 		res |= (val >> 9) & BIT1;  //PC2
 		res |= (val << 2) & BIT2;  //PA0
@@ -191,11 +210,11 @@ void micro_spec_post_process_values( void )
 		sens1_buffer.buf[i] = res;
 	}
 
-	// put the last-valid-pixel index to the beginning of the data
+	/* We captured the TIM1 counter value at the moment when EOS occurred
+	 * on the TIM1 channel2. This indicated the last valid data the sensor
+	 * was sending. Also the ADC already processed the last data, as EOS
+	 * is set high between two edges of the Sensor TRG signal.*/
 	sens1_buffer.last_valid = TIM1->CCR2;
-
-	// ...
-	status = MS_DONE;
 }
 
 /**

@@ -20,13 +20,8 @@ int usr_main( void )
 	usart3_init();
 	tim1_Init();
 	tim2_Init();
-	micro_spec_init();
 
-	/* Initialize interrupts */
 
-	// Enable TIM capture compare IRs
-	NVIC_EnableIRQ( TIM1_UP_TIM16_IRQn );
-	NVIC_EnableIRQ( TIM1_CC_IRQn );
 
 	// EXTI2_IRQn_BUSY1:	 en/dis in TIM1 ISR
 	//	HAL_NVIC_SetPriority(EXTI2_IRQn_BUSY1,1,0);
@@ -47,10 +42,12 @@ int usr_main( void )
 
 		switch( usrcmd ) {
 		case USR_CMD_SINGLE_MEASURE_START:
+			micro_spec_init();
 			micro_spec_measure_init();
 			micro_spec_measure_start();
 			micro_spec_wait_for_measurement_done();
 			micro_spec_measure_deinit();
+			micro_spec_deinit();
 
 			uint16_t cap_st = MSPARAM_CAPTURE_PXL_ST;
 			//send data
@@ -86,7 +83,7 @@ int usr_main( void )
 		{
 			micro_spec_measure_start();
 			micro_spec_wait_for_measurement_done();
-			micro_spec_post_process_values();
+
 
 			//send data
 			HAL_UART_Transmit( &huart3, (uint8_t *) sens1_buffer.buf, sens1_buffer.bytes, 100 );
