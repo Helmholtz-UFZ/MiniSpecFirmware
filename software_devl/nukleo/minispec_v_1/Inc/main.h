@@ -61,8 +61,6 @@
 #define EXTADC1_BUSY_EXTI_IRQn EXTI2_IRQn
 
 /* USER CODE BEGIN Private defines */
-int usr_main( void );
-
 #ifdef __packed
 #undef __packed
 #define __packed __attribute__((__packed__))
@@ -72,6 +70,11 @@ int usr_main( void );
 #undef __weak
 #define __weak 	__attribute__((weak))
 #endif /*__weak */
+
+#define DATA_FORMAT_BIN		0
+#define DATA_FORMAT_ASCII	1
+
+int usr_main( void );
 /* USER CODE END Private defines */
 
 void _Error_Handler(char *, int);

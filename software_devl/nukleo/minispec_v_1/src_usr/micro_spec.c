@@ -13,7 +13,7 @@
 
 volatile microspec_buffer sens1_buffer;
 volatile meas_status_t status;
-uint32_t integrtion_time = 0;
+uint32_t integrtion_time = MSPARAM_DEFAULT_INTTIME;
 static uint16_t mem_block0[BUFFER_MAX_IDX + 1];
 
 static void enable_sensor_clk( void );
@@ -25,94 +25,9 @@ static void post_process_values( void );
  */
 void micro_spec_init( void )
 {
-	// Enable TIM1 IRs
-	NVIC_ClearPendingIRQ( TIM1_UP_TIM16_IRQn );
-	NVIC_ClearPendingIRQ( TIM1_CC_IRQn );
-	NVIC_EnableIRQ( TIM1_UP_TIM16_IRQn );
-	NVIC_EnableIRQ( TIM1_CC_IRQn );
-
-	integrtion_time = (integrtion_time == 0) ? MSPARAM_DEFAULT_INTTIME : integrtion_time;
 	sens1_buffer.buf = mem_block0;
 	sens1_buffer.bytes = BUFFER_SIZE;
 	sens1_buffer.w_idx = 0;
-
-	enable_sensor_clk();
-	HAL_Delay( 1 );
-	status = MS_INITIALIZED;
-}
-
-void micro_spec_deinit( void )
-{
-	HAL_Delay( 1 );
-	disable_sensor_clk();
-
-	// Enable TIM1 IRs
-	NVIC_DisableIRQ( TIM1_UP_TIM16_IRQn );
-	NVIC_DisableIRQ( TIM1_CC_IRQn );
-	status = MS_UNINITIALIZED;
-}
-
-/**
- * Init the spectrometer for a single measurement.
- */
-void micro_spec_measure_init( void )
-{
-	memset( (microspec_buffer*) sens1_buffer.buf, 0, sens1_buffer.bytes );
-	sens1_buffer.w_idx = 0;
-	sens_trg_count = 0;
-	status = MS_MEASUREMENT_READY;
-}
-
-/**
- * @brief 	Set the integration time in us for the sensor.
- *
- * The minimum is defined by MIN_INTERGATION_TIME ( 50 us )
- * The maximum is (UINT32_MAX / TIM2_SCALER) - PRE_ST_DELAY ( ~4200 sec )
- *
- * @param int_time	The integration time in us
- * @return The integration time value set
- */
-uint32_t micro_spec_set_integration_time( uint32_t int_time )
-{
-
-	if( int_time < MIN_INTERGATION_TIME )
-	{
-		integrtion_time = MIN_INTERGATION_TIME;
-	}
-	else
-	{
-		integrtion_time = int_time;
-	}
-
-	return integrtion_time;
-}
-
-/**
- * @ brief Start a single measurement.
- *
- *	All further work is done in by the timers TIM1 and TIM2 and in the GPIO ISR.
- *	1. TIM2 generating the start signal (ST) for the sensor
- *	2. TIM1 count the trigger pulses (TRG) from the sensor directly after
- * todo	ST goes low and throw an IR when MSPARAM_TRG_CNT many pulses occurred.
- *	TIM2 is started from the update event (UEV) of TIM1.
- *	3. TIM2 enables the GPIO IR on the EXTADCx_BUSY Pin(s). So if the external
- *	ADC signals "ready to read" we capture 16 bits on 16 input lines and save.
- *	4. After MSPARAM_PIXEL conversions the external ADC we disables the IR on the
- *	EXTADCx_BUSY-PIN and we're done.
- *	(5. we post process the captured data, if necessary.)
- */
-void micro_spec_measure_start( void )
-{
-	uint32_t int_time_cnt;
-
-	// 48 clock-cycles are added to ST-signal-"high" resulting in integrationtime
-	// (see c12880ma_kacc1226e.pdf)
-	const uint8_t clk_cycl = 48;
-
-	int_time_cnt = MAX( integrtion_time, MIN_INTERGATION_TIME );
-	int_time_cnt -= clk_cycl;
-
-	__HAL_TIM_SET_AUTORELOAD( &htim2, int_time_cnt );
 
 	// enable TIM channels
 	// Don't use TIM_CCxChannelCmd() because it will generate a short
@@ -135,12 +50,91 @@ void micro_spec_measure_start( void )
 
 	// enable tim2 channel 3 to output ST and start tim2
 	TIM2->CCER |= TIM_CCER_CC3E;
+
+	// Enable TIM1 IRs
+	NVIC_ClearPendingIRQ( TIM1_UP_TIM16_IRQn );
+	NVIC_ClearPendingIRQ( TIM1_CC_IRQn );
+	NVIC_EnableIRQ( TIM1_UP_TIM16_IRQn );
+	NVIC_EnableIRQ( TIM1_CC_IRQn );
+
+	enable_sensor_clk();
+	HAL_Delay( 1 );
+	status = MS_INITIALIZED;
+}
+
+void micro_spec_deinit( void )
+{
+	HAL_Delay( 1 );
+	disable_sensor_clk();
+
+	// Enable TIM1 IRs
+	NVIC_DisableIRQ( TIM1_UP_TIM16_IRQn );
+	NVIC_DisableIRQ( TIM1_CC_IRQn );
+	status = MS_UNINITIALIZED;
+}
+
+/**
+ * Init the spectrometer for a single measurement.
+ */
+void micro_spec_measure_init( void )
+{
+	if( status != MS_INITIALIZED )
+	{
+		return;
+	}
+	memset( (microspec_buffer*) sens1_buffer.buf, 0, sens1_buffer.bytes );
+	sens1_buffer.w_idx = 0;
+	sens_trg_count = 0;
+	status = MS_MEASUREMENT_READY;
+}
+
+
+/**
+ * @ brief Start a single measurement.
+ *
+ *	All further work is done in by the timers TIM1 and TIM2 and in the GPIO ISR.
+ *	1. TIM2 generating the start signal (ST) for the sensor
+ *	2. TIM1 count the trigger pulses (TRG) from the sensor directly after
+ * todo	ST goes low and throw an IR when MSPARAM_TRG_CNT many pulses occurred.
+ *	TIM2 is started from the update event (UEV) of TIM1.
+ *	3. TIM2 enables the GPIO IR on the EXTADCx_BUSY Pin(s). So if the external
+ *	ADC signals "ready to read" we capture 16 bits on 16 input lines and save.
+ *	4. After MSPARAM_PIXEL conversions the external ADC we disables the IR on the
+ *	EXTADCx_BUSY-PIN and we're done.
+ *	(5. we post process the captured data, if necessary.)
+ */
+void micro_spec_measure_start( void )
+{
+
+	if( !(status == MS_MEASUREMENT_READY || status == MS_MEASUREMENT_DONE) )
+	{
+		return;
+	}
+	uint32_t int_time_cnt;
+
+	// 48 clock-cycles are added to ST-signal-"high" resulting in integrationtime
+	// (see c12880ma_kacc1226e.pdf)
+	const uint8_t clk_cycl = 48;
+
+	int_time_cnt = MAX( integrtion_time, MIN_INTERGATION_TIME );
+	int_time_cnt -= clk_cycl;
+
+	__HAL_TIM_SET_AUTORELOAD( &htim2, int_time_cnt );
+
+	// reset the capturing reg for the eos
+	TIM1->CCR2 = 0;
+
 	TIM2->CR1 |= TIM_CR1_CEN;
 	status = MS_MEASUREMENT_STARTED;
 }
 
 void micro_spec_wait_for_measurement_done( void )
 {
+	if( status != MS_MEASUREMENT_STARTED )
+	{
+		return;
+	}
+
 	while( status != MS_MEASUREMENT_ONGOING_TIM1_UP )
 	{
 		// busy waiting
@@ -206,6 +200,30 @@ static void post_process_values( void )
 	 * was sending. Also the ADC already processed the last data, as EOS
 	 * is set high between two edges of the Sensor TRG signal.*/
 	sens1_buffer.last_valid = TIM1->CCR2;
+}
+
+/**
+ * @brief 	Set the integration time in us for the sensor.
+ *
+ * The minimum is defined by MIN_INTERGATION_TIME ( 50 us )
+ * The maximum is (UINT32_MAX / TIM2_SCALER) - PRE_ST_DELAY ( ~4200 sec )
+ *
+ * @param int_time	The integration time in us
+ * @return The integration time value set
+ */
+uint32_t micro_spec_set_integration_time( uint32_t int_time )
+{
+
+	if( int_time < MIN_INTERGATION_TIME )
+	{
+		integrtion_time = MIN_INTERGATION_TIME;
+	}
+	else
+	{
+		integrtion_time = int_time;
+	}
+
+	return integrtion_time;
 }
 
 /**

@@ -59,15 +59,25 @@ extern UART_HandleTypeDef huart3;
 typedef enum usr_cmd_enum
 {
 	USR_CMD_UNKNOWN,
+	USR_CMD_SET_DATA_FORMAT, // ascii or raw
 	USR_CMD_WRITE_INTEGRATION_TIME,
 	USR_CMD_READ_INTEGRATION_TIME,
+	USR_CMD_GET_DATA,
 	USR_CMD_SINGLE_MEASURE_START,
 	USR_CMD_CONTINUOUS_MEASURE_START,
-	USR_CMD_CONTINUOUS_MEASURE_END
+	USR_CMD_CONTINUOUS_MEASURE_END,
 } usr_cmd_enum_t;
 
+typedef struct
+{
+	uint16_t size;
+	uint8_t *base;
+} uart_buffer_t;
+
 extern UART_HandleTypeDef huart3;
-extern simple_buffer uart3_recv_buffer;
+extern uart_buffer_t uart3_rx_buffer;
+extern uart_buffer_t uart3_tx_buffer;
+
 extern usr_cmd_enum_t usrcmd;
 extern uint32_t usr_cmd_data;
 
@@ -80,6 +90,7 @@ void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN Prototypes */
 void usart3_init( void );
 void usart3_receive_handler( void );
+int uart_printf( UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const char *__restrict format, ... )__attribute__( (__format__ (__printf__, 3, 4)) );
 
 /* USER CODE END Prototypes */
 

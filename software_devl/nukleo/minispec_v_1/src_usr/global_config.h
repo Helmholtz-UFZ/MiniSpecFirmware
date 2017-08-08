@@ -8,6 +8,9 @@
 #ifndef GLOBAL_CONFIG_H_
 #define GLOBAL_CONFIG_H_
 
+#define UART_DEFAULT_TX_BUFFER_SZ	1024
+#define UART_DEFAULT_RX_BUFFER_SZ	128
+
 /** The delay between function call and ST goes high.
  *  This only is used by the timer, to ensure that the initial
  *  value is not zero*/
@@ -27,15 +30,15 @@
 #define MSPARAM_UNUSED_TRG_CNT	(88)
 
 // captured pixel 85,86,87,88 are not valid
-//#define MSPARAM_CAPTURE_PXL_ST	(85)
-#define MSPARAM_CAPTURE_PXL_ST	(89)
+#define MSPARAM_CAPTURE_PXL_ST	(85)
+//#define MSPARAM_CAPTURE_PXL_ST	(89)
 
 
 //288 + 88 = 376 => 4 we make it 4 more
-//#define MSPARAM_CAPTURE_PXL_END	(380)
-#define MSPARAM_CAPTURE_PXL_END	(MSPARAM_PIXEL + MSPARAM_CAPTURE_PXL_ST)
+#define MSPARAM_CAPTURE_PXL_END	(380)
+//#define MSPARAM_CAPTURE_PXL_END	(MSPARAM_PIXEL + MSPARAM_CAPTURE_PXL_ST)
 
-#define MSPARAM_DEFAULT_INTTIME	(1100)
+#define MSPARAM_DEFAULT_INTTIME	(110000)
 
 #define TIM2_HIGH	(MSPARAM_PIXEL+20)
 #define TIM2_LOW	(MSPARAM_UNUSED_TRG_CNT)
