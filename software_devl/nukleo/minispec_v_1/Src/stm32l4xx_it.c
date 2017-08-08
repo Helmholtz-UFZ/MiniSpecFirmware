@@ -59,7 +59,7 @@ extern UART_HandleTypeDef huart3;
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-
+#define SysTick_Handler__OK
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   HAL_SYSTICK_IRQHandler();
@@ -243,7 +243,11 @@ void dummy_function_to_ignore_warnings()
 	UNUSED( htim1 );
 }
 #endif /*DO_NOT_USE_HAL_IRQ_HANDLER*/
-#if (!defined EXTI2_IRQHandler__OK || !defined TIM1_UP_TIM16_IRQHandler__OK || !defined TIM1_CC_IRQHandler__OK || !defined USART3_IRQHandler__OK)
+#if (!defined EXTI2_IRQHandler__OK \
+	|| !defined TIM1_UP_TIM16_IRQHandler__OK \
+	|| !defined TIM1_CC_IRQHandler__OK \
+	|| !defined USART3_IRQHandler__OK \
+	|| !defined SysTick_Handler__OK )
 #warning "IRQ_Handler missing. May it was deleted by CubeMX ?"
 #endif
 /* USER CODE END 1 */

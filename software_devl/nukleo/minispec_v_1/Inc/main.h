@@ -62,6 +62,16 @@
 
 /* USER CODE BEGIN Private defines */
 int usr_main( void );
+
+#ifdef __packed
+#undef __packed
+#define __packed __attribute__((__packed__))
+#endif /*__packed */
+
+#ifdef __weak
+#undef __weak
+#define __weak 	__attribute__((weak))
+#endif /*__weak */
 /* USER CODE END Private defines */
 
 void _Error_Handler(char *, int);

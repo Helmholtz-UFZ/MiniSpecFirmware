@@ -31,7 +31,7 @@ void micro_spec_init( void )
 	NVIC_EnableIRQ( TIM1_UP_TIM16_IRQn );
 	NVIC_EnableIRQ( TIM1_CC_IRQn );
 
-	integrtion_time = MSPARAM_DEFAULT_INTTIME;
+	integrtion_time = (integrtion_time == 0) ? MSPARAM_DEFAULT_INTTIME : integrtion_time;
 	sens1_buffer.buf = mem_block0;
 	sens1_buffer.bytes = BUFFER_SIZE;
 	sens1_buffer.w_idx = 0;

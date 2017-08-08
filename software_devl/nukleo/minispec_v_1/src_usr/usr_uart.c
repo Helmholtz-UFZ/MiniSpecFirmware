@@ -68,7 +68,7 @@ void usart3_receive_handler( void )
 			usrcmd = USR_CMD_CONTINUOUS_MEASURE_START;
 		}
 
-		else if( memcmp( uart3_recv_buffer.base, "endstream", 9 ) == 0 )
+		else if( memcmp( uart3_recv_buffer.base, "end", 3 ) == 0 )
 		{
 			usrcmd = USR_CMD_CONTINUOUS_MEASURE_END;
 		}
