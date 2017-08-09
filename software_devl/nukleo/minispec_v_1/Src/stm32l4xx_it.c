@@ -110,13 +110,13 @@ void EXTI2_IRQHandler(void)
 	{
 		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
 
-		if( sens1_buffer.w_idx < BUFFER_MAX_IDX )
+		if( hms1.data->wptr < (hms1.data->base + hms1.data->words) )
 		{
 			// read ADC parallel-port-value
 			value0 = GPIOA->IDR;
 			value1 = GPIOC->IDR;
 			// todo pointer instead ?
-			sens1_buffer.buf[sens1_buffer.w_idx++] = (value1 << 8) | value0;
+			*(hms1.data->wptr++) = (value1 << 8) | value0;
 		}
 	}
 	// -------------- nomore code here !! --------------
@@ -156,7 +156,7 @@ void TIM1_UP_TIM16_IRQHandler(void)
 	// Disable IR for ADC-busy-line.
 	NVIC_DisableIRQ( EXTI2_IRQn );
 
-	status = MS_MEASUREMENT_ONGOING_TIM1_UP;
+	hms1.status = MS_MEASUREMENT_ONGOING_TIM1_UP;
   /* USER CODE END TIM1_UP_TIM16_IRQn 1 */
 }
 
@@ -190,7 +190,7 @@ void TIM1_CC_IRQHandler(void)
 	{
 		// clear IR flag
 		TIM1->SR &= ~TIM_SR_CC4IF;
-		status = MS_MEASUREMENT_ONGOING_TIM1_CC;
+		hms1.status = MS_MEASUREMENT_ONGOING_TIM1_CC;
 		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
 
 		// Enable IR for ADC-busy-line.

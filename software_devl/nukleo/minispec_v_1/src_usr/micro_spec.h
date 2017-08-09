@@ -10,7 +10,24 @@
 
 #include "buffer.h"
 
-extern volatile microspec_buffer sens1_buffer;
+
+#define MICROSPEC_DATA_BUFFER_MAX_WORDS		(350)
+
+/**word size in bytes*/
+#define MICROSPEC_WORD_SIZE			(2)
+
+/**size in bytes*/
+#define MICROSPEC_DATA_BUFFER_SIZE		(MICROSPEC_DATA_BUFFER_MAX_WORDS*MICROSPEC_WORD_SIZE)
+
+typedef struct
+{
+	const uint16_t size2; /*!< buffer size in bytes  */
+	const uint16_t words; /*!< buffer size in (16bit-)words  */
+	uint16_t* base;
+	volatile uint16_t volatile *wptr;
+	volatile uint16_t last_valid;
+} microspec_buffer;
+
 
 typedef enum
 {
@@ -21,11 +38,17 @@ typedef enum
 	MS_MEASUREMENT_ONGOING_TIM1_UP,
 	MS_MEASUREMENT_ONGOING_TIM1_CC,
 	MS_MEASUREMENT_DONE
-} meas_status_t;
+} microspec_status_enum_t;
 
-extern volatile meas_status_t status;
-extern uint32_t integrtion_time;
-volatile uint16_t sens_trg_count;
+typedef struct
+{
+	volatile microspec_status_enum_t status;
+	volatile microspec_buffer *data;
+	uint32_t integrtion_time;
+
+} microspec_t;
+
+extern microspec_t hms1;
 
 void micro_spec_init( void );
 void micro_spec_deinit( void );

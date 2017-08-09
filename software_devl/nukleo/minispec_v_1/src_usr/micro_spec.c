@@ -11,10 +11,13 @@
 #include "global_include.h"
 #include "tim.h"
 
-volatile microspec_buffer sens1_buffer;
-volatile meas_status_t status;
-uint32_t integrtion_time = MSPARAM_DEFAULT_INTTIME;
-static uint16_t mem_block0[BUFFER_MAX_IDX + 1];
+/* micro sprectrometer 1 handle */
+microspec_t hms1 =
+{ MS_UNINITIALIZED, NULL, MSPARAM_DEFAULT_INTTIME };
+
+static uint16_t mem_block1[MICROSPEC_DATA_BUFFER_MAX_WORDS + 1];
+static microspec_buffer ms1_buf =
+        { MICROSPEC_DATA_BUFFER_SIZE, MICROSPEC_DATA_BUFFER_MAX_WORDS, mem_block1, mem_block1, 0 };
 
 static void enable_sensor_clk( void );
 static void disable_sensor_clk( void );
@@ -25,9 +28,10 @@ static void post_process_values( void );
  */
 void micro_spec_init( void )
 {
-	sens1_buffer.buf = mem_block0;
-	sens1_buffer.bytes = BUFFER_SIZE;
-	sens1_buffer.w_idx = 0;
+	hms1.data = &ms1_buf;
+	hms1.data->base = mem_block1;
+	hms1.data->last_valid = 0;
+	hms1.data->wptr = mem_block1;
 
 	// enable TIM channels
 	// Don't use TIM_CCxChannelCmd() because it will generate a short
@@ -59,7 +63,7 @@ void micro_spec_init( void )
 
 	enable_sensor_clk();
 	HAL_Delay( 1 );
-	status = MS_INITIALIZED;
+	hms1.status = MS_INITIALIZED;
 }
 
 void micro_spec_deinit( void )
@@ -70,7 +74,7 @@ void micro_spec_deinit( void )
 	// Enable TIM1 IRs
 	NVIC_DisableIRQ( TIM1_UP_TIM16_IRQn );
 	NVIC_DisableIRQ( TIM1_CC_IRQn );
-	status = MS_UNINITIALIZED;
+	hms1.status = MS_UNINITIALIZED;
 }
 
 /**
@@ -78,14 +82,13 @@ void micro_spec_deinit( void )
  */
 void micro_spec_measure_init( void )
 {
-	if( status != MS_INITIALIZED )
+	if( hms1.status != MS_INITIALIZED )
 	{
 		return;
 	}
-	memset( (microspec_buffer*) sens1_buffer.buf, 0, sens1_buffer.bytes );
-	sens1_buffer.w_idx = 0;
-	sens_trg_count = 0;
-	status = MS_MEASUREMENT_READY;
+	memset( hms1.data->base, 0, hms1.data->size2 );
+	hms1.data->wptr = hms1.data->base;
+	hms1.status = MS_MEASUREMENT_READY;
 }
 
 
@@ -106,7 +109,7 @@ void micro_spec_measure_init( void )
 void micro_spec_measure_start( void )
 {
 
-	if( !(status == MS_MEASUREMENT_READY || status == MS_MEASUREMENT_DONE) )
+	if( !(hms1.status == MS_MEASUREMENT_READY || hms1.status == MS_MEASUREMENT_DONE) )
 	{
 		return;
 	}
@@ -116,7 +119,7 @@ void micro_spec_measure_start( void )
 	// (see c12880ma_kacc1226e.pdf)
 	const uint8_t clk_cycl = 48;
 
-	int_time_cnt = MAX( integrtion_time, MIN_INTERGATION_TIME );
+	int_time_cnt = MAX( hms1.integrtion_time, MIN_INTERGATION_TIME );
 	int_time_cnt -= clk_cycl;
 
 	__HAL_TIM_SET_AUTORELOAD( &htim2, int_time_cnt );
@@ -125,23 +128,23 @@ void micro_spec_measure_start( void )
 	TIM1->CCR2 = 0;
 
 	TIM2->CR1 |= TIM_CR1_CEN;
-	status = MS_MEASUREMENT_STARTED;
+	hms1.status = MS_MEASUREMENT_STARTED;
 }
 
 void micro_spec_wait_for_measurement_done( void )
 {
-	if( status != MS_MEASUREMENT_STARTED )
+	if( hms1.status != MS_MEASUREMENT_STARTED )
 	{
 		return;
 	}
 
-	while( status != MS_MEASUREMENT_ONGOING_TIM1_UP )
+	while( hms1.status != MS_MEASUREMENT_ONGOING_TIM1_UP )
 	{
 		// busy waiting
 	}
 
 	post_process_values();
-	status = MS_MEASUREMENT_DONE;
+	hms1.status = MS_MEASUREMENT_DONE;
 }
 
 /**
@@ -163,16 +166,17 @@ static void post_process_values( void )
 	 *
 	 */
 	uint16_t res, val;
-	int16_t i;
+	uint16_t *rptr = hms1.data->base;
 
 	if( DBG_SIMULATE_SENSOR )
 	{
 		return;
 	}
 
-	for( i = 0; i < sens1_buffer.w_idx; ++i )
+
+	while( rptr < hms1.data->wptr )
 	{
-		val = sens1_buffer.buf[i];
+		val = *rptr;
 
 		res = 0;
 		res |= (val >> 11) & BIT0; //PC3
@@ -192,14 +196,15 @@ static void post_process_values( void )
 		res |= (val << 1) & BIT14; //PC5
 		res |= (val << 3) & BIT15; //PC4
 
-		sens1_buffer.buf[i] = res;
+		*rptr = res;
+		rptr++;
 	}
 
 	/* We captured the TIM1 counter value at the moment when EOS occurred
 	 * on the TIM1 channel2. This indicated the last valid data the sensor
 	 * was sending. Also the ADC already processed the last data, as EOS
 	 * is set high between two edges of the Sensor TRG signal.*/
-	sens1_buffer.last_valid = TIM1->CCR2;
+	hms1.data->last_valid = TIM1->CCR2;
 }
 
 /**
@@ -216,14 +221,14 @@ uint32_t micro_spec_set_integration_time( uint32_t int_time )
 
 	if( int_time < MIN_INTERGATION_TIME )
 	{
-		integrtion_time = MIN_INTERGATION_TIME;
+		hms1.integrtion_time = MIN_INTERGATION_TIME;
 	}
 	else
 	{
-		integrtion_time = int_time;
+		hms1.integrtion_time = int_time;
 	}
 
-	return integrtion_time;
+	return hms1.integrtion_time;
 }
 
 /**

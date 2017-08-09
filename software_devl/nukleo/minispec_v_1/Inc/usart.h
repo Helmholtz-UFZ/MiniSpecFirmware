@@ -60,6 +60,7 @@ typedef enum usr_cmd_enum
 {
 	USR_CMD_UNKNOWN,
 	USR_CMD_SET_DATA_FORMAT, // ascii or raw
+	USR_CMD_SET_SET_SENSOR, // choose if sens 1 or sens 2 (future use)
 	USR_CMD_WRITE_INTEGRATION_TIME,
 	USR_CMD_READ_INTEGRATION_TIME,
 	USR_CMD_GET_DATA,
