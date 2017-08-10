@@ -46,6 +46,17 @@
  *	by the internal clock and wait for the time 400 TRG pulses would normally need.
  *	If the timer is not disabled before it will throw an IR where we unlock the
  *	program and return to a certain state and of course we will set an error-flag.
+ *
+ *
+ *	Call hierarchy for this module
+ *	-------------------------------
+ *
+ *	1. micro_spec_init()					\n
+ * 	2. micro_spec_measure_init()                            \n
+ * 	3. micro_spec_measure_start()                           \n
+ * 	4. micro_spec_wait_for_measurement_done()               \n
+ * 	5. when a new measurement is desired go back to 2.      \n
+ * 	6. micro_spec_deinit()                                  \n
  */
 
 #include "stm32l4xx_hal.h"
@@ -54,38 +65,41 @@
 #include "global_include.h"
 #include "tim.h"
 
-/* micro sprectrometer 1 handle */
-microspec_t hms1 =
-        { MS_UNINITIALIZED, NULL, MSPARAM_DEFAULT_INTTIME };
 
 static uint16_t mem_block1[MICROSPEC_DATA_BUFFER_MAX_WORDS + 1];
-static microspec_buffer ms1_buf =
-        { MICROSPEC_DATA_BUFFER_SIZE, MICROSPEC_DATA_BUFFER_MAX_WORDS, mem_block1, mem_block1, 0 };
+
+static microspec_buffer_t ms1_buf =
+        { MICROSPEC_DATA_BUFFER_SIZE, MICROSPEC_DATA_BUFFER_MAX_WORDS, mem_block1, mem_block1 };
+
+/* Handle for the micro sprectrometer 1 */
+microspec_t hms1 =
+        { MS_UNINITIALIZED, &ms1_buf, MSPARAM_DEFAULT_INTTIME };
 
 static void enable_sensor_clk( void );
 static void disable_sensor_clk( void );
 static void post_process_values( void );
 
 /**
- *@brief Init all internal data structs and buffer for the sensor.
+ *Init all internal data structs and buffer needed by the sensor(s).
  */
 void micro_spec_init( void )
 {
 	hms1.data = &ms1_buf;
 	hms1.data->base = mem_block1;
-	hms1.data->last_valid = 0;
 	hms1.data->wptr = mem_block1;
 
 	// enable TIM channels
-	// Don't use TIM_CCxChannelCmd() because it will generate a short
-	// uncertain state, which will result in a high with an external
-	// pull-up resistor.
+	// Don't use TIM_CCxChannelCmd() (which also use the HAL) because it
+	// will generate a short uncertain state, which will result in a high
+	// with an external pull-up resistor.
 
-	// enable TIM1 IRs: update and channel 4
+	// enable TIM1 IRs: update, channel 2 and 4
 	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_UPDATE );
 	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_UPDATE );
 	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC4 );
 	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC4 );
+	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC2 );
+	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC2 );
 
 	// prepare tim1 channel 2 for capturing EOS
 	TIM1->CCER |= TIM_CCER_CC2E;
@@ -95,7 +109,7 @@ void micro_spec_init( void )
 	TIM1->CCER |= TIM_CCER_CC4E;
 	__HAL_TIM_MOE_ENABLE( &htim1 );
 
-	// enable tim2 channel 3 to output ST and start tim2
+	// enable tim2 channel 3 to output ST
 	TIM2->CCER |= TIM_CCER_CC3E;
 
 	// Enable TIM1 IRs
@@ -122,31 +136,40 @@ void micro_spec_deinit( void )
 
 /**
  * Init the spectrometer for a single measurement.
+ *
+ * This should be called every time a before a new measurement
+ * is made.
  */
-void micro_spec_measure_init( void )
+uint8_t micro_spec_measure_init( void )
 {
 	if( hms1.status != MS_INITIALIZED )
 	{
-		return;
+		return 1;
 	}
-	memset( hms1.data->base, 0, hms1.data->size2 );
+	memset( hms1.data->base, 0, hms1.data->size );
 	hms1.data->wptr = hms1.data->base;
 	hms1.status = MS_MEASUREMENT_READY;
+	return 0;
 }
 
 /**
  * @ brief Start a single measurement.
  *
- *	All further work is done in by the timers TIM1 and TIM2 and in the GPIO ISR.
- *	The procedure is described in the header.
+ * All further work is done in by the timers TIM1 and TIM2 and in the GPIO ISR.
+ * The procedure is described in the header.
+ *
+ * Call micro_spec_measure_init() before this.
+ *
+ * After this call micro_spec_wait_for_measurement_done() to wait until the
+ * measurement is done.
  *
  */
-void micro_spec_measure_start( void )
+uint8_t micro_spec_measure_start( void )
 {
 
 	if( !(hms1.status == MS_MEASUREMENT_READY || hms1.status == MS_MEASUREMENT_DONE) )
 	{
-		return;
+		return 1;
 	}
 	uint32_t int_time_cnt;
 
@@ -164,42 +187,60 @@ void micro_spec_measure_start( void )
 
 	TIM2->CR1 |= TIM_CR1_CEN;
 	hms1.status = MS_MEASUREMENT_STARTED;
+	return 0;
 }
 
-void micro_spec_wait_for_measurement_done( void )
+/**
+ * Call this if a measurement was started and we wait until
+ * it is finished.
+ *
+ * If a new measurement after this is desired call micro_spec_measure_init().
+ *
+ */
+uint8_t micro_spec_wait_for_measurement_done( void )
 {
 	if( hms1.status != MS_MEASUREMENT_STARTED )
 	{
-		return;
+		return 1;
 	}
 
-	while( hms1.status != MS_MEASUREMENT_ONGOING_TIM1_UP )
+	while( hms1.status != MS_MEASUREMENT_CAPTURED_EOS && hms1.status != MS_MEASUREMENT_ERR_NO_EOS )
 	{
 		// busy waiting
 	}
 
 	post_process_values();
-	hms1.status = MS_MEASUREMENT_DONE;
+
+	if( hms1.status == MS_MEASUREMENT_ERR_NO_EOS )
+	{
+		return 1;
+	}
+	else
+	{
+		hms1.status = MS_MEASUREMENT_DONE;
+		return 0;
+	}
+		
 }
 
 /**
- * micro_spec_post_process_values()
  *
  *
- * Insitu reorder values, as the single bits are not in the correct order.
+ * Local helper for insitu reorder values, as the single bits
+ * are not in the correct order.
+ *
+ * before ordering:
+ *             PC[7..0]                PA[7..0]
+ * buffer[i] = c7 c6 c5 c4 c3 c2 c1 c0 a7 a6 a5 a4 a3 a2 a1 a0
+ *
+ * after ordering:
+ * buffer[i] = c3 c2 a0 a1 a4 c1 c0 a3 a2 c7 a7 a6 a5 c6 c5 c4
+ *
  *
  */
 static void post_process_values( void )
 {
-	/*
-	 * before ordering:
-	 *   PC[7..0] PA[7..0]
-	 *   c7 c6 c5 c4 c3 c2 c1 c0 a7 a6 a5 a4 a3 a2 a1 a0
-	 *
-	 * after ordering:
-	 *   c3 c2 a0 a1 a4 c1 c0 a3 a2 c7 a7 a6 a5 c6 c5 c4
-	 *
-	 */
+
 	uint16_t res, val;
 	uint16_t *rptr = hms1.data->base;
 
@@ -233,12 +274,6 @@ static void post_process_values( void )
 		*rptr = res;
 		rptr++;
 	}
-
-	/* We captured the TIM1 counter value at the moment when EOS occurred
-	 * on the TIM1 channel2. This indicated the last valid data the sensor
-	 * was sending. Also the ADC already processed the last data, as EOS
-	 * is set high between two edges of the Sensor TRG signal.*/
-	hms1.data->last_valid = TIM1->CCR2;
 }
 
 /**
@@ -267,9 +302,14 @@ uint32_t micro_spec_set_integration_time( uint32_t int_time )
 
 /**
  * Enables the clock signal for the sensor.
- * This gated through the sensor (with a small delay ~43ns)
- * and given back as TRG-signal from the sensor to the ADC-
- * trigger input.
+ *
+ * This clock gated through the sensor (with a small delay ~43ns)
+ * and is given back as TRG-signal from the sensor. The inverted
+ * version of the TRG is send to the ADC-trigger input and also
+ * we count the falling edges of the inverted TRG as clock source
+ * of TIM1. So the sensor clock should stay enabled for the whole
+ * cycle of all measurements, until this (micro-sprectrometer-)
+ * module is disabled or the nukleo is powered down.
  */
 void enable_sensor_clk( void )
 {
@@ -291,14 +331,13 @@ void enable_sensor_clk( void )
  */
 void disable_sensor_clk( void )
 {
-	HAL_GPIO_WritePin( SENS_CLK_GPIO_Port, SENS_CLK_Pin, GPIO_PIN_RESET );
 	GPIO_InitTypeDef GPIO_InitStruct;
 	/*Configure GPIO pin for the Sensors CLK
 	 * STM32 --> SENS1 & SENS2*/
 	GPIO_InitStruct.Pin = SENS_CLK_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
-
+	HAL_GPIO_WritePin( SENS_CLK_GPIO_Port, SENS_CLK_Pin, GPIO_PIN_RESET );
 }
 

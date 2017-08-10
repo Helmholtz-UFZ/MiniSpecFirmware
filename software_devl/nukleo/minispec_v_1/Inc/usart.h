@@ -70,16 +70,9 @@ typedef enum usr_cmd_enum
 
 typedef struct
 {
-	uint16_t size;
-	uint8_t *base;
+	const uint16_t size; /* !< size in bytes. */
+	uint8_t *base; /* !< pointer to the start of the buffer. */
 } uart_buffer_t;
-
-extern UART_HandleTypeDef huart3;
-extern uart_buffer_t uart3_rx_buffer;
-extern uart_buffer_t uart3_tx_buffer;
-
-extern usr_cmd_enum_t usrcmd;
-extern uint32_t usr_cmd_data;
 
 /* USER CODE END Private defines */
 
@@ -88,6 +81,12 @@ extern void _Error_Handler(char *, int);
 void MX_USART3_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
+extern uart_buffer_t uart3_rx_buffer;
+extern uart_buffer_t uart3_tx_buffer;
+
+extern usr_cmd_enum_t usrcmd;
+extern uint32_t usr_cmd_data;
+
 void usart3_init( void );
 void usart3_receive_handler( void );
 int uart_printf( UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const char *__restrict format, ... )__attribute__( (__format__ (__printf__, 3, 4)) );

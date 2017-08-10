@@ -19,12 +19,11 @@
 
 typedef struct
 {
-	const uint16_t size2; /*!< buffer size in bytes  */
-	const uint16_t words; /*!< buffer size in (16bit-)words  */
-	uint16_t* base;
-	volatile uint16_t volatile *wptr;
-	volatile uint16_t last_valid;
-} microspec_buffer;
+	const uint16_t size; /*		        !< buffer size in bytes  */
+	const uint16_t words; /*                !< buffer size in (16bit-)words  */
+	uint16_t* base; /*			!< pointer to the start of the buffer  */
+	volatile uint16_t volatile *wptr; /*	!< write pointer for the data, points to the next empty location  */
+} microspec_buffer_t;
 
 
 typedef enum
@@ -33,15 +32,16 @@ typedef enum
 	MS_INITIALIZED,
 	MS_MEASUREMENT_READY,
 	MS_MEASUREMENT_STARTED,
-	MS_MEASUREMENT_ONGOING_TIM1_UP,
 	MS_MEASUREMENT_ONGOING_TIM1_CC,
+	MS_MEASUREMENT_CAPTURED_EOS,
+	MS_MEASUREMENT_ERR_NO_EOS,
 	MS_MEASUREMENT_DONE
 } microspec_status_enum_t;
 
 typedef struct
 {
 	volatile microspec_status_enum_t status;
-	volatile microspec_buffer *data;
+	volatile microspec_buffer_t *data;
 	uint32_t integrtion_time;
 
 } microspec_t;
@@ -51,9 +51,9 @@ extern microspec_t hms1;
 void micro_spec_init( void );
 void micro_spec_deinit( void );
 
-void micro_spec_measure_init( void );
-void micro_spec_measure_start( void );
-void micro_spec_wait_for_measurement_done( void );
+uint8_t micro_spec_measure_init( void );
+uint8_t micro_spec_measure_start( void );
+uint8_t micro_spec_wait_for_measurement_done( void );
 
 uint32_t micro_spec_set_integration_time( uint32_t int_time );
 

@@ -36,7 +36,7 @@ int usr_main( void )
 	NVIC_EnableIRQ( USART3_IRQn );
 	HAL_UART_Receive_IT( &huart3, uart3_rx_buffer.base, uart3_rx_buffer.size );
 
-	bool continiuos_mode = 0;
+	bool stream_mode = 0;
 	uart_printf( &huart3, &uart3_tx_buffer, "\nstart\n" );
 	while( 1 )
 	{
@@ -70,7 +70,7 @@ int usr_main( void )
 
 		case USR_CMD_CONTINUOUS_MEASURE_START:
 			micro_spec_init();
-			continiuos_mode = 1;
+			stream_mode = 1;
 			break;
 
 		case USR_CMD_SET_DATA_FORMAT:
@@ -79,20 +79,19 @@ int usr_main( void )
 
 		case USR_CMD_CONTINUOUS_MEASURE_END:
 			micro_spec_deinit();
-			continiuos_mode = 0;
+			stream_mode = 0;
 			break;
 
 		default:
 			break;
 		}
 
-		if( continiuos_mode )
+		if( stream_mode )
 		{
 			micro_spec_measure_init();
 			micro_spec_measure_start();
 			micro_spec_wait_for_measurement_done();
 			send_data( data_format );
-
 		}
 	}
 	
@@ -100,18 +99,19 @@ int usr_main( void )
 }
 
 /**
- * Send data to uart3
+ * Local helper for sending data via the uart3 interface.
+ *
+ * \param format	0 (DATA_FORMAT_BIN) send raw data, byte per byte.(eg. 1000 -> 0xE8 0x03)\n
+ * \param format	1 (DATA_FORMAT_ASCII) send the data as in ASCII, as human readable text. (eg. 1000 -> '1' '0' '0' '0')
+ *
+ *
  */
 static void send_data( uint8_t format )
 {
 	if( format == DATA_FORMAT_BIN )
 	{
-		// send metadata
-//		HAL_UART_Transmit( &huart3, (uint8_t *) &sens1_buffer.w_idx, 2, 100 );
-//		HAL_UART_Transmit( &huart3, (uint8_t *) &sens1_buffer.last_valid, 2, 100 );
-
-//send data
-		HAL_UART_Transmit( &huart3, (uint8_t *) hms1.data->base, hms1.data->size2, 100 );
+		//send data
+		HAL_UART_Transmit( &huart3, (uint8_t *) hms1.data->base, hms1.data->size, 100 );
 
 		//send delimiter
 		HAL_UART_Transmit( &huart3, (uint8_t *) delim, sizeof(delim), 100 );
@@ -131,9 +131,9 @@ static void send_data( uint8_t format )
 				uart_printf( &huart3, &uart3_tx_buffer, "%05d ", *rptr );
 			}
 
-			if( i == hms1.data->last_valid )
+			if( rptr == (hms1.data->wptr - 288) )
 			{
-				uart_printf( &huart3, &uart3_tx_buffer, "\n\n" );
+				uart_printf( &huart3, &uart3_tx_buffer, "---------------------------------\n\n" );
 			}
 
 			rptr++;

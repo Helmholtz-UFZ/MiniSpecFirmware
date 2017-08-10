@@ -8,8 +8,12 @@
 #ifndef GLOBAL_CONFIG_H_
 #define GLOBAL_CONFIG_H_
 
-#define UART_DEFAULT_TX_BUFFER_SZ	1024
-#define UART_DEFAULT_RX_BUFFER_SZ	128
+// this should be as least as big that we can send one whole
+// measurement data plus some meta data.
+#define UART_DEFAULT_TX_BUFFER_SZ	(1024)
+
+// small as we just need it for receiving user commands
+#define UART_DEFAULT_RX_BUFFER_SZ	(128)
 
 /** The delay between function call and ST goes high.
  *  This only is used by the timer, to ensure that the initial
@@ -29,39 +33,16 @@
  *  6 CLK_cycles + 48 CLK_cycles = 54 CLK_cycles
  *  6 us         + 48 us         = 54 us
  */
-#define MIN_INTERGATION_TIME	54
+#define MIN_INTERGATION_TIME		(54)
 
-/** The number of pixels the sensor provide. This defines also the number of
- * TRG pulses between MSPARAM_UNUSED_TRG_CNT and the rising edge of SENS_EOS. */
-#define MSPARAM_PIXEL	(288)
+/* The number of pixels the sensor provide.*/
+#define MSPARAM_PIXEL			(288)
+#define MSPARAM_FISRT_VALID		(89)
+#define MSPARAM_SAFETY_FRAME		(10)
+#define MSPARAM_DEFAULT_INTTIME		(110000)
 
-/** The number of 'unused' TRG pulses before the sensor putting out the
- * video data */
-#define MSPARAM_UNUSED_TRG_CNT	(88)
-
-// captured pixel 85,86,87,88 are not valid
-//#define MSPARAM_CAPTURE_PXL_ST	(85)
-#define MSPARAM_CAPTURE_PXL_ST	(1)
-
-
-//288 + 88 = 376 => 4 we make it 4 more
-#define MSPARAM_CAPTURE_PXL_END	(380)
-//#define MSPARAM_CAPTURE_PXL_END	(MSPARAM_PIXEL + MSPARAM_CAPTURE_PXL_ST)
-
-#define MSPARAM_DEFAULT_INTTIME	(110000)
-
-#define TIM2_HIGH	(MSPARAM_PIXEL+20)
-#define TIM2_LOW	(MSPARAM_UNUSED_TRG_CNT)
-
-//#define MSPARAM_TRG_DELAY_CNT	3
-
-/** defines how many timer clock cycles are 1 us. */
-#define TIM2_SCALER		80
-
-#define EXTERNAL_COMMUNICATION_UART_BUFFER_SIZE	256
-
-#define CONTINIOUS_MODE		OFF
-
+#define MSPARAM_CAPTURE_PXL_ST		(MSPARAM_FISRT_VALID - MSPARAM_SAFETY_FRAME)
+#define MSPARAM_CAPTURE_PXL_END		(MSPARAM_FISRT_VALID + MSPARAM_PIXEL + MSPARAM_SAFETY_FRAME)
 
 #define ON	1
 #define OFF	0

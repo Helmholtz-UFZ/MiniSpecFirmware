@@ -16,12 +16,19 @@ uint32_t usr_cmd_data = 0;
 volatile bool uart3_cmd_received;
 volatile uint16_t uart3_cmd_bytes;
 
-uart_buffer_t uart3_rx_buffer;
-uart_buffer_t uart3_tx_buffer;
+static uint8_t rx_mem_block3[UART_DEFAULT_RX_BUFFER_SZ];
+static uint8_t tx_mem_block3[UART_DEFAULT_TX_BUFFER_SZ];
+uart_buffer_t uart3_rx_buffer =
+{ UART_DEFAULT_RX_BUFFER_SZ, rx_mem_block3 };
+uart_buffer_t uart3_tx_buffer =
+{ UART_DEFAULT_TX_BUFFER_SZ, tx_mem_block3 };
 
-static void uart_alloc_mem( void );
 static void parse_cmd( void );
 
+/**
+ * Init the all used uart interfaces to our needs. May overwrite
+ * some preferences CubeMx made.
+ */
 void usart3_init( void )
 {
 	/* Cmd activation
@@ -43,29 +50,14 @@ void usart3_init( void )
 
 	uart3_cmd_received = 0;
 	uart3_cmd_bytes = 0;
-
-	/* set up buffer */
-	uart_alloc_mem();
 }
 
 /**
- * allocate some memory for the uart buffer.
+ * This should be called to check if we received a command
+ * from the user. If so we parse the command and set the
+ * global variable 'usrcmd' to a appropriate value from the
+ * usr_cmd_enum_t.
  */
-static void uart_alloc_mem( void )
-{
-
-	// uart3
-	static uint8_t rx_mem_block3[UART_DEFAULT_RX_BUFFER_SZ];
-	memset( rx_mem_block3, 0, UART_DEFAULT_RX_BUFFER_SZ );
-	uart3_rx_buffer.size = UART_DEFAULT_RX_BUFFER_SZ;
-	uart3_rx_buffer.base = rx_mem_block3;
-
-	static uint8_t tx_mem_block3[UART_DEFAULT_TX_BUFFER_SZ];
-	memset( tx_mem_block3, 0, UART_DEFAULT_TX_BUFFER_SZ );
-	uart3_tx_buffer.size = UART_DEFAULT_TX_BUFFER_SZ;
-	uart3_tx_buffer.base = tx_mem_block3;
-}
-
 void usart3_receive_handler( void )
 {
 	uint16_t sz;
@@ -92,6 +84,9 @@ void usart3_receive_handler( void )
 	}
 }
 
+/**
+ * This is a local helper for parsing the user command.
+ */
 static void parse_cmd( void )
 {
 	char *str, *alias;
@@ -156,7 +151,12 @@ static void parse_cmd( void )
 }
 
 /**
- * This function provide an easy print to any uart line.
+ * This function provide an easy print to any available uart line.
+ *
+ *\param uart_handle 	A pointer to a U(S)ART handle
+ *\param tx_buffer	A pointer to a buffer where the following arguments are copied to and send from.
+ *\param format 	A printf-style format string.
+ *
  */
 int uart_printf( UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const char *__restrict format, ... )
 {
