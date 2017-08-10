@@ -16,10 +16,20 @@
  *  value is not zero*/
 #define PRE_ST_DELAY		1
 
-/** The minimal possible integration time, limited by the sensor.
- * 	Hightime of ST-signal + 48 Clk cycles
- * 	@1Mhz: 1.2us + 48 * 1/10^6 = 49.2 us*/
-#define MIN_INTERGATION_TIME	50
+/** The minimal possible integration time is limited by the sensor and the
+ *  clock frequency.
+ *  The minimal high period of ST-pulse:   6 * CLK_freq
+ *  The minimal low  period of ST-pulse: 375 * CLK_freq
+ *  The minimal full period of ST-pulse: 381 * CLK_freq
+ *
+ *  We have a CLK_freq of 1Mhz
+ *  The integration time is 'high period of ST-pulse' + 48 CLK_cycles
+ *
+ *  So the minimal integration time we can choose is:
+ *  6 CLK_cycles + 48 CLK_cycles = 54 CLK_cycles
+ *  6 us         + 48 us         = 54 us
+ */
+#define MIN_INTERGATION_TIME	54
 
 /** The number of pixels the sensor provide. This defines also the number of
  * TRG pulses between MSPARAM_UNUSED_TRG_CNT and the rising edge of SENS_EOS. */
@@ -30,8 +40,8 @@
 #define MSPARAM_UNUSED_TRG_CNT	(88)
 
 // captured pixel 85,86,87,88 are not valid
-#define MSPARAM_CAPTURE_PXL_ST	(85)
-//#define MSPARAM_CAPTURE_PXL_ST	(89)
+//#define MSPARAM_CAPTURE_PXL_ST	(85)
+#define MSPARAM_CAPTURE_PXL_ST	(1)
 
 
 //288 + 88 = 376 => 4 we make it 4 more

@@ -94,8 +94,8 @@ void usart3_receive_handler( void )
 
 static void parse_cmd( void )
 {
-	char *str;
-	uint16_t sz;
+	char *str, *alias;
+	uint16_t sz, aliassz;
 
 	str = "format=";
 	sz = strlen( str );
@@ -107,8 +107,10 @@ static void parse_cmd( void )
 	}
 
 	str = "measure\r";
+	alias = "m\r";
 	sz = strlen( str );
-	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 )
+	aliassz = strlen( str );
+	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 || memcmp( uart3_rx_buffer.base, alias, aliassz ) == 0 )
 	{
 		usrcmd = USR_CMD_SINGLE_MEASURE_START;
 		return;
@@ -131,8 +133,10 @@ static void parse_cmd( void )
 	}
 
 	str = "itime=";
+	alias = "i=";
 	sz = strlen( str );
-	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 )
+	aliassz = strlen( str );
+	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 || memcmp( uart3_rx_buffer.base, alias, aliassz ) == 0 )
 	{
 		// ignore the pre-string than read as unsigned long int.
 		sscanf( (char*) (uart3_rx_buffer.base + sz), "%lu", &usr_cmd_data );
@@ -141,40 +145,14 @@ static void parse_cmd( void )
 	}
 
 	str = "itime?\r";
+	alias = "i?\r";
 	sz = strlen( str );
-	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 )
+	aliassz = strlen( str );
+	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 || memcmp( uart3_rx_buffer.base, alias, aliassz ) == 0 )
 	{
 		usrcmd = USR_CMD_READ_INTEGRATION_TIME;
 		return;
 	}
-
-	// short aliases
-	str = "m\r";
-	sz = strlen( str );
-	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 )
-	{
-		usrcmd = USR_CMD_SINGLE_MEASURE_START;
-		return;
-	}
-
-	str = "i=";
-	sz = strlen( str );
-	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 )
-	{
-		// ignore the pre-string than read as unsigned long int.
-		sscanf( (char*) (uart3_rx_buffer.base + sz), "%lu", &usr_cmd_data );
-		usrcmd = USR_CMD_WRITE_INTEGRATION_TIME;
-		return;
-	}
-
-	str = "i?\r";
-	sz = strlen( str );
-	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 )
-	{
-		usrcmd = USR_CMD_READ_INTEGRATION_TIME;
-		return;
-	}
-
 }
 
 /**

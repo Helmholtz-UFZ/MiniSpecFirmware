@@ -8,8 +8,6 @@
 #ifndef MICRO_SPEC_H_
 #define MICRO_SPEC_H_
 
-#include "buffer.h"
-
 
 #define MICROSPEC_DATA_BUFFER_MAX_WORDS		(350)
 

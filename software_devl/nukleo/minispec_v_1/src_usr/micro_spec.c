@@ -3,6 +3,49 @@
  *
  *  Created on: May 16, 2017
  *      Author: Bert Palm
+ *
+ *	General Procedure:
+ *	-------------------
+ *
+ *	1. TIM2 is started and generate the start signal (ST) for the sensor with the
+ *	length of integration time - 48us.
+ *
+ *	2. With the falling edge of ST (TIM2 counter reached TIM2ARR) TIM1 is started
+ *	automatically and count the rising edges of the sensors trigger (TRG) signal.
+ *	(Actually we count the falling edges of the inverted TRG signal, what is the
+ *	same, but the inversion is needed for the ADC).
+ *
+ *	3. When TIM1 counter reaches the value in the CCR4 the IR for the ADC_BUSY is
+ *	enabled. With every rising edge on the ADC_BUSY line a new conversion is done
+ *	and we read the result on the ADC parallel port.
+ *
+ *	4. Somewhat later, with the 89th TRG edge after ST was falling, the first
+ *	**valid** value is send from the sensor to the ADC and slightly later we will
+ *	read it from the parallel port of the ADC. This procedure repeats for 288 times
+ *	until all valid values are transmitted.
+ *
+ *	5. After 288 valid values (should be on the 377(288+88+1) TRG edge) the sensor
+ *	generates the end of signal (EOS) signal. We capture the current TRG count in
+ *	the TIM1 CCR2 and an IR is generated. todo There we disable the IR for the
+ *	ADC_BUSY line, stop TIM1 and return to the main program which should be waiting
+ *	in the function micro_spec_wait_for_measurement_done(). At this point we know
+ *	that the last written value in the data buffer is valid and the first valid lies
+ *	288 values before the last one.
+ *
+ *	Safety Mechanisms / Error Handling:
+ *	------------------------------------
+ *
+ *	a) todo If and only if EOS is not generated or not detected by any mischance.
+ *	The TIM1 counter will count up to TIM1ARR, where we throw an IR and do the same
+ *	as procedure as described in 5. additional we set a warning-flag to inform about
+ *	the missing EOS.
+ *
+ *	b) todo For any reason may none or not enough TRG pulses occur. This would lock
+ *	the whole program as we wait for the MS_MEASUREMENT_DONE flag in the function
+ *	micro_spec_wait_for_measurement_done(). Therefore we set a third timer clocked
+ *	by the internal clock and wait for the time 400 TRG pulses would normally need.
+ *	If the timer is not disabled before it will throw an IR where we unlock the
+ *	program and return to a certain state and of course we will set an error-flag.
  */
 
 #include "stm32l4xx_hal.h"
@@ -13,7 +56,7 @@
 
 /* micro sprectrometer 1 handle */
 microspec_t hms1 =
-{ MS_UNINITIALIZED, NULL, MSPARAM_DEFAULT_INTTIME };
+        { MS_UNINITIALIZED, NULL, MSPARAM_DEFAULT_INTTIME };
 
 static uint16_t mem_block1[MICROSPEC_DATA_BUFFER_MAX_WORDS + 1];
 static microspec_buffer ms1_buf =
@@ -91,20 +134,12 @@ void micro_spec_measure_init( void )
 	hms1.status = MS_MEASUREMENT_READY;
 }
 
-
 /**
  * @ brief Start a single measurement.
  *
  *	All further work is done in by the timers TIM1 and TIM2 and in the GPIO ISR.
- *	1. TIM2 generating the start signal (ST) for the sensor
- *	2. TIM1 count the trigger pulses (TRG) from the sensor directly after
- * todo	ST goes low and throw an IR when MSPARAM_TRG_CNT many pulses occurred.
- *	TIM2 is started from the update event (UEV) of TIM1.
- *	3. TIM2 enables the GPIO IR on the EXTADCx_BUSY Pin(s). So if the external
- *	ADC signals "ready to read" we capture 16 bits on 16 input lines and save.
- *	4. After MSPARAM_PIXEL conversions the external ADC we disables the IR on the
- *	EXTADCx_BUSY-PIN and we're done.
- *	(5. we post process the captured data, if necessary.)
+ *	The procedure is described in the header.
+ *
  */
 void micro_spec_measure_start( void )
 {
@@ -172,7 +207,6 @@ static void post_process_values( void )
 	{
 		return;
 	}
-
 
 	while( rptr < hms1.data->wptr )
 	{

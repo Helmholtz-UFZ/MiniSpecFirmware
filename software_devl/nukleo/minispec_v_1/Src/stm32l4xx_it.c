@@ -115,7 +115,6 @@ void EXTI2_IRQHandler(void)
 			// read ADC parallel-port-value
 			value0 = GPIOA->IDR;
 			value1 = GPIOC->IDR;
-			// todo pointer instead ?
 			*(hms1.data->wptr++) = (value1 << 8) | value0;
 		}
 	}
