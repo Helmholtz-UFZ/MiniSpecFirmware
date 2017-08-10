@@ -79,8 +79,6 @@ void MX_DMA_Init(void)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
-        
-  
 
   /* Configure DMA request hdma_memtomem_dma2_channel1 on DMA2_Channel1 */
   hdma_memtomem_dma2_channel1.Instance = DMA2_Channel1;
@@ -96,8 +94,6 @@ void MX_DMA_Init(void)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
-        
-  
 
 }
 

@@ -81,7 +81,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
   /* USER CODE BEGIN USART3_MspInit 0 */
 
   /* USER CODE END USART3_MspInit 0 */
-    /* Peripheral clock enable */
+    /* USART3 clock enable */
     __HAL_RCC_USART3_CLK_ENABLE();
   
     /**USART3 GPIO Configuration    

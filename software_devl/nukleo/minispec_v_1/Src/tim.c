@@ -241,7 +241,7 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
   /* USER CODE BEGIN TIM1_MspInit 0 */
 
   /* USER CODE END TIM1_MspInit 0 */
-    /* Peripheral clock enable */
+    /* TIM1 clock enable */
     __HAL_RCC_TIM1_CLK_ENABLE();
   
     /**TIM1 GPIO Configuration    
@@ -264,7 +264,7 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
   /* USER CODE BEGIN TIM2_MspInit 0 */
 
   /* USER CODE END TIM2_MspInit 0 */
-    /* Peripheral clock enable */
+    /* TIM2 clock enable */
     __HAL_RCC_TIM2_CLK_ENABLE();
   /* USER CODE BEGIN TIM2_MspInit 1 */
 
@@ -275,7 +275,7 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
   /* USER CODE BEGIN TIM5_MspInit 0 */
 
   /* USER CODE END TIM5_MspInit 0 */
-    /* Peripheral clock enable */
+    /* TIM5 clock enable */
     __HAL_RCC_TIM5_CLK_ENABLE();
   /* USER CODE BEGIN TIM5_MspInit 1 */
 
