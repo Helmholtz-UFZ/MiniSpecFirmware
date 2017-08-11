@@ -26,7 +26,7 @@
  *
  *	5. After 288 valid values (should be on the 377(288+88+1) TRG edge) the sensor
  *	generates the end of signal (EOS) signal. We capture the current TRG count in
- *	the TIM1 CCR2 and an IR is generated. todo There we disable the IR for the
+ *	the TIM1 CCR2 and an IR is generated. There we disable the IR for the
  *	ADC_BUSY line, stop TIM1 and return to the main program which should be waiting
  *	in the function micro_spec_wait_for_measurement_done(). At this point we know
  *	that the last written value in the data buffer is valid and the first valid lies
