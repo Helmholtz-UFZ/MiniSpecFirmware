@@ -49,11 +49,10 @@
 
 #define DO_NOT_USE_HAL_IRQ_HANDLER
 
-/** If ON: connect pysically SENS_CLK with ADC1_BUSY, then everything will work,
- * except EOS (not needed). The data is generated random or static.*/
-#define DBG_SIMULATE_SENSOR	OFF
-
-#define DBG_SIMULATE_ALL	OFF
+/* send all data/samples/pixel that we recorded, particularly the data
+ * that is lying in the data buffer before the valid data. If off we
+ * only send the valid samples */
+#define DBG_SEND_ALL		ON
 
 
 #endif /* GLOBAL_CONFIG_H_ */

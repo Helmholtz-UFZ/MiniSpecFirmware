@@ -84,16 +84,19 @@ void EXTI2_IRQHandler( void )
 
 	/**
 	 *
-	 * ADC1_BUSY
+	 * DATA READY TO READ - ADC1 BUSY
+	 * -------------------------------
 	 *
-	 * With every IR we got a falling edge on the ADC-Busy-Line we can read the value
-	 * of the the current ADC conversion. The value is read from the 16 GPIO pins
+	 * With every rising edge on the ADC-Busy-Line we come here and read the last value
+	 * of the ADC conversion. The value is read from the 16 GPIO pins, which are directly
 	 * connected to the parallel port of the ADC.
 	 *
-	 * This IR is enabled by the TIM1_CC_IRQHandler() (counter reaches TIM1_CCR4) and
-	 * disabled by the TIM1_UP_TIM16_IRQHandler() (counter reaches TIM1_ARR).
+	 * This IR is only enabled [1] and disabled [2] in IRQHandler.
 	 *
-	 * TODO use DMA instead of manually save values
+	 * [1] TIM1_CC_IRQHandler()
+	 * [2] TIM1_CC_IRQHandler() or TIM1_UP_TIM16_IRQHandler().
+	 *
+	 * TODO use DMA instead of manually save values ??
 	 */
 
 	uint8_t value0, value1;
@@ -131,9 +134,15 @@ void TIM1_UP_TIM16_IRQHandler( void )
 	/* USER CODE BEGIN TIM1_UP_TIM16_IRQn 0 */
 
 	/*
-	 * We get this IR when the TIM1 counter reaches the value, which is written in the ARR.
-	 * This means we did not got the EOS.
-	 * [1] micro_spec_wait_for_measurement_done() in microspec.c
+	 * ERROR - NO EOS
+	 * ---------------
+	 *
+	 * We get this IR when the TIM1 counter reaches the ARR value. Normally this will not
+	 * occur as we disable this IR if we capture the EOS signal. So if we did not got the
+	 * EOS something went terribly wrong. We return to the main program 'they' [1] can
+	 * handle this.
+	 *
+	 * [1] see micro_spec_wait_for_measurement_done() in micro_spec.c
 	 */
 
 	// clear IR flag
@@ -162,28 +171,18 @@ void TIM1_CC_IRQHandler( void )
 	/* USER CODE BEGIN TIM1_CC_IRQn 0 */
 
 	/*
-	 * This handles the capture compare of the TIM1. If this IR occur we enable the
-	 * IR on the ADC-Busy-Line. So every time when this line change the level from
-	 * high to low we get an IR (EXTI2_IR) an read the value from the ADC. For easy
-	 * examination/debugging one can read the TEST signal on the oscilloscope it is
-	 * set high automatically with this IR and is reset automatically with the
-	 * TIM1_UP_TIM16_IR (when the TIM1 counter reaches the ARR value). It should be
-	 * at least remain high until the EOS occur.
+	 * CAPTURE DATA END - END OF SIGNAL (EOS)
+	 * ---------------------------------------
+	 *
+	 * Here we handle the capturing of the EOS of the sensor. The signal is send after
+	 * all pixel-data (samples) are send by the sensor. If we catch the signal we dis-
+	 * able the IR for the ADC-Busy-Line and return to the main program [1], which is
+	 * waiting for the status to change.
+	 *
+	 * [1] see micro_spec_wait_for_measurement_done() in micro_spec.c
+	 *
 	 */
 
-	// channel 4 compare IR
-	if( (TIM1->SR & TIM_SR_CC4IF) && (TIM1->DIER & TIM_DIER_CC4IE) )
-	{
-		// clear IR flag
-		TIM1->SR &= ~TIM_SR_CC4IF;
-		hms1.status = MS_MEASUREMENT_ONGOING_TIM1_CC;
-
-		// Enable IR for ADC-busy-line.
-		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
-		NVIC_EnableIRQ( EXTI2_IRQn );
-	}
-
-	// channel 2 capture EOS
 	if( (TIM1->SR & TIM_SR_CC2IF) && (TIM1->DIER & TIM_DIER_CC2IE) )
 	{
 		// clear IR flag
@@ -192,8 +191,30 @@ void TIM1_CC_IRQHandler( void )
 
 		// Disable IR for ADC-busy-line. And disable TIM1 UP IR
 		// as we do not need this safety-feature anymore.
-		NVIC_DisableIRQ( EXTI2_IRQn );
 		__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_UPDATE );
+		NVIC_DisableIRQ( EXTI2_IRQn );
+	}
+
+	/*
+	 * CAPTURE DATA START
+	 * -------------------
+	 *
+	 * If we counted MSPARAM_CAPTURE_PXL_ST many TRG edges we start capturing the
+	 * values from the ADC. Here we enable the IR for the ADC-Busy-Line. To examine
+	 * the start of capturing, the TEST signal is set high here (automatically by the
+	 * TIM1). One can read TEST on the oscilloscope.
+	 */
+	if( (TIM1->SR & TIM_SR_CC4IF) && (TIM1->DIER & TIM_DIER_CC4IE) )
+	{
+		// clear IR flag
+		TIM1->SR &= ~TIM_SR_CC4IF;
+
+		// Enable IR for ADC-busy-line.
+		__HAL_GPIO_EXTI_CLEAR_FLAG( EXTADC1_BUSY_Pin );
+		NVIC_ClearPendingIRQ( EXTI2_IRQn );
+		NVIC_EnableIRQ( EXTI2_IRQn );
+
+		hms1.status = MS_MEASUREMENT_ONGOING_TIM1_CC;
 	}
 
 #ifndef DO_NOT_USE_HAL_IRQ_HANDLER

@@ -35,7 +35,7 @@
  *	Safety Mechanisms / Error Handling:
  *	------------------------------------
  *
- *	a) todo If and only if EOS is not generated or not detected by any mischance.
+ *	a) If and only if EOS is not generated or not detected by any mischance.
  *	The TIM1 counter will count up to TIM1ARR, where we throw an IR and do the same
  *	as procedure as described in 5. additional we set a warning-flag to inform about
  *	the missing EOS.
@@ -142,7 +142,7 @@ void micro_spec_deinit( void )
  */
 uint8_t micro_spec_measure_init( void )
 {
-	if( hms1.status != MS_INITIALIZED )
+	if( !(hms1.status == MS_INITIALIZED || hms1.status == MS_MEASUREMENT_DONE) )
 	{
 		return 1;
 	}
@@ -167,10 +167,11 @@ uint8_t micro_spec_measure_init( void )
 uint8_t micro_spec_measure_start( void )
 {
 
-	if( !(hms1.status == MS_MEASUREMENT_READY || hms1.status == MS_MEASUREMENT_DONE) )
+	if( hms1.status != MS_MEASUREMENT_READY )
 	{
 		return 1;
 	}
+
 	uint32_t int_time_cnt;
 
 	// 48 clock-cycles are added to ST-signal-"high" resulting in integrationtime
@@ -179,6 +180,11 @@ uint8_t micro_spec_measure_start( void )
 
 	int_time_cnt = MAX( hms1.integrtion_time, MIN_INTERGATION_TIME );
 	int_time_cnt -= clk_cycl;
+
+
+	// enable safety feature
+	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_UPDATE );
+	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_UPDATE );
 
 	__HAL_TIM_SET_AUTORELOAD( &htim2, int_time_cnt );
 
@@ -243,11 +249,6 @@ static void post_process_values( void )
 
 	uint16_t res, val;
 	uint16_t *rptr = hms1.data->base;
-
-	if( DBG_SIMULATE_SENSOR )
-	{
-		return;
-	}
 
 	while( rptr < hms1.data->wptr )
 	{
