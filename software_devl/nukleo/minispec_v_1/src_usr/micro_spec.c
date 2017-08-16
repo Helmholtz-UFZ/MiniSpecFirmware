@@ -304,7 +304,7 @@ uint32_t micro_spec_set_integration_time( uint32_t int_time )
 /**
  * Enables the clock signal for the sensor.
  *
- * This clock gated through the sensor (with a small delay ~43ns)
+ * This clock gated through the sensor (with a small todo delay ~43ns??)
  * and is given back as TRG-signal from the sensor. The inverted
  * version of the TRG is send to the ADC-trigger input and also
  * we count the falling edges of the inverted TRG as clock source

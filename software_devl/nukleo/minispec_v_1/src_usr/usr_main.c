@@ -13,7 +13,7 @@
 
 static void send_data( uint8_t format );
 static void usr_main_error_handler( uint8_t err );
-static uint8_t data_format = DATA_FORMAT_ASCII; //hack
+static uint8_t data_format = DATA_FORMAT_BIN;
 static bool stream_mode = 0;
 
 int usr_main( void )
@@ -36,7 +36,7 @@ int usr_main( void )
 	NVIC_EnableIRQ( USART3_IRQn );
 	HAL_UART_Receive_IT( &huart3, uart3_rx_buffer.base, uart3_rx_buffer.size );
 
-	uart_printf( &huart3, &uart3_tx_buffer, "\nstart\n" );
+	// uart_printf( &huart3, &uart3_tx_buffer, "\nstart\n" ); todo debug line != data-line messup stuff otherwise
 	while( 1 )
 	{
 		// check if we received a usr command
@@ -97,13 +97,6 @@ int usr_main( void )
 			err = micro_spec_wait_for_measurement_done();
 			if( err ) break;
 			send_data( data_format );
-			/*
-			 * todo IF stream en -> save command (save the last data)
-			 * -> get command (send data via uart) delay next measurement a bit
-			 * -> check rx_buffer after measurement (only in stream mode) for commands
-			 *
-			 *
-			 */
 		}
 
 		if( err )
@@ -129,7 +122,18 @@ static void send_data( uint8_t format )
 	if( format == DATA_FORMAT_BIN )
 	{
 		//send data
-		HAL_UART_Transmit( &huart3, (uint8_t *) (hms1.data->wptr - MSPARAM_PIXEL), MSPARAM_PIXEL, MSPARAM_PIXEL * 100 );
+		HAL_UART_Transmit( &huart3, (uint8_t *) (hms1.data->wptr - MSPARAM_PIXEL), MSPARAM_PIXEL * 2, MSPARAM_PIXEL * 2 * 100 );
+
+//		//test data
+//		uint16_t i;
+//		uint16_t testbuf[288];
+//		for( i = 0; i < 288; ++i )
+//		{
+//			testbuf[i] = i + 1000;
+//		}
+//
+//		HAL_UART_Transmit( &huart3, (uint8_t *) testbuf, 2 * MSPARAM_PIXEL, MSPARAM_PIXEL * 2 * 100 );
+
 	}
 	else
 	{
