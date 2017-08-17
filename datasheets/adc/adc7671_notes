@@ -1,0 +1,17 @@
+ADC 7671
+---------
+
+Added restistor R27:
+ used to have only one powersupply (see pg.4, section "SUPPLYING POWER FOR STAND-ALONE USE" in EVAL-AD76XXEDZ.pdf)
+
+Solder-pads (see back of the PCB):
+ We use 0-5V input range. So we set these pads:
+  s3
+  s4
+  s6 
+  
+ This means (see Table I. in AD7671.pdf):
+  INA: INGND
+  INB: V_in
+  INC: V_in
+  IND: V_in
