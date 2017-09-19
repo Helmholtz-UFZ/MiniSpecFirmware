@@ -128,43 +128,6 @@ void EXTI2_IRQHandler( void )
 }
 
 /**
- * @brief This function handles TIM1 update interrupt and TIM16 global interrupt.
- */
-void TIM1_UP_TIM16_IRQHandler( void )
-{
-	/* USER CODE BEGIN TIM1_UP_TIM16_IRQn 0 */
-
-	/*
-	 * ERROR - NO EOS
-	 * ---------------
-	 *
-	 * We get this IR when the TIM1 counter reaches the ARR value. Normally this will not
-	 * occur as we disable this IR if we capture the EOS signal. So if we did not got the
-	 * EOS something went terribly wrong. We return to the main program 'they' [1] can
-	 * handle this.
-	 *
-	 * [1] see micro_spec_wait_for_measurement_done() in micro_spec.c
-	 */
-
-	// clear IR flag
-	TIM1->SR &= ~TIM_SR_UIF;
-
-	// Disable IR for ADC-busy-line.
-	NVIC_DisableIRQ( EXTI2_IRQn );
-
-	hms1.status = MS_MEASUREMENT_ERR_NO_EOS;
-
-#ifndef DO_NOT_USE_HAL_IRQ_HANDLER
-#error this_will_fail
-	/* USER CODE END TIM1_UP_TIM16_IRQn 0 */
-	HAL_TIM_IRQHandler(&htim1);
-	/* USER CODE BEGIN TIM1_UP_TIM16_IRQn 1 */
-#endif  /* DO_NOT_USE_HAL_IRQ_HANDLER */
-#define TIM1_UP_TIM16_IRQHandler__OK
-	/* USER CODE END TIM1_UP_TIM16_IRQn 1 */
-}
-
-/**
  * @brief This function handles TIM1 capture compare interrupt.
  */
 void TIM1_CC_IRQHandler( void )
@@ -199,11 +162,10 @@ void TIM1_CC_IRQHandler( void )
 			hms1.status = MS_MEASUREMENT_CAPTURED_EOS;
 		}
 
-		// Disable IR for ADC-busy-line. And disable TIM1 UP IR
-		// as we do not need this safety-feature anymore. We also
-		// disable EOS.
+		// Disable IR for ADC-busy-line. We also disable EOS,
+		// as we may got it early and we don't want to catch
+		// an other or many others.
 		__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_CC2 );
-		__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_UPDATE );
 		NVIC_DisableIRQ( EXTI2_IRQn );
 	}
 
@@ -280,6 +242,13 @@ void TIM5_IRQHandler( void )
 	/* USER CODE END TIM5_IRQn 0 */
 	HAL_TIM_IRQHandler( &htim5 );
 	/* USER CODE BEGIN TIM5_IRQn 1 */
+
+	// Disable IR for ADC-busy-line...
+	NVIC_DisableIRQ( EXTI2_IRQn );
+
+	// ..and the EOS capturing.
+	__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_CC2 );
+
 #define TIM5_IRQHandler__OK
 	/* USER CODE END TIM5_IRQn 1 */
 }
@@ -292,7 +261,6 @@ void TIM5_IRQHandler( void )
  * kinds of errors as they are hard to track and can happen easily.
  */
 #if (!defined EXTI2_IRQHandler__OK \
-	|| !defined TIM1_UP_TIM16_IRQHandler__OK \
 	|| !defined TIM1_CC_IRQHandler__OK \
 	|| !defined USART3_IRQHandler__OK \
 	|| !defined SysTick_Handler__OK \

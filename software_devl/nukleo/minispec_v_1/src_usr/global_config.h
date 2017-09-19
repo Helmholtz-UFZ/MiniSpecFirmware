@@ -34,6 +34,7 @@
  *  6 us         + 48 us         = 54 us
  */
 #define MIN_INTERGATION_TIME		(54)
+#define MAX_INTERGATION_TIME		(1000000)
 
 /* The number of pixels the sensor provide.*/
 #define MSPARAM_PIXEL			(288)
@@ -51,7 +52,7 @@
 
 /* send all data/samples/pixel that we recorded, particularly the data
  * that is lying in the data buffer before the valid data. If off we
- * only send the valid samples */
+ * only send the valid samples (for DATA_FORMAT_ASCII only)*/
 #define DBG_SEND_ALL		ON
 
 

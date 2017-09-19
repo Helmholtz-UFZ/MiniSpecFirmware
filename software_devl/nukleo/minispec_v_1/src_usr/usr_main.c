@@ -23,7 +23,6 @@ int usr_main( void )
 	// we enable IRs where/when we need them
 	HAL_NVIC_DisableIRQ( USART3_IRQn );
 	HAL_NVIC_DisableIRQ( TIM1_CC_IRQn );
-	HAL_NVIC_DisableIRQ( TIM1_UP_TIM16_IRQn );
 	HAL_NVIC_DisableIRQ( EXTI2_IRQn );
 
 	usart3_init();
@@ -193,6 +192,17 @@ static void usr_main_error_handler( uint8_t err )
 		}
 
 		errcode = ERRC_NO_EOS;
+		stream_mode = 0;
+		micro_spec_deinit();
+		break;
+
+	case MS_MEASUREMENT_ERR_EOS_EARLY:
+		if( data_format == DATA_FORMAT_ASCII )
+		{
+			uart_printf( &huart3, &uart3_tx_buffer, "ERR: EOS EARLY. Something went wrong, please debug manually.\n" );
+		}
+
+		errcode = ERRC_EOS_EARLY;
 		stream_mode = 0;
 		micro_spec_deinit();
 		break;

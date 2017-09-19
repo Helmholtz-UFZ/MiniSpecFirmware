@@ -360,7 +360,6 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
     HAL_GPIO_DeInit(GPIOA, SENS_EOS_Pin|TEST_PIN_Pin|SENS_TRG_Pin);
 
     /* TIM1 interrupt Deinit */
-    HAL_NVIC_DisableIRQ(TIM1_UP_TIM16_IRQn);
     HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
   /* USER CODE BEGIN TIM1_MspDeInit 1 */
 

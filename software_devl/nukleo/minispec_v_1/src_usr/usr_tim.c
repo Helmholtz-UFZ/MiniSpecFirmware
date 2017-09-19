@@ -34,4 +34,6 @@ void tim2_Init( void )
 	__HAL_TIM_SET_COMPARE( &htim2, TIM_CHANNEL_3, 1 );
 }
 
+//todo tim5 init / define timeouttime after itime
+
 

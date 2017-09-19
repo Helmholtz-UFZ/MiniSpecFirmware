@@ -90,32 +90,33 @@ void micro_spec_init( void )
 	// enable TIM channels
 	// Don't use TIM_CCxChannelCmd() (which also use the HAL) because it
 	// will generate a short uncertain state, which will result in a high
-	// with an external pull-up resistor (as the level-translator has internal!)
+	// with an external pull-up resistor (as the level-translator has internal!).
+	// TIM_CCxChannelCmd() is also used by the HAL.
 
-	// enable TIM1 IRs: update, channel 2 and 4
-	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_UPDATE );
-	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_UPDATE );
+	//TIM1
+	// enable the IR's for channel 2 and 4 in the module
 	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC4 );
 	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC4 );
 	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC2 );
 	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC2 );
 
-	// prepare tim1 channel 2 for capturing EOS
+	// prepare channel 2 for capturing EOS
 	TIM1->CCER |= TIM_CCER_CC2E;
 	TIM1->CCR2 = 0;
 
-	// enable tim1 channel 4 to output TEST
+	// enable channel 4 to output TEST
 	TIM1->CCER |= TIM_CCER_CC4E;
 	__HAL_TIM_MOE_ENABLE( &htim1 );
 
+	// Enable IR as we want to end the measuring sequence if
+	// we capture EOS
+	NVIC_ClearPendingIRQ( TIM1_CC_IRQn );
+	NVIC_EnableIRQ( TIM1_CC_IRQn );
+
+	//TIM2
 	// enable tim2 channel 3 to output ST
 	TIM2->CCER |= TIM_CCER_CC3E;
 
-	// Enable TIM1 IRs
-	NVIC_ClearPendingIRQ( TIM1_UP_TIM16_IRQn );
-	NVIC_ClearPendingIRQ( TIM1_CC_IRQn );
-	NVIC_EnableIRQ( TIM1_UP_TIM16_IRQn );
-	NVIC_EnableIRQ( TIM1_CC_IRQn );
 
 	enable_sensor_clk();
 	HAL_Delay( 1 );
@@ -126,9 +127,6 @@ void micro_spec_deinit( void )
 {
 	HAL_Delay( 1 );
 	disable_sensor_clk();
-
-	// Enable TIM1 IRs
-	NVIC_DisableIRQ( TIM1_UP_TIM16_IRQn );
 	NVIC_DisableIRQ( TIM1_CC_IRQn );
 	hms1.status = MS_UNINITIALIZED;
 }
@@ -173,25 +171,25 @@ uint8_t micro_spec_measure_start( void )
 
 	uint32_t int_time_cnt;
 
+	HAL_SuspendTick();
+	//todo disable uart ?? ,ove the above somewhere else??
+
 	// 48 clock-cycles are added to ST-signal-"high" resulting in integrationtime
 	// (see c12880ma_kacc1226e.pdf)
-	const uint8_t clk_cycl = 48;
+	const uint8_t clk_cycl = 48;	//todo define
 
 	int_time_cnt = MAX( hms1.integrtion_time, MIN_INTERGATION_TIME );
 	int_time_cnt -= clk_cycl;
 
-	// enable safety feature
-	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_UPDATE );
-	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_UPDATE );
-
-	// enable eos capture
+	// EOS prepare.
+	// Reset the capturing reg and enable the capturing IR
+	TIM1->CCR2 = 0;
 	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC2 );
 	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC2 );
 
+	// set the countervalue for integrationtime on TIM2
 	__HAL_TIM_SET_AUTORELOAD( &htim2, int_time_cnt );
 
-	// reset the capturing reg for the eos
-	TIM1->CCR2 = 0;
 
 	TIM2->CR1 |= TIM_CR1_CEN;
 	hms1.status = MS_MEASUREMENT_STARTED;
@@ -209,6 +207,7 @@ uint8_t micro_spec_wait_for_measurement_done( void )
 {
 	if( hms1.status < MS_MEASUREMENT_STARTED )
 	{
+		HAL_ResumeTick();
 		return 1;
 	}
 
@@ -216,6 +215,8 @@ uint8_t micro_spec_wait_for_measurement_done( void )
 	{
 		// busy waiting
 	}
+
+	HAL_ResumeTick();
 
 	post_process_values();
 
@@ -282,7 +283,7 @@ static void post_process_values( void )
  * @brief 	Set the integration time in us for the sensor.
  *
  * The minimum is defined by MIN_INTERGATION_TIME ( 50 us )
- * The maximum is (UINT32_MAX / TIM2_SCALER) - PRE_ST_DELAY ( ~4200 sec )
+ * The maximum is 1 second
  *
  * @param int_time	The integration time in us
  * @return The integration time value set
@@ -293,6 +294,10 @@ uint32_t micro_spec_set_integration_time( uint32_t int_time )
 	if( int_time < MIN_INTERGATION_TIME )
 	{
 		hms1.integrtion_time = MIN_INTERGATION_TIME;
+	}
+	else if( int_time > MAX_INTERGATION_TIME )
+	{
+		hms1.integrtion_time = MAX_INTERGATION_TIME;
 	}
 	else
 	{
