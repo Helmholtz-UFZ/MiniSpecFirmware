@@ -122,24 +122,17 @@ static void send_data( uint8_t format )
 	if( format == DATA_FORMAT_BIN )
 	{
 		//send data
+		uint32_t no_err = ERRC_NO_ERROR;
+		HAL_UART_Transmit( &huart3, (uint8_t *) &no_err, 2, 200 );
 		HAL_UART_Transmit( &huart3, (uint8_t *) (hms1.data->wptr - MSPARAM_PIXEL), MSPARAM_PIXEL * 2, MSPARAM_PIXEL * 2 * 100 );
-
-//		//test data
-//		uint16_t i;
-//		uint16_t testbuf[288];
-//		for( i = 0; i < 288; ++i )
-//		{
-//			testbuf[i] = i + 1000;
-//		}
-//
-//		HAL_UART_Transmit( &huart3, (uint8_t *) testbuf, 2 * MSPARAM_PIXEL, MSPARAM_PIXEL * 2 * 100 );
-
+		
 	}
-	else
+
+	else if( format == DATA_FORMAT_ASCII )
 	{
 		uint16_t *rptr = hms1.data->base;
 		uint16_t i = 0;
-
+		
 		while( rptr < hms1.data->wptr )
 		{
 			if( DBG_SEND_ALL == OFF && rptr < (hms1.data->wptr - MSPARAM_PIXEL) )
@@ -154,7 +147,7 @@ static void send_data( uint8_t format )
 				uart_printf( &huart3, &uart3_tx_buffer, "\n"HEADER_STR );
 				i = 0;
 			}
-
+			
 			if( i % 10 == 0 )
 			{
 				uart_printf( &huart3, &uart3_tx_buffer, "\n%03d   %05d ", i, *rptr );
@@ -163,20 +156,23 @@ static void send_data( uint8_t format )
 			{
 				uart_printf( &huart3, &uart3_tx_buffer, "%05d ", *rptr );
 			}
-
+			
 			rptr++;
 			i++;
 		}
 		uart_printf( &huart3, &uart3_tx_buffer, "\n"DELIMITER_STR"\n\n" );
 	}
+	
 }
 
 static void usr_main_error_handler( uint8_t err )
 {
+
+	uint32_t errcode = ERRC_UNKNOWN;
 	switch( err ) {
 	case 0:
 		return;
-
+		
 	case MS_MEASUREMENT_ERR_TIMEOUT:
 		if( data_format == DATA_FORMAT_ASCII )
 		{
@@ -185,20 +181,26 @@ static void usr_main_error_handler( uint8_t err )
 				"2. ADC/sensor powered ?\n"
 				"3. check physical connections" );
 		}
+		errcode = ERRC_TIMEOUT;
 		stream_mode = 0;
 		micro_spec_deinit();
 		break;
-
+		
 	case MS_MEASUREMENT_ERR_NO_EOS:
 		if( data_format == DATA_FORMAT_ASCII )
 		{
 			uart_printf( &huart3, &uart3_tx_buffer, "ERR: NO EOS. Something went wrong, please debug manually.\n" );
 		}
+
+		errcode = ERRC_NO_EOS;
 		stream_mode = 0;
 		micro_spec_deinit();
 		break;
-
+		
 	default:
 		break;
 	}
+
+	// send error code
+	HAL_UART_Transmit( &huart3, (uint8_t *) &errcode, 2, 200 );
 }

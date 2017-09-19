@@ -174,7 +174,7 @@ void TIM1_CC_IRQHandler( void )
 	 * CAPTURE DATA END - END OF SIGNAL (EOS)
 	 * ---------------------------------------
 	 *
-	 * Here we handle the capturing of the EOS of the sensor. The signal is send after
+	 * Here we handle the capturing of the EOS of the sensor. EOS signal is send after
 	 * all pixel-data (samples) are send by the sensor. If we catch the signal we dis-
 	 * able the IR for the ADC-Busy-Line and return to the main program [1], which is
 	 * waiting for the status to change.
@@ -187,10 +187,21 @@ void TIM1_CC_IRQHandler( void )
 	{
 		// clear IR flag
 		TIM1->SR &= ~TIM_SR_CC2IF;
-		hms1.status = MS_MEASUREMENT_CAPTURED_EOS;
+
+		// we got the eos to early.
+		if( hms1.data->wptr < (hms1.data->base + MSPARAM_PIXEL) )
+		{
+			hms1.status = MS_MEASUREMENT_ERR_EOS_EARLY;
+		}
+		else
+		{
+			hms1.status = MS_MEASUREMENT_CAPTURED_EOS;
+		}
 
 		// Disable IR for ADC-busy-line. And disable TIM1 UP IR
-		// as we do not need this safety-feature anymore.
+		// as we do not need this safety-feature anymore. We also
+		// disable EOS.
+		__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_CC2 );
 		__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_UPDATE );
 		NVIC_DisableIRQ( EXTI2_IRQn );
 	}

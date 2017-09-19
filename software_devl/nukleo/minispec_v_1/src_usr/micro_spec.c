@@ -65,7 +65,6 @@
 #include "global_include.h"
 #include "tim.h"
 
-
 static uint16_t mem_block1[MICROSPEC_DATA_BUFFER_MAX_WORDS + 1];
 
 static microspec_buffer_t ms1_buf =
@@ -91,7 +90,7 @@ void micro_spec_init( void )
 	// enable TIM channels
 	// Don't use TIM_CCxChannelCmd() (which also use the HAL) because it
 	// will generate a short uncertain state, which will result in a high
-	// with an external pull-up resistor.
+	// with an external pull-up resistor (as the level-translator has internal!)
 
 	// enable TIM1 IRs: update, channel 2 and 4
 	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_UPDATE );
@@ -167,7 +166,7 @@ uint8_t micro_spec_measure_init( void )
 uint8_t micro_spec_measure_start( void )
 {
 
-	if( hms1.status != MS_MEASUREMENT_READY )
+	if( hms1.status < MS_MEASUREMENT_READY )
 	{
 		return 1;
 	}
@@ -181,10 +180,13 @@ uint8_t micro_spec_measure_start( void )
 	int_time_cnt = MAX( hms1.integrtion_time, MIN_INTERGATION_TIME );
 	int_time_cnt -= clk_cycl;
 
-
 	// enable safety feature
 	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_UPDATE );
 	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_UPDATE );
+
+	// enable eos capture
+	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC2 );
+	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC2 );
 
 	__HAL_TIM_SET_AUTORELOAD( &htim2, int_time_cnt );
 
@@ -205,28 +207,27 @@ uint8_t micro_spec_measure_start( void )
  */
 uint8_t micro_spec_wait_for_measurement_done( void )
 {
-	if( hms1.status != MS_MEASUREMENT_STARTED )
+	if( hms1.status < MS_MEASUREMENT_STARTED )
 	{
 		return 1;
 	}
 
-	while( hms1.status != MS_MEASUREMENT_CAPTURED_EOS && hms1.status != MS_MEASUREMENT_ERR_NO_EOS )
+	while( hms1.status < MS_MEASUREMENT_CAPTURED_EOS )
 	{
 		// busy waiting
 	}
 
 	post_process_values();
 
-	if( hms1.status == MS_MEASUREMENT_ERR_NO_EOS )
-	{
-		return 1;
-	}
-	else
+	if( hms1.status == MS_MEASUREMENT_CAPTURED_EOS )
 	{
 		hms1.status = MS_MEASUREMENT_DONE;
 		return 0;
 	}
-		
+	else
+	{
+		return 1;
+	}
 }
 
 /**

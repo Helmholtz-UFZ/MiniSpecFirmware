@@ -74,6 +74,15 @@
 #define DATA_FORMAT_BIN		0
 #define DATA_FORMAT_ASCII	1
 
+typedef enum
+{
+	ERRC_NO_ERROR = 0,
+	ERRC_UNKNOWN,
+	ERRC_NO_EOS,
+	ERRC_EOS_EARLY,
+	ERRC_TIMEOUT
+} error_code;
+
 #define HEADER_STR	"          0     1     2     3     4     5     6     7     8     9"
 #define DELIMITER_STR   "-----------------------------------------------------------------"
 
