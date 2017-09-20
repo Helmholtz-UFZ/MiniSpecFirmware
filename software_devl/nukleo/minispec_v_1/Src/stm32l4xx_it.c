@@ -249,6 +249,8 @@ void TIM5_IRQHandler( void )
 	// ..and the EOS capturing.
 	__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_CC2 );
 
+	hms1.status = MS_MEASUREMENT_ERR_TIMEOUT;
+
 #define TIM5_IRQHandler__OK
 	/* USER CODE END TIM5_IRQn 1 */
 }

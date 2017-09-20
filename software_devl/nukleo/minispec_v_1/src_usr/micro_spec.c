@@ -100,6 +100,7 @@ void micro_spec_init( void )
 	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC2 );
 	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC2 );
 
+
 	// prepare channel 2 for capturing EOS
 	TIM1->CCER |= TIM_CCER_CC2E;
 	TIM1->CCR2 = 0;
@@ -116,6 +117,10 @@ void micro_spec_init( void )
 	//TIM2
 	// enable tim2 channel 3 to output ST
 	TIM2->CCER |= TIM_CCER_CC3E;
+
+	//TIM5
+	__HAL_TIM_CLEAR_IT( &htim5, TIM_IT_UPDATE );
+	__HAL_TIM_ENABLE_IT( &htim5, TIM_IT_UPDATE );
 
 
 	enable_sensor_clk();
@@ -215,6 +220,8 @@ uint8_t micro_spec_wait_for_measurement_done( void )
 	{
 		// busy waiting
 	}
+
+	__HAL_TIM_DISABLE_IT( &htim5, TIM_IT_UPDATE );
 
 	HAL_ResumeTick();
 
