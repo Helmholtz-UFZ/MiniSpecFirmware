@@ -192,6 +192,7 @@ void TIM1_CC_IRQHandler(void)
 		// as we may got it early and we don't want to catch
 		// an other or many others.
 		__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_CC2 );
+		NVIC_ClearPendingIRQ( EXTI2_IRQn );
 		NVIC_DisableIRQ( EXTI2_IRQn );
 	}
 

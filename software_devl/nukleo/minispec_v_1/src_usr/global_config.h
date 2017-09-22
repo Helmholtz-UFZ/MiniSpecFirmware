@@ -38,12 +38,26 @@
 
 /* The number of pixels the sensor provide.*/
 #define MSPARAM_PIXEL			(288)
-#define MSPARAM_FISRT_VALID		(89)
-#define MSPARAM_SAFETY_FRAME		(10)
-#define MSPARAM_DEFAULT_INTTIME		(1100)
 
-#define MSPARAM_CAPTURE_PXL_ST		(MSPARAM_FISRT_VALID - MSPARAM_SAFETY_FRAME)
-#define MSPARAM_CAPTURE_PXL_END		(MSPARAM_FISRT_VALID + MSPARAM_PIXEL + MSPARAM_SAFETY_FRAME)
+/** count from the first rising edge of TRG after ST goes low
+ * to the first rising edge when VID is put out.*/
+#define MSPARAM_FISRT_VALID		(88)
+
+// take adc delay on aquireing and enableing in account
+#define MSPARAM_SAFETY_FRAME		(8)
+#define MSPARAM_DEFAULT_INTTIME		(1100)
+#define ADC_DELAY			(1)
+/** to test watch the TEST signal on pin todo with the oszilloscope and
+ * set MSPARAM_SAFETY_FRAME to zero, than the rising edge should be at
+ * the first valid VID pixel (synchron with rising edge of TRG) and the
+ * falling edge should be on the rising edge of TRG right *after* the last
+ * valid pixel.
+ *
+ * It helps to set the integration time very high, to see the valid pixel
+ * range on the VID-signal-line.
+ */
+#define MSPARAM_CAPTURE_PXL_ST		((MSPARAM_FISRT_VALID) - (MSPARAM_SAFETY_FRAME) )
+#define MSPARAM_CAPTURE_PXL_END		((MSPARAM_FISRT_VALID) + (MSPARAM_PIXEL) + (MSPARAM_SAFETY_FRAME) )
 
 #define ON	1
 #define OFF	0
