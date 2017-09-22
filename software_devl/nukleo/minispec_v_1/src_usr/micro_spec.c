@@ -100,7 +100,6 @@ void micro_spec_init( void )
 	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC2 );
 	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC2 );
 
-
 	// prepare channel 2 for capturing EOS
 	TIM1->CCER |= TIM_CCER_CC2E;
 	TIM1->CCR2 = 0;
@@ -121,7 +120,6 @@ void micro_spec_init( void )
 	//TIM5
 	__HAL_TIM_CLEAR_IT( &htim5, TIM_IT_UPDATE );
 	__HAL_TIM_ENABLE_IT( &htim5, TIM_IT_UPDATE );
-
 
 	enable_sensor_clk();
 	HAL_Delay( 1 );
@@ -194,7 +192,6 @@ uint8_t micro_spec_measure_start( void )
 
 	// set the countervalue for integrationtime on TIM2
 	__HAL_TIM_SET_AUTORELOAD( &htim2, int_time_cnt );
-
 
 	TIM2->CR1 |= TIM_CR1_CEN;
 	hms1.status = MS_MEASUREMENT_STARTED;
@@ -327,16 +324,21 @@ uint32_t micro_spec_set_integration_time( uint32_t int_time )
  */
 void enable_sensor_clk( void )
 {
-	HAL_GPIO_WritePin( SENS_CLK_GPIO_Port, SENS_CLK_Pin, GPIO_PIN_RESET );
-	GPIO_InitTypeDef GPIO_InitStruct;
-	/*Configure GPIO pin for the Sensors CLK
-	 * STM32 --> SENS1 & SENS2*/
-	GPIO_InitStruct.Pin = SENS_CLK_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
-	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
+	TIM3->CCER |= TIM_CCER_CC3E;
+//	TIM3->CCR3 = 40;
+	TIM3->CCER |= TIM_CCER_CC4E;
+//	TIM3->CCR4 = 40;
+	TIM3->CR1 |= TIM_CR1_CEN;
+//	HAL_GPIO_WritePin( SENS_CLK_GPIO_Port, SENS_CLK_Pin, GPIO_PIN_RESET );
+//	GPIO_InitTypeDef GPIO_InitStruct;
+//	/*Configure GPIO pin for the Sensors CLK
+//	 * STM32 --> SENS1 & SENS2*/
+//	GPIO_InitStruct.Pin = SENS_CLK_Pin;
+//	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+//	GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
+//	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
 
 }
 /**
@@ -345,13 +347,13 @@ void enable_sensor_clk( void )
  */
 void disable_sensor_clk( void )
 {
-	GPIO_InitTypeDef GPIO_InitStruct;
-	/*Configure GPIO pin for the Sensors CLK
-	 * STM32 --> SENS1 & SENS2*/
-	GPIO_InitStruct.Pin = SENS_CLK_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
-	HAL_GPIO_WritePin( SENS_CLK_GPIO_Port, SENS_CLK_Pin, GPIO_PIN_RESET );
+//	GPIO_InitTypeDef GPIO_InitStruct;
+//	/*Configure GPIO pin for the Sensors CLK
+//	 * STM32 --> SENS1 & SENS2*/
+//	GPIO_InitStruct.Pin = SENS_CLK_Pin;
+//	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
+//	HAL_GPIO_WritePin( SENS_CLK_GPIO_Port, SENS_CLK_Pin, GPIO_PIN_RESET );
 }
 
