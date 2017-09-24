@@ -282,8 +282,8 @@ static void post_process_values( void )
 		rptr++;
 	}
 
-	//todo
-	hms1.data->wptr -= 2;
+	//todo check if still necessary
+//	hms1.data->wptr -= 2;
 }
 
 /**
