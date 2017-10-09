@@ -39,7 +39,7 @@ int usr_main( void )
 	while( 1 )
 	{
 		// check if we received a usr command
-		usart3_receive_handler();
+		usart3_receive_handler(); //todo rename to parse(char* buffer, int length)
 
 		switch( usrcmd ) {
 		case USR_CMD_SINGLE_MEASURE_START:

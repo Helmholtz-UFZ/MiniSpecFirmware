@@ -178,8 +178,15 @@ void TIM1_CC_IRQHandler(void)
 		// clear IR flag
 		TIM1->SR &= ~TIM_SR_CC2IF;
 
-		// we got the eos to early.
-		if( hms1.data->wptr < (hms1.data->base + MSPARAM_PIXEL) )
+		// Disable IR for ADC-busy-line. We also disable EOS,
+		// as we may got it early and we don't want to catch
+		// an other or many others.
+		__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_CC2 );
+		NVIC_ClearPendingIRQ( EXTI2_IRQn );
+		NVIC_DisableIRQ( EXTI2_IRQn );
+
+		// do we got the eos to early ?
+		if( hms1.data->wptr < (hms1.data->base + MSPARAM_PIXEL) ) //todo pxl+frame PXL_TO_CAPTURE
 		{
 			hms1.status = MS_MEASUREMENT_ERR_EOS_EARLY;
 		}
@@ -188,12 +195,6 @@ void TIM1_CC_IRQHandler(void)
 			hms1.status = MS_MEASUREMENT_CAPTURED_EOS;
 		}
 
-		// Disable IR for ADC-busy-line. We also disable EOS,
-		// as we may got it early and we don't want to catch
-		// an other or many others.
-		__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_CC2 );
-		NVIC_ClearPendingIRQ( EXTI2_IRQn );
-		NVIC_DisableIRQ( EXTI2_IRQn );
 	}
 
 	/*
@@ -211,7 +212,7 @@ void TIM1_CC_IRQHandler(void)
 		TIM1->SR &= ~TIM_SR_CC4IF;
 
 		// Enable IR for ADC-busy-line.
-		__HAL_GPIO_EXTI_CLEAR_FLAG( EXTADC1_BUSY_Pin );
+		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
 		NVIC_ClearPendingIRQ( EXTI2_IRQn );
 		NVIC_EnableIRQ( EXTI2_IRQn );
 

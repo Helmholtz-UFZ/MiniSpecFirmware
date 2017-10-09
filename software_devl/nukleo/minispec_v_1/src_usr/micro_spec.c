@@ -90,8 +90,10 @@ void micro_spec_init( void )
 	// enable TIM channels
 	// Don't use TIM_CCxChannelCmd() (which also use the HAL) because it
 	// will generate a short uncertain state, which will result in a high
-	// with an external pull-up resistor (as the level-translator has internal!).
+	// with an external pull-up resistor (as the level-translator has them internal!).
 	// TIM_CCxChannelCmd() is also used by the HAL.
+
+	//todo call here TIMx_init()
 
 	//TIM1
 	// enable the IR's for channel 2 and 4 in the module
@@ -108,8 +110,7 @@ void micro_spec_init( void )
 	TIM1->CCER |= TIM_CCER_CC4E;
 	__HAL_TIM_MOE_ENABLE( &htim1 );
 
-	// Enable IR as we want to end the measuring sequence if
-	// we capture EOS
+	// Enable TIM1 IR in the NVIC
 	NVIC_ClearPendingIRQ( TIM1_CC_IRQn );
 	NVIC_EnableIRQ( TIM1_CC_IRQn );
 
@@ -163,6 +164,8 @@ uint8_t micro_spec_measure_init( void )
  * After this call micro_spec_wait_for_measurement_done() to wait until the
  * measurement is done.
  *
+ *todo alle funktionen zusammenlegen bzw. static machen. nur noch ein 3 aufrufe von außen:
+ *todo init measure deinit !
  */
 uint8_t micro_spec_measure_start( void )
 {
@@ -177,12 +180,10 @@ uint8_t micro_spec_measure_start( void )
 	HAL_SuspendTick();
 	//todo disable uart ?? ,ove the above somewhere else??
 
-	// 48 clock-cycles are added to ST-signal-"high" resulting in integrationtime
-	// (see c12880ma_kacc1226e.pdf)
-	const uint8_t clk_cycl = 48;	//todo define
-
+	// 48 clock-cycles are added by the sensor to "high" of the ST-signal
+	// resulting in the integrationtime (see c12880ma_kacc1226e.pdf)
 	int_time_cnt = MAX( hms1.integrtion_time, MIN_INTERGATION_TIME );
-	int_time_cnt -= clk_cycl;
+	int_time_cnt -= ITIME_CORRECTION;
 
 	// EOS prepare.
 	// Reset the capturing reg and enable the capturing IR
@@ -328,21 +329,8 @@ uint32_t micro_spec_set_integration_time( uint32_t int_time )
 void enable_sensor_clk( void )
 {
 	TIM3->CCER |= TIM_CCER_CC3E;
-//	TIM3->CCR3 = 40;
 	TIM3->CCER |= TIM_CCER_CC4E;
-//	TIM3->CCR4 = 40;
 	TIM3->CR1 |= TIM_CR1_CEN;
-//	HAL_GPIO_WritePin( SENS_CLK_GPIO_Port, SENS_CLK_Pin, GPIO_PIN_RESET );
-//	GPIO_InitTypeDef GPIO_InitStruct;
-//	/*Configure GPIO pin for the Sensors CLK
-//	 * STM32 --> SENS1 & SENS2*/
-//	GPIO_InitStruct.Pin = SENS_CLK_Pin;
-//	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-//	GPIO_InitStruct.Pull = GPIO_NOPULL;
-//	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-//	GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
-//	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
-
 }
 /**
  * Disable the sensor clock. When the CLK-signal is deactivated,
@@ -350,13 +338,6 @@ void enable_sensor_clk( void )
  */
 void disable_sensor_clk( void )
 {
-//	GPIO_InitTypeDef GPIO_InitStruct;
-//	/*Configure GPIO pin for the Sensors CLK
-//	 * STM32 --> SENS1 & SENS2*/
-//	GPIO_InitStruct.Pin = SENS_CLK_Pin;
-//	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-//	GPIO_InitStruct.Pull = GPIO_NOPULL;
-//	HAL_GPIO_Init( SENS_CLK_GPIO_Port, &GPIO_InitStruct );
-//	HAL_GPIO_WritePin( SENS_CLK_GPIO_Port, SENS_CLK_Pin, GPIO_PIN_RESET );
+	TIM3->CR1 &= ~TIM_CR1_CEN;
 }
 

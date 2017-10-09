@@ -58,9 +58,14 @@
  *
  * It helps to set the integration time very high, to see the valid pixel
  * range on the VID-signal-line.
- */
+ * todo rm MSPARAM_
+ * */
 #define MSPARAM_CAPTURE_PXL_ST		((MSPARAM_FISRT_TRG_ON_VALID_PXL) - (MSPARAM_SAFETY_FRAME) )
 #define MSPARAM_CAPTURE_PXL_END		((MSPARAM_FISRT_TRG_ON_VALID_PXL) + (MSPARAM_PIXEL) + (MSPARAM_SAFETY_FRAME) )
+//todo check this (+2 invalid) add pre_valid(falling ST to first valid TRG), post_valid (last valid TRG to rising EOS)
+#define PXL_TO_CAPTURE			((MSPARAM_PIXEL+MSPARAM_SAFETY_FRAME))
+
+#define ITIME_CORRECTION		(48)
 
 #define ON	1
 #define OFF	0
