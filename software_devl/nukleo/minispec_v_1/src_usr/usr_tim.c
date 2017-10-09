@@ -9,7 +9,7 @@
 #include "global_include.h"
 
 /**
- * Init the tim1 interfaces to our needs. May overwrite
+ * Init the tim1 interfaces to our needs. Overwrite
  * some preferences CubeMx made.
  */
 void tim1_Init( void )
@@ -20,20 +20,26 @@ void tim1_Init( void )
 }
 
 /**
- * Init the tim2 interfaces to our needs. May overwrite
+ * Init the tim2 interfaces to our needs. Overwrite
  * some preferences CubeMx made.
  */
 void tim2_Init( void )
 {
-	//enable the channel so the line is pulled down to a
-	// ceratin state
+	//enable the channel so the line is pulled down to ensure a low signal
 	TIM2->CCER |= TIM_CCER_CC3E;
 
 	// pwm2 high = (ARR - CCRx) + 1 = ARR
-	__HAL_TIM_SET_AUTORELOAD( &htim2, MSPARAM_DEFAULT_INTTIME );
+	__HAL_TIM_SET_AUTORELOAD( &htim2, MSPARAM_DEFAULT_ITIME );
 	__HAL_TIM_SET_COMPARE( &htim2, TIM_CHANNEL_3, 1 );
 }
 
-//todo tim5 init / define timeouttime after itime
+/**
+ * Init the tim2 interfaces to our needs. Overwrite
+ * some preferences CubeMx made.
+ */
+void tim5_Init( void )
+{
+	__HAL_TIM_SET_AUTORELOAD( &htim5, SAFTY_TIMER_DELAY );
+}
 
 

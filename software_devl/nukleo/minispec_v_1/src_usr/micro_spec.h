@@ -30,16 +30,15 @@ typedef enum
 {
 	MS_UNINITIALIZED = 0,
 	MS_INITIALIZED,
-	MS_MEASUREMENT_READY,
-	MS_MEASUREMENT_STARTED,
+	MS_MEASURE_STARTED,
 	MS_MEASUREMENT_ONGOING_TIM1_CC, // todo rename CAPTURE_DATA
-	MS_MEASUREMENT_CAPTURED_EOS,
-	MS_MEASUREMENT_DONE,
+	MS_EOS_CAPTURED,
+	MS_MEASURE_DONE,
 
 	//errors
-	MS_MEASUREMENT_ERR_EOS_EARLY,
-	MS_MEASUREMENT_ERR_NO_EOS,
-	MS_MEASUREMENT_ERR_TIMEOUT,
+	MS_ERR_EOS_EARLY,
+	MS_ERR_NO_EOS,
+	MS_ERR_TIMEOUT,
 } microspec_status_enum_t;
 
 typedef struct
@@ -55,9 +54,7 @@ extern microspec_t hms1;
 void micro_spec_init( void );
 void micro_spec_deinit( void );
 
-uint8_t micro_spec_measure_init( void );
 uint8_t micro_spec_measure_start( void );
-uint8_t micro_spec_wait_for_measurement_done( void );
 
 uint32_t micro_spec_set_integration_time( uint32_t int_time );
 

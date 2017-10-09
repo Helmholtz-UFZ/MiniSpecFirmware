@@ -40,11 +40,11 @@
  *	as procedure as described in 5. additional we set a warning-flag to inform about
  *	the missing EOS.
  *
- *	b) todo For any reason may none or not enough TRG pulses occur. This would lock
+ *	b) For any reason may none or not enough TRG pulses occur. This would lock
  *	the whole program as we wait for the MS_MEASUREMENT_DONE flag in the function
- *	micro_spec_wait_for_measurement_done(). Therefore we set a third timer clocked
- *	by the internal clock and wait for the time 400 TRG pulses would normally need.
- *	If the timer is not disabled before it will throw an IR where we unlock the
+ *	micro_spec_wait_for_measurement_done(). Therefore we set a third timer (TIM5)
+ *	clocked by the internal clock and wait for the time 400 TRG pulses would normally
+ *	need. If the timer is not disabled before it will throw an IR where we unlock the
  *	program and return to a certain state and of course we will set an error-flag.
  *
  *
@@ -72,11 +72,12 @@ static microspec_buffer_t ms1_buf =
 
 /* Handle for the micro sprectrometer 1 */
 microspec_t hms1 =
-        { MS_UNINITIALIZED, &ms1_buf, MSPARAM_DEFAULT_INTTIME };
+        { MS_UNINITIALIZED, &ms1_buf, MSPARAM_DEFAULT_ITIME };
 
 static void enable_sensor_clk( void );
 static void disable_sensor_clk( void );
 static void post_process_values( void );
+static void wait_for_measure_done( void );
 
 /**
  *Init all internal data structs and buffer needed by the sensor(s).
@@ -136,24 +137,6 @@ void micro_spec_deinit( void )
 }
 
 /**
- * Init the spectrometer for a single measurement.
- *
- * This should be called every time a before a new measurement
- * is made.
- */
-uint8_t micro_spec_measure_init( void )
-{
-	if( !(hms1.status == MS_INITIALIZED || hms1.status == MS_MEASUREMENT_DONE) )
-	{
-		return 1;
-	}
-	memset( hms1.data->base, 0, hms1.data->size );
-	hms1.data->wptr = hms1.data->base;
-	hms1.status = MS_MEASUREMENT_READY;
-	return 0;
-}
-
-/**
  * @ brief Start a single measurement.
  *
  * All further work is done in by the timers TIM1 and TIM2 and in the GPIO ISR.
@@ -169,34 +152,50 @@ uint8_t micro_spec_measure_init( void )
  */
 uint8_t micro_spec_measure_start( void )
 {
-
-	if( hms1.status < MS_MEASUREMENT_READY )
+	if( hms1.status < MS_INITIALIZED )
 	{
 		return 1;
 	}
 
+	// reset data buffer
+	memset( hms1.data->base, 0, hms1.data->size );
+	hms1.data->wptr = hms1.data->base;
+
 	uint32_t int_time_cnt;
-
+	
 	HAL_SuspendTick();
-	//todo disable uart ?? ,ove the above somewhere else??
-
+	
 	// 48 clock-cycles are added by the sensor to "high" of the ST-signal
 	// resulting in the integrationtime (see c12880ma_kacc1226e.pdf)
 	int_time_cnt = MAX( hms1.integrtion_time, MIN_INTERGATION_TIME );
 	int_time_cnt -= ITIME_CORRECTION;
-
+	
 	// EOS prepare.
 	// Reset the capturing reg and enable the capturing IR
 	TIM1->CCR2 = 0;
 	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC2 );
 	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC2 );
-
+	
 	// set the countervalue for integrationtime on TIM2
 	__HAL_TIM_SET_AUTORELOAD( &htim2, int_time_cnt );
-
+	
 	TIM2->CR1 |= TIM_CR1_CEN;
-	hms1.status = MS_MEASUREMENT_STARTED;
-	return 0;
+	hms1.status = MS_MEASURE_STARTED;
+	
+	wait_for_measure_done();
+
+	post_process_values();
+
+	if( hms1.status == MS_EOS_CAPTURED )
+	{
+		hms1.status = MS_MEASURE_DONE;
+		return 0;
+	}
+	else
+	{
+		HAL_Delay( 1 );
+		return 1;
+	}
 }
 
 /**
@@ -206,34 +205,14 @@ uint8_t micro_spec_measure_start( void )
  * If a new measurement after this is desired call micro_spec_measure_init().
  *
  */
-uint8_t micro_spec_wait_for_measurement_done( void )
+static void wait_for_measure_done( void )
 {
-	if( hms1.status < MS_MEASUREMENT_STARTED )
-	{
-		HAL_ResumeTick();
-		return 1;
-	}
-
-	while( hms1.status < MS_MEASUREMENT_CAPTURED_EOS )
+	while( hms1.status < MS_EOS_CAPTURED )
 	{
 		// busy waiting
 	}
-
 	__HAL_TIM_DISABLE_IT( &htim5, TIM_IT_UPDATE );
-
 	HAL_ResumeTick();
-
-	post_process_values();
-
-	if( hms1.status == MS_MEASUREMENT_CAPTURED_EOS )
-	{
-		hms1.status = MS_MEASUREMENT_DONE;
-		return 0;
-	}
-	else
-	{
-		return 1;
-	}
 }
 
 /**
@@ -253,10 +232,10 @@ uint8_t micro_spec_wait_for_measurement_done( void )
  */
 static void post_process_values( void )
 {
-
+	
 	uint16_t res, val;
 	uint16_t *rptr = hms1.data->base;
-
+	
 	while( rptr < hms1.data->wptr )
 	{
 		val = *rptr;
@@ -282,9 +261,6 @@ static void post_process_values( void )
 		*rptr = res;
 		rptr++;
 	}
-
-	//todo check if still necessary
-//	hms1.data->wptr -= 2;
 }
 
 /**
@@ -298,7 +274,7 @@ static void post_process_values( void )
  */
 uint32_t micro_spec_set_integration_time( uint32_t int_time )
 {
-
+	
 	if( int_time < MIN_INTERGATION_TIME )
 	{
 		hms1.integrtion_time = MIN_INTERGATION_TIME;
@@ -311,22 +287,23 @@ uint32_t micro_spec_set_integration_time( uint32_t int_time )
 	{
 		hms1.integrtion_time = int_time;
 	}
-
+	
 	return hms1.integrtion_time;
 }
 
 /**
  * Enables the clock signal for the sensor.
  *
- * This clock gated through the sensor (with a small todo delay ~43ns??)
- * and is given back as TRG-signal from the sensor. The inverted
- * version of the TRG is send to the ADC-trigger input and also
- * we count the falling edges of the inverted TRG as clock source
- * of TIM1. So the sensor clock should stay enabled for the whole
- * cycle of all measurements, until this (micro-sprectrometer-)
- * module is disabled or the nukleo is powered down.
+ * This clock gated through the sensor (with a delay of about
+ * half a CLK-cycle ~542ns) and is given back as TRG-signal
+ * from the sensor. The inverted version of the TRG is send to
+ * the ADC-trigger input and also we count the falling edges of
+ * the inverted TRG as clock source of TIM1. So the sensor clock
+ * should stay enabled for the whole cycle of all measurements,
+ * until this (micro-sprectrometer-)module is disabled or the
+ * nukleo is powered down.
  */
-void enable_sensor_clk( void )
+static void enable_sensor_clk( void )
 {
 	TIM3->CCER |= TIM_CCER_CC3E;
 	TIM3->CCER |= TIM_CCER_CC4E;
@@ -336,7 +313,7 @@ void enable_sensor_clk( void )
  * Disable the sensor clock. When the CLK-signal is deactivated,
  * also the TRG-signal is deactivated. @sa enable_sensor_clk()
  */
-void disable_sensor_clk( void )
+static void disable_sensor_clk( void )
 {
 	TIM3->CR1 &= ~TIM_CR1_CEN;
 }

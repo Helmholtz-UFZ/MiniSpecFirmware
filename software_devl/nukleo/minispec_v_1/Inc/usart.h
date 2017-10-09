@@ -58,14 +58,14 @@ extern UART_HandleTypeDef huart3;
 typedef enum usr_cmd_enum
 {
 	USR_CMD_UNKNOWN,
-	USR_CMD_SET_DATA_FORMAT, // 0 - raw/bin or 1 - ascii
-	USR_CMD_SET_SET_SENSOR, // choose if sens 1 or sens 2 (for future use)
-	USR_CMD_WRITE_INTEGRATION_TIME,
-	USR_CMD_READ_INTEGRATION_TIME,
+	USR_CMD_SET_FORMAT, // 0 - raw/bin or 1 - ascii
+	USR_CMD_SET_SENSOR, // choose if sens 1 or sens 2 (for future use)
+	USR_CMD_WRITE_ITIME,
+	USR_CMD_READ_ITIME,
 	USR_CMD_GET_DATA, // not implemented
 	USR_CMD_SINGLE_MEASURE_START,
-	USR_CMD_CONTINUOUS_MEASURE_START,
-	USR_CMD_CONTINUOUS_MEASURE_END,
+	USR_CMD_STREAM_START,
+	USR_CMD_STREAM_END,
 } usr_cmd_enum_t;
 
 typedef struct
@@ -86,6 +86,9 @@ extern uart_buffer_t uart3_tx_buffer;
 
 extern usr_cmd_enum_t usrcmd;
 extern uint32_t usr_cmd_data;
+
+extern volatile bool uart3_cmd_CR_recvd;
+extern volatile uint16_t uart3_cmd_bytes;
 
 void usart3_init( void );
 void usart3_receive_handler( void );

@@ -16,6 +16,9 @@ static void usr_main_error_handler( uint8_t err );
 static uint8_t data_format = DATA_FORMAT_BIN;
 static bool stream_mode = 0;
 
+#define UART_USR_CHAR_MATCH_IR_ENABLE		(huart_usr.Instance->CR1 |= USART_CR1_CMIE)
+#define UART_USR_CHAR_MATCH_IR_DISABLE		(huart_usr.Instance->CR1 &= ~USART_CR1_CMIE)
+
 int usr_main( void )
 {
 	uint8_t err = 0;
@@ -28,37 +31,47 @@ int usr_main( void )
 	usart3_init();
 	tim1_Init();
 	tim2_Init();
+	tim5_Init();
 
 	/* Run the system ------------------------------------------------------------*/
 
 	// enabling usart receiving
 	NVIC_EnableIRQ( USART3_IRQn );
-	HAL_UART_Receive_IT( &huart3, uart3_rx_buffer.base, uart3_rx_buffer.size );
+	HAL_UART_Receive_DMA( &huart3, uart3_rx_buffer.base, uart3_rx_buffer.size );
 
 	// uart_printf( &huart3, &uart3_tx_buffer, "\nstart\n" ); todo debug line != data-line messup stuff otherwise
 	while( 1 )
 	{
+		__HAL_UART_ENABLE_IT( &huart3, UART_IT_CM );
+
+		if( uart3_cmd_CR_recvd == 0 && stream_mode == 0 )
+		{
+			cpu_enter_sleep_mode();
+		}
+
+		// redundant if not in stream-mode
+		__HAL_UART_DISABLE_IT( &huart3, UART_IT_CM );
+		
 		// check if we received a usr command
 		usart3_receive_handler(); //todo rename to parse(char* buffer, int length)
 
 		switch( usrcmd ) {
 		case USR_CMD_SINGLE_MEASURE_START:
 			micro_spec_init();
-			err = micro_spec_measure_init();
-			if( err ) break;
+
 			err = micro_spec_measure_start();
 			if( err ) break;
-			err = micro_spec_wait_for_measurement_done();
-			if( err ) break;
+
 			micro_spec_deinit();
+
 			send_data( data_format );
 			break;
 
-		case USR_CMD_WRITE_INTEGRATION_TIME:
+		case USR_CMD_WRITE_ITIME:
 			micro_spec_set_integration_time( usr_cmd_data );
 			break;
 
-		case USR_CMD_READ_INTEGRATION_TIME:
+		case USR_CMD_READ_ITIME:
 			if( data_format == DATA_FORMAT_BIN )
 			{
 				HAL_UART_Transmit( &huart3, (uint8_t *) &hms1.integrtion_time, 4, 1000 );
@@ -69,16 +82,16 @@ int usr_main( void )
 			}
 			break;
 
-		case USR_CMD_CONTINUOUS_MEASURE_START:
+		case USR_CMD_STREAM_START:
 			micro_spec_init();
 			stream_mode = 1;
 			break;
 
-		case USR_CMD_SET_DATA_FORMAT:
+		case USR_CMD_SET_FORMAT:
 			data_format = (usr_cmd_data > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
 			break;
 
-		case USR_CMD_CONTINUOUS_MEASURE_END:
+		case USR_CMD_STREAM_END:
 			micro_spec_deinit();
 			stream_mode = 0;
 			break;
@@ -89,11 +102,8 @@ int usr_main( void )
 
 		if( stream_mode )
 		{
-			err = micro_spec_measure_init();
-			if( err ) break;
+
 			err = micro_spec_measure_start();
-			if( err ) break;
-			err = micro_spec_wait_for_measurement_done();
 			if( err ) break;
 			send_data( data_format );
 		}
@@ -172,7 +182,7 @@ static void usr_main_error_handler( uint8_t err )
 	case 0:
 		return;
 		
-	case MS_MEASUREMENT_ERR_TIMEOUT:
+	case MS_ERR_TIMEOUT:
 		if( data_format == DATA_FORMAT_ASCII )
 		{
 			uart_printf( &huart3, &uart3_tx_buffer, "ERR: TIMEOUT. Please check the following:\n"
@@ -185,7 +195,7 @@ static void usr_main_error_handler( uint8_t err )
 		micro_spec_deinit();
 		break;
 		
-	case MS_MEASUREMENT_ERR_NO_EOS:
+	case MS_ERR_NO_EOS:
 		if( data_format == DATA_FORMAT_ASCII )
 		{
 			uart_printf( &huart3, &uart3_tx_buffer, "ERR: NO EOS. Something went wrong, please debug manually.\n" );
@@ -196,7 +206,7 @@ static void usr_main_error_handler( uint8_t err )
 		micro_spec_deinit();
 		break;
 
-	case MS_MEASUREMENT_ERR_EOS_EARLY:
+	case MS_ERR_EOS_EARLY:
 		if( data_format == DATA_FORMAT_ASCII )
 		{
 			uart_printf( &huart3, &uart3_tx_buffer, "ERR: EOS EARLY. Something went wrong, please debug manually.\n" );
@@ -212,5 +222,36 @@ static void usr_main_error_handler( uint8_t err )
 	}
 
 	// send error code
-	HAL_UART_Transmit( &huart3, (uint8_t *) &errcode, 2, 200 );
+	if( data_format == DATA_FORMAT_BIN )
+	{
+		HAL_UART_Transmit( &huart3, (uint8_t *) &errcode, 2, 200 );
+	}
 }
+
+/**
+ * @brief cpu_sleep()
+ * Disabel SysTick and make CPU enter sleep-mode.
+ *
+ * @sa cpu_awake()
+ */
+void cpu_enter_sleep_mode( void )
+{
+	
+	// to prevent wakeup by Systick interrupt.
+	HAL_SuspendTick();
+	// go back to sleep after handling an IR
+	HAL_PWR_EnableSleepOnExit();
+	HAL_PWR_EnterSLEEPMode( PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI );
+}
+
+/**
+ * @brief cpu_awake()
+ * EXECUTED BY ISR - KEEP IT SHORT
+ */
+void cpu_enter_run_mode( void )
+{
+	// wake up after handling the actual IR
+	CLEAR_BIT( SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk) );
+	HAL_ResumeTick();
+}
+

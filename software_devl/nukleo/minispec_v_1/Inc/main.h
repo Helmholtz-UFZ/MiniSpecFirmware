@@ -87,6 +87,8 @@ typedef enum
 #define DELIMITER_STR   "-----------------------------------------------------------------"
 
 int usr_main( void );
+void cpu_enter_sleep_mode( void );
+void cpu_enter_run_mode( void );
 /* USER CODE END Private defines */
 
 void _Error_Handler(char *, int);

@@ -36,21 +36,17 @@
 #define MIN_INTERGATION_TIME		(54)
 #define MAX_INTERGATION_TIME		(1000000)
 
-/* we do NOT count the first (half) TRG pulse as Hamamasu do,
- * because we trigger on rising edges. */
-#define MSPARAM_FIRST_TRG_CORRECTION	(1)
 
 /* The number of pixels the sensor provide.*/
 #define MSPARAM_PIXEL			(288)
 
-/** count from the first rising edge of TRG after ST goes low
- * to the first rising edge when VID is put out.*/
-#define MSPARAM_FISRT_TRG_ON_VALID_PXL	(88)
+#define PRE_VALID			(88)
+#define TRG_TO_EOS			((PRE_VALID) + (MSPARAM_PIXEL))
 
-#define MSPARAM_ADC_DELAY		(1)
-#define MSPARAM_DEFAULT_INTTIME		(1100)
-#define MSPARAM_SAFETY_FRAME		(8)
-/** to test watch the TEST signal on pin todo with the oszilloscope and
+#define MSPARAM_DEFAULT_ITIME		(1100)
+#define MSPARAM_SAFETY_FRAME		(5)
+/**
+ * To test, watch the TEST signal on pin PA11 with the oszilloscope and
  * set MSPARAM_SAFETY_FRAME to zero, than the rising edge should be at
  * the first valid VID pixel (synchron with rising edge of TRG) and the
  * falling edge should be on the rising edge of TRG right *after* the last
@@ -60,12 +56,19 @@
  * range on the VID-signal-line.
  * todo rm MSPARAM_
  * */
-#define MSPARAM_CAPTURE_PXL_ST		((MSPARAM_FISRT_TRG_ON_VALID_PXL) - (MSPARAM_SAFETY_FRAME) )
-#define MSPARAM_CAPTURE_PXL_END		((MSPARAM_FISRT_TRG_ON_VALID_PXL) + (MSPARAM_PIXEL) + (MSPARAM_SAFETY_FRAME) )
-//todo check this (+2 invalid) add pre_valid(falling ST to first valid TRG), post_valid (last valid TRG to rising EOS)
-#define PXL_TO_CAPTURE			((MSPARAM_PIXEL+MSPARAM_SAFETY_FRAME))
+#define MSPARAM_CAPTURE_PXL_ST		((PRE_VALID+1) - (MSPARAM_SAFETY_FRAME))
+#define MSPARAM_CAPTURE_PXL_END		((PRE_VALID+1) + (MSPARAM_PIXEL) + (MSPARAM_SAFETY_FRAME) )
 
+/**
+ * in numbers of CLK
+ */
 #define ITIME_CORRECTION		(48)
+
+/**
+ * The time in ns after the safty timer throw
+ * an IR and stop a failed measurement.
+ */
+#define SAFTY_TIMER_DELAY		(500)
 
 #define ON	1
 #define OFF	0

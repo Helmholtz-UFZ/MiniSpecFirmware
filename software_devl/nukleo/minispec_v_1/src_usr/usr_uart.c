@@ -13,7 +13,7 @@
 usr_cmd_enum_t usrcmd = USR_CMD_UNKNOWN;
 uint32_t usr_cmd_data = 0;
 
-volatile bool uart3_cmd_received;
+volatile bool uart3_cmd_CR_recvd;
 volatile uint16_t uart3_cmd_bytes;
 
 static uint8_t rx_mem_block3[UART_DEFAULT_RX_BUFFER_SZ];
@@ -48,7 +48,7 @@ void usart3_init( void )
 	//enable char match IR-Flag
 	USART3->CR1 |= USART_CR1_CMIE;
 
-	uart3_cmd_received = 0;
+	uart3_cmd_CR_recvd = 0;
 	uart3_cmd_bytes = 0;
 }
 
@@ -60,16 +60,15 @@ void usart3_init( void )
  */
 void usart3_receive_handler( void )
 {
-	uint16_t sz;
 	usrcmd = USR_CMD_UNKNOWN;
 
 	// usr pushed enter
-	if( uart3_cmd_received )
+	if( uart3_cmd_CR_recvd )
 	{
-		uart3_cmd_received = 0;
-		sz = huart3.RxXferSize - huart3.RxXferCount;
+		uart3_cmd_CR_recvd = 0;
 
-		if( sz == 0 )
+		//nothing or just CR
+		if( uart3_cmd_bytes <= 1 )
 		{
 			return;
 		}
@@ -78,9 +77,9 @@ void usart3_receive_handler( void )
 
 		// restart listening
 		HAL_UART_AbortReceive( &huart3 );
-		memset( uart3_rx_buffer.base, 0, sz );
+		memset( uart3_rx_buffer.base, 0, uart3_cmd_bytes );
 		uart3_cmd_bytes = 0;
-		HAL_UART_Receive_IT( &huart3, uart3_rx_buffer.base, uart3_rx_buffer.size );
+		HAL_UART_Receive_DMA( &huart3, uart3_rx_buffer.base, uart3_rx_buffer.size );
 	}
 }
 
@@ -97,7 +96,7 @@ static void parse_cmd( void )
 	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 )
 	{
 		sscanf( (char*) (uart3_rx_buffer.base + sz), "%lu", &usr_cmd_data );
-		usrcmd = USR_CMD_SET_DATA_FORMAT;
+		usrcmd = USR_CMD_SET_FORMAT;
 		return;
 	}
 
@@ -115,7 +114,7 @@ static void parse_cmd( void )
 	sz = strlen( str );
 	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 )
 	{
-		usrcmd = USR_CMD_CONTINUOUS_MEASURE_START;
+		usrcmd = USR_CMD_STREAM_START;
 		return;
 	}
 
@@ -123,7 +122,7 @@ static void parse_cmd( void )
 	sz = strlen( str );
 	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 )
 	{
-		usrcmd = USR_CMD_CONTINUOUS_MEASURE_END;
+		usrcmd = USR_CMD_STREAM_END;
 		return;
 	}
 
@@ -136,7 +135,7 @@ static void parse_cmd( void )
 		// search the '=', than parse the value
 		str = memchr( uart3_rx_buffer.base, '=', sz );
 		sscanf( str + 1, "%lu", &usr_cmd_data );
-		usrcmd = USR_CMD_WRITE_INTEGRATION_TIME;
+		usrcmd = USR_CMD_WRITE_ITIME;
 		return;
 	}
 
@@ -146,7 +145,7 @@ static void parse_cmd( void )
 	aliassz = strlen( alias );
 	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 || memcmp( uart3_rx_buffer.base, alias, aliassz ) == 0 )
 	{
-		usrcmd = USR_CMD_READ_INTEGRATION_TIME;
+		usrcmd = USR_CMD_READ_ITIME;
 		return;
 	}
 }

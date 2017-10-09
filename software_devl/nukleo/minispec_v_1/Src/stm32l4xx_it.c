@@ -41,13 +41,12 @@
 #include "global_include.h"
 #include "micro_spec.h"
 
-extern volatile bool uart3_cmd_received;
-extern volatile uint16_t uart3_cmd_bytes;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim5;
+extern DMA_HandleTypeDef hdma_usart3_rx;
 extern UART_HandleTypeDef huart3;
 
 /******************************************************************************/
@@ -123,7 +122,7 @@ void EXTI2_IRQHandler(void)
 	 * [1] TIM1_CC_IRQHandler()
 	 * [2] TIM1_CC_IRQHandler() or TIM1_UP_TIM16_IRQHandler().
 	 *
-	 * TODO use DMA instead of manually save values ??
+	 * TODO use DMA instead of manually save values.
 	 */
 
 	uint8_t value0, value1;
@@ -154,6 +153,20 @@ void EXTI2_IRQHandler(void)
 }
 
 /**
+* @brief This function handles DMA1 channel3 global interrupt.
+*/
+void DMA1_Channel3_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Channel3_IRQn 0 */
+
+  /* USER CODE END DMA1_Channel3_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart3_rx);
+  /* USER CODE BEGIN DMA1_Channel3_IRQn 1 */
+
+  /* USER CODE END DMA1_Channel3_IRQn 1 */
+}
+
+/**
 * @brief This function handles TIM1 capture compare interrupt.
 */
 void TIM1_CC_IRQHandler(void)
@@ -176,25 +189,25 @@ void TIM1_CC_IRQHandler(void)
 	if( (TIM1->SR & TIM_SR_CC2IF) && (TIM1->DIER & TIM_DIER_CC2IE) )
 	{
 		// clear IR flag
-		TIM1->SR &= ~TIM_SR_CC2IF;
+		__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC2 );
+//		TIM1->SR &= ~TIM_SR_CC2IF;
 
 		// Disable IR for ADC-busy-line. We also disable EOS,
 		// as we may got it early and we don't want to catch
 		// an other or many others.
-		__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_CC2 );
 		NVIC_ClearPendingIRQ( EXTI2_IRQn );
 		NVIC_DisableIRQ( EXTI2_IRQn );
 
 		// do we got the eos to early ?
-		if( hms1.data->wptr < (hms1.data->base + MSPARAM_PIXEL) ) //todo pxl+frame PXL_TO_CAPTURE
+		if( TIM1->CCR2 < TRG_TO_EOS )
 		{
-			hms1.status = MS_MEASUREMENT_ERR_EOS_EARLY;
+			hms1.status = MS_ERR_EOS_EARLY;
 		}
 		else
 		{
-			hms1.status = MS_MEASUREMENT_CAPTURED_EOS;
+			hms1.status = MS_EOS_CAPTURED;
 		}
-
+		__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_CC2 );
 	}
 
 	/*
@@ -209,7 +222,8 @@ void TIM1_CC_IRQHandler(void)
 	if( (TIM1->SR & TIM_SR_CC4IF) && (TIM1->DIER & TIM_DIER_CC4IE) )
 	{
 		// clear IR flag
-		TIM1->SR &= ~TIM_SR_CC4IF;
+		__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC4 );
+//		TIM1->SR &= ~TIM_SR_CC4IF;
 
 		// Enable IR for ADC-busy-line.
 		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
@@ -252,8 +266,12 @@ void USART3_IRQHandler(void)
 	if( ((USART3->ISR & USART_ISR_CMF) != RESET) && ((USART3->CR1 & USART_CR1_CMIE) != RESET) )
 	{
 		__HAL_UART_CLEAR_IT( &huart3, USART_ISR_CMF );
-		uart3_cmd_bytes = huart3.RxXferSize - huart3.RxXferCount;
-		uart3_cmd_received = true;
+		__HAL_UART_DISABLE_IT( &huart3, UART_IT_CM );
+
+		uart3_cmd_bytes = huart3.RxXferSize - huart3.hdmarx->Instance->CNDTR;
+		uart3_cmd_CR_recvd = true;
+
+		cpu_enter_run_mode();
 	}
 
 #define USART3_IRQHandler__OK
@@ -277,7 +295,7 @@ void TIM5_IRQHandler(void)
 	// ..and the EOS capturing.
 	__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_CC2 );
 
-	hms1.status = MS_MEASUREMENT_ERR_TIMEOUT;
+	hms1.status = MS_ERR_TIMEOUT;
 
 #define TIM5_IRQHandler__OK
   /* USER CODE END TIM5_IRQn 1 */
