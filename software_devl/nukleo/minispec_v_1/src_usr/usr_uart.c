@@ -10,9 +10,6 @@
 #include "string.h"
 #include <stdarg.h>
 
-usr_cmd_enum_t usrcmd = USR_CMD_UNKNOWN;
-uint32_t usr_cmd_data = 0;
-
 volatile bool uart3_cmd_CR_recvd;
 volatile uint16_t uart3_cmd_bytes;
 
@@ -22,8 +19,6 @@ uart_buffer_t uart3_rx_buffer =
 { UART_DEFAULT_RX_BUFFER_SZ, rx_mem_block3 };
 uart_buffer_t uart3_tx_buffer =
 { UART_DEFAULT_TX_BUFFER_SZ, tx_mem_block3 };
-
-static void parse_cmd( void );
 
 /**
  * Init the all used uart interfaces to our needs. May overwrite
@@ -60,93 +55,15 @@ void usart3_init( void )
  */
 void usart3_receive_handler( void )
 {
-	usrcmd = USR_CMD_UNKNOWN;
-
-	// usr pushed enter
 	if( uart3_cmd_CR_recvd )
 	{
 		uart3_cmd_CR_recvd = 0;
-
-		//nothing or just CR
-		if( uart3_cmd_bytes <= 1 )
-		{
-			return;
-		}
-		
-		parse_cmd();
 
 		// restart listening
 		HAL_UART_AbortReceive( &huart3 );
 		memset( uart3_rx_buffer.base, 0, uart3_cmd_bytes );
 		uart3_cmd_bytes = 0;
 		HAL_UART_Receive_DMA( &huart3, uart3_rx_buffer.base, uart3_rx_buffer.size );
-	}
-}
-
-/**
- * This is a local helper for parsing the user command.
- */
-static void parse_cmd( void )
-{
-	char *str, *alias;
-	uint16_t sz, aliassz;
-
-	str = "format=";
-	sz = strlen( str );
-	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 )
-	{
-		sscanf( (char*) (uart3_rx_buffer.base + sz), "%lu", &usr_cmd_data );
-		usrcmd = USR_CMD_SET_FORMAT;
-		return;
-	}
-
-	str = "measure\r";
-	alias = "m\r";
-	sz = strlen( str );
-	aliassz = strlen( alias );
-	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 || memcmp( uart3_rx_buffer.base, alias, aliassz ) == 0 )
-	{
-		usrcmd = USR_CMD_SINGLE_MEASURE_START;
-		return;
-	}
-
-	str = "stream\r";
-	sz = strlen( str );
-	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 )
-	{
-		usrcmd = USR_CMD_STREAM_START;
-		return;
-	}
-
-	str = "end\r";
-	sz = strlen( str );
-	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 )
-	{
-		usrcmd = USR_CMD_STREAM_END;
-		return;
-	}
-
-	str = "itime=";
-	alias = "i=";
-	sz = strlen( str );
-	aliassz = strlen( alias );
-	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 || memcmp( uart3_rx_buffer.base, alias, aliassz ) == 0 )
-	{
-		// search the '=', than parse the value
-		str = memchr( uart3_rx_buffer.base, '=', sz );
-		sscanf( str + 1, "%lu", &usr_cmd_data );
-		usrcmd = USR_CMD_WRITE_ITIME;
-		return;
-	}
-
-	str = "itime?\r";
-	alias = "i?\r";
-	sz = strlen( str );
-	aliassz = strlen( alias );
-	if( memcmp( uart3_rx_buffer.base, str, sz ) == 0 || memcmp( uart3_rx_buffer.base, alias, aliassz ) == 0 )
-	{
-		usrcmd = USR_CMD_READ_ITIME;
-		return;
 	}
 }
 

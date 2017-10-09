@@ -8,17 +8,14 @@
 #ifndef GLOBAL_CONFIG_H_
 #define GLOBAL_CONFIG_H_
 
+#include "helper_defines.h"
+
 // this should be as least as big that we can send one whole
 // measurement data plus some meta data.
 #define UART_DEFAULT_TX_BUFFER_SZ	(1024)
 
 // small as we just need it for receiving user commands
 #define UART_DEFAULT_RX_BUFFER_SZ	(128)
-
-/** The delay between function call and ST goes high.
- *  This only is used by the timer, to ensure that the initial
- *  value is not zero*/
-#define PRE_ST_DELAY		1
 
 /** The minimal possible integration time is limited by the sensor and the
  *  clock frequency.
@@ -35,16 +32,25 @@
  */
 #define MIN_INTERGATION_TIME		(54)
 #define MAX_INTERGATION_TIME		(1000000)
+#define DEFAULT_INTEGRATION_TIME	(1100)
 
+/**
+ * in numbers of CLK
+ */
+#define ITIME_CORRECTION		(48)
 
 /* The number of pixels the sensor provide.*/
 #define MSPARAM_PIXEL			(288)
 
-#define PRE_VALID			(88)
-#define TRG_TO_EOS			((PRE_VALID) + (MSPARAM_PIXEL))
+/* The number of TRG pules before the first valid
+ * value is send
+ */
+#define MSPARAM_PRE_VALID		(88)
 
-#define MSPARAM_DEFAULT_ITIME		(1100)
-#define MSPARAM_SAFETY_FRAME		(5)
+/* The number of TRG-pulses before EOS occure */
+#define TRG_TO_EOS			((MSPARAM_PRE_VALID) + (MSPARAM_PIXEL))
+
+#define SAFETY_FRAME			(5)
 /**
  * To test, watch the TEST signal on pin PA11 with the oszilloscope and
  * set MSPARAM_SAFETY_FRAME to zero, than the rising edge should be at
@@ -54,24 +60,16 @@
  *
  * It helps to set the integration time very high, to see the valid pixel
  * range on the VID-signal-line.
- * todo rm MSPARAM_
  * */
-#define MSPARAM_CAPTURE_PXL_ST		((PRE_VALID+1) - (MSPARAM_SAFETY_FRAME))
-#define MSPARAM_CAPTURE_PXL_END		((PRE_VALID+1) + (MSPARAM_PIXEL) + (MSPARAM_SAFETY_FRAME) )
+#define CAPTURE_PXL_ST		((MSPARAM_PRE_VALID+1) - (SAFETY_FRAME))
+#define CAPTURE_PXL_END		((MSPARAM_PRE_VALID+1) + (MSPARAM_PIXEL) + (SAFETY_FRAME) )
 
-/**
- * in numbers of CLK
- */
-#define ITIME_CORRECTION		(48)
 
 /**
  * The time in ns after the safty timer throw
  * an IR and stop a failed measurement.
  */
 #define SAFTY_TIMER_DELAY		(500)
-
-#define ON	1
-#define OFF	0
 
 #define DO_NOT_USE_HAL_IRQ_HANDLER
 

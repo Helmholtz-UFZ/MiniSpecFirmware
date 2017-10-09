@@ -230,7 +230,7 @@ void TIM1_CC_IRQHandler(void)
 		NVIC_ClearPendingIRQ( EXTI2_IRQn );
 		NVIC_EnableIRQ( EXTI2_IRQn );
 
-		hms1.status = MS_MEASUREMENT_ONGOING_TIM1_CC;
+		hms1.status = MS_CAPTURE_DATA;
 	}
 
 #ifndef DO_NOT_USE_HAL_IRQ_HANDLER

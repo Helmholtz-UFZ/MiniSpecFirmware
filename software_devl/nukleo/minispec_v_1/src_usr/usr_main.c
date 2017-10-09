@@ -10,9 +10,15 @@
 #include "micro_spec.h"
 #include "usart.h"
 #include "tim.h"
+#include "string.h"
 
 static void send_data( uint8_t format );
 static void usr_main_error_handler( uint8_t err );
+
+static void parse_external_command( uint8_t *buffer, uint16_t size );
+static usr_cmd_enum_t usrcmd = USR_CMD_UNKNOWN;
+static uint32_t usr_cmd_data = 0;
+
 static uint8_t data_format = DATA_FORMAT_BIN;
 static bool stream_mode = 0;
 
@@ -53,7 +59,9 @@ int usr_main( void )
 		__HAL_UART_DISABLE_IT( &huart3, UART_IT_CM );
 		
 		// check if we received a usr command
-		usart3_receive_handler(); //todo rename to parse(char* buffer, int length)
+		parse_external_command( uart3_rx_buffer.base, uart3_rx_buffer.size );
+
+		usart3_receive_handler();
 
 		switch( usrcmd ) {
 		case USR_CMD_SINGLE_MEASURE_START:
@@ -87,13 +95,13 @@ int usr_main( void )
 			stream_mode = 1;
 			break;
 
-		case USR_CMD_SET_FORMAT:
-			data_format = (usr_cmd_data > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
-			break;
-
 		case USR_CMD_STREAM_END:
 			micro_spec_deinit();
 			stream_mode = 0;
+			break;
+
+		case USR_CMD_SET_FORMAT:
+			data_format = (usr_cmd_data > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
 			break;
 
 		default:
@@ -253,5 +261,71 @@ void cpu_enter_run_mode( void )
 	// wake up after handling the actual IR
 	CLEAR_BIT( SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk) );
 	HAL_ResumeTick();
+}
+
+void parse_external_command( uint8_t *buffer, uint16_t size )
+{
+	UNUSED( size );
+	usrcmd = USR_CMD_UNKNOWN;
+	char *str, *alias;
+	uint16_t sz, aliassz;
+
+	str = "format=";
+	sz = strlen( str );
+	if( memcmp( buffer, str, sz ) == 0 )
+	{
+		sscanf( (char*) (buffer + sz), "%lu", &usr_cmd_data );
+		usrcmd = USR_CMD_SET_FORMAT;
+		return;
+	}
+
+	str = "measure\r";
+	alias = "m\r";
+	sz = strlen( str );
+	aliassz = strlen( alias );
+	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
+	{
+		usrcmd = USR_CMD_SINGLE_MEASURE_START;
+		return;
+	}
+
+	str = "stream\r";
+	sz = strlen( str );
+	if( memcmp( buffer, str, sz ) == 0 )
+	{
+		usrcmd = USR_CMD_STREAM_START;
+		return;
+	}
+
+	str = "end\r";
+	sz = strlen( str );
+	if( memcmp( buffer, str, sz ) == 0 )
+	{
+		usrcmd = USR_CMD_STREAM_END;
+		return;
+	}
+
+	str = "itime=";
+	alias = "i=";
+	sz = strlen( str );
+	aliassz = strlen( alias );
+	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
+	{
+		// search the '=', than parse the value
+		str = memchr( buffer, '=', sz );
+		sscanf( str + 1, "%lu", &usr_cmd_data );
+		usrcmd = USR_CMD_WRITE_ITIME;
+		return;
+	}
+
+	str = "itime?\r";
+	alias = "i?\r";
+	sz = strlen( str );
+	aliassz = strlen( alias );
+	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
+	{
+		usrcmd = USR_CMD_READ_ITIME;
+		return;
+	}
 }
 

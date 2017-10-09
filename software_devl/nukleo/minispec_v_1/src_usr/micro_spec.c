@@ -72,7 +72,7 @@ static microspec_buffer_t ms1_buf =
 
 /* Handle for the micro sprectrometer 1 */
 microspec_t hms1 =
-        { MS_UNINITIALIZED, &ms1_buf, MSPARAM_DEFAULT_ITIME };
+        { MS_UNINITIALIZED, &ms1_buf, DEFAULT_INTEGRATION_TIME };
 
 static void enable_sensor_clk( void );
 static void disable_sensor_clk( void );
@@ -93,8 +93,6 @@ void micro_spec_init( void )
 	// will generate a short uncertain state, which will result in a high
 	// with an external pull-up resistor (as the level-translator has them internal!).
 	// TIM_CCxChannelCmd() is also used by the HAL.
-
-	//todo call here TIMx_init()
 
 	//TIM1
 	// enable the IR's for channel 2 and 4 in the module
@@ -147,8 +145,6 @@ void micro_spec_deinit( void )
  * After this call micro_spec_wait_for_measurement_done() to wait until the
  * measurement is done.
  *
- *todo alle funktionen zusammenlegen bzw. static machen. nur noch ein 3 aufrufe von außen:
- *todo init measure deinit !
  */
 uint8_t micro_spec_measure_start( void )
 {

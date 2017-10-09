@@ -41,7 +41,7 @@
   /* Includes ------------------------------------------------------------------*/
 
 /* USER CODE BEGIN Includes */
-
+#include "global_include.h"
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
@@ -82,6 +82,19 @@ typedef enum
 	ERRC_EOS_EARLY,
 	ERRC_TIMEOUT
 } error_code;
+
+typedef enum usr_cmd_enum
+{
+	USR_CMD_UNKNOWN,
+	USR_CMD_SET_FORMAT, // 0 - raw/bin or 1 - ascii
+	USR_CMD_SET_SENSOR, // choose if sens 1 or sens 2 (for future use)
+	USR_CMD_WRITE_ITIME,
+	USR_CMD_READ_ITIME,
+	USR_CMD_GET_DATA, // not implemented
+	USR_CMD_SINGLE_MEASURE_START,
+	USR_CMD_STREAM_START,
+	USR_CMD_STREAM_END,
+} usr_cmd_enum_t;
 
 #define HEADER_STR	"          0     1     2     3     4     5     6     7     8     9"
 #define DELIMITER_STR   "-----------------------------------------------------------------"
