@@ -90,7 +90,7 @@ void micro_spec_init( void )
 
 	// enable TIM channels
 	// Don't use TIM_CCxChannelCmd() (which also use the HAL) because it
-	// will generate a short uncertain state, which will result in a high
+	// will generate a short uncertain state, which will result in a high output
 	// with an external pull-up resistor (as the level-translator has them internal!).
 	// TIM_CCxChannelCmd() is also used by the HAL.
 
@@ -159,6 +159,7 @@ uint8_t micro_spec_measure_start( void )
 
 	uint32_t int_time_cnt;
 	
+	// prevent SysTick to stretch time critical sections
 	HAL_SuspendTick();
 	
 	// 48 clock-cycles are added by the sensor to "high" of the ST-signal
@@ -168,7 +169,8 @@ uint8_t micro_spec_measure_start( void )
 	
 	// EOS prepare.
 	// Reset the capturing reg and enable the capturing IR
-	TIM1->CCR2 = 0;
+	TIM1->CCR2 = 0; // todo use HAL everywhere
+//	__HAL_TIM_SET_COMPARE();
 	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC2 );
 	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC2 );
 	

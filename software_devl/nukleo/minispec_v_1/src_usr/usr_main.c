@@ -129,8 +129,8 @@ int usr_main( void )
 /**
  * Local helper for sending data via the uart3 interface.
  *
- * \param format	0 (DATA_FORMAT_BIN) send raw data, byte per byte.(eg. 1000 -> 0xE8 0x03)\n
- * \param format	1 (DATA_FORMAT_ASCII) send the data as in ASCII, as human readable text. (eg. 1000 -> '1' '0' '0' '0')
+ * \param format	0 (DATA_FORMAT_BIN) send raw data, byte per byte.(eg. (dez) 1000 -> 0xE8 0x03)\n
+ * \param format	1 (DATA_FORMAT_ASCII) send the data as in ASCII, as human readable text. (eg. (dez) 1000 -> '1' '0' '0' '0')
  *
  *
  */
@@ -196,7 +196,7 @@ static void usr_main_error_handler( uint8_t err )
 			uart_printf( &huart3, &uart3_tx_buffer, "ERR: TIMEOUT. Please check the following:\n"
 				"1. is sensor plugged ?\n"
 				"2. ADC/sensor powered ?\n"
-				"3. check physical connections" );
+				"3. check physical connections\n" );
 		}
 		errcode = ERRC_TIMEOUT;
 		stream_mode = 0;
@@ -248,7 +248,7 @@ void cpu_enter_sleep_mode( void )
 	// to prevent wakeup by Systick interrupt.
 	HAL_SuspendTick();
 	// go back to sleep after handling an IR
-	HAL_PWR_EnableSleepOnExit();
+	//HAL_PWR_EnableSleepOnExit(); TODO TEST
 	HAL_PWR_EnterSLEEPMode( PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI );
 }
 
