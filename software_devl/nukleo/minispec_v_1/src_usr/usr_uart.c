@@ -10,7 +10,7 @@
 #include "string.h"
 #include <stdarg.h>
 
-volatile bool uart3_cmd_CR_recvd;
+volatile bool uart3_CR_recvd;
 volatile uint16_t uart3_cmd_bytes;
 
 static uint8_t rx_mem_block3[UART_DEFAULT_RX_BUFFER_SZ];
@@ -21,43 +21,46 @@ uart_buffer_t uart3_tx_buffer =
 { UART_DEFAULT_TX_BUFFER_SZ, tx_mem_block3 };
 
 /**
- * Init the all used uart interfaces to our needs. May overwrite
- * some preferences CubeMx made.
+ * Init the all used uart interfaces to our needs.
+ * May overwrite some preferences CubeMx made.
  */
 void usart3_init( void )
 {
-	/* Cmd activation
-	 * We enable the automatic character recognition for the carriage return (CR) char.*/
+	/* Enable character match (CM) IR for
+	 * carriage return (CR) char.*/
 
 	uint32_t cr1 = 0;
 	char trigger_char;
-	//save cr1 status + reset RE and UE bit for modifying ADD[7:0]
+
+	//save cr1 status
 	cr1 = USART3->CR1;
+
+	// reset RE and UE bit
 	USART3->CR1 &= ~(USART_CR1_RE | USART_CR1_UE);
 
+	//modifying ADD[7:0]
 	trigger_char = '\r';
 	USART3->CR2 |= (USART_CR2_ADD_Msk & (trigger_char << USART_CR2_ADD_Pos));
 
 	// restore RE and UE bit
 	USART3->CR1 = cr1;
+
 	//enable char match IR-Flag
 	USART3->CR1 |= USART_CR1_CMIE;
 
-	uart3_cmd_CR_recvd = 0;
+	uart3_CR_recvd = 0;
 	uart3_cmd_bytes = 0;
 }
 
 /**
- * This should be called to check if we received a command
- * from the user. If so we parse the command and set the
- * global variable 'usrcmd' to a appropriate value from the
- * usr_cmd_enum_t.
+ * resets the uart buffer and restart listening
+ * with DMA.
  */
 void usart3_receive_handler( void )
 {
-	if( uart3_cmd_CR_recvd )
+	if( uart3_CR_recvd )
 	{
-		uart3_cmd_CR_recvd = 0;
+		uart3_CR_recvd = 0;
 
 		// restart listening
 		HAL_UART_AbortReceive( &huart3 );

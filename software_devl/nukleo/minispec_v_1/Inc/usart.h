@@ -73,7 +73,7 @@ void MX_USART3_UART_Init(void);
 extern uart_buffer_t uart3_rx_buffer;
 extern uart_buffer_t uart3_tx_buffer;
 
-extern volatile bool uart3_cmd_CR_recvd;
+extern volatile bool uart3_CR_recvd;
 extern volatile uint16_t uart3_cmd_bytes;
 
 void usart3_init( void );

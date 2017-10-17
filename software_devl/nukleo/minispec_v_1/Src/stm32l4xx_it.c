@@ -108,7 +108,7 @@ void EXTI2_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI2_IRQn 0 */
 
-	/**
+	/*
 	 *
 	 * DATA READY TO READ - ADC1 BUSY
 	 * -------------------------------
@@ -117,12 +117,12 @@ void EXTI2_IRQHandler(void)
 	 * of the ADC conversion. The value is read from the 16 GPIO pins, which are directly
 	 * connected to the parallel port of the ADC.
 	 *
-	 * This IR is only enabled [1] and disabled [2] in IRQHandler.
+	 * This IR is only enabled [1] and disabled [2] in IRQHandlers.
 	 *
 	 * [1] TIM1_CC_IRQHandler()
-	 * [2] TIM1_CC_IRQHandler() or TIM1_UP_TIM16_IRQHandler().
+	 * [2] TIM1_CC_IRQHandler() or TIM5_IRQHandler().
 	 *
-	 * TODO use DMA instead of manually save values.
+	 * TODO (future release) use DMA instead of manually save values.
 	 */
 
 	uint8_t value0, value1;
@@ -132,12 +132,12 @@ void EXTI2_IRQHandler(void)
 	{
 		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
 
-		if( hms1.data->wptr < (hms1.data->base + hms1.data->words) )
+		if( sens1.data->wptr < (sens1.data->base + sens1.data->words) )
 		{
 			// read ADC parallel-port-value
 			value0 = GPIOA->IDR;
 			value1 = GPIOC->IDR;
-			*(hms1.data->wptr++) = (value1 << 8) | value0;
+			*(sens1.data->wptr++) = (value1 << 8) | value0;
 		}
 	}
 	// -------------- nomore code here !! --------------
@@ -174,7 +174,7 @@ void TIM1_CC_IRQHandler(void)
   /* USER CODE BEGIN TIM1_CC_IRQn 0 */
 
 	/*
-	 * CAPTURE DATA END - END OF SIGNAL (EOS)
+	 * CAPTURE DATA END - END OF SCAN (EOS)
 	 * ---------------------------------------
 	 *
 	 * Here we handle the capturing of the EOS of the sensor. EOS signal is send after
@@ -182,7 +182,7 @@ void TIM1_CC_IRQHandler(void)
 	 * able the IR for the ADC-Busy-Line and return to the main program [1], which is
 	 * waiting for the status to change.
 	 *
-	 * [1] see micro_spec_wait_for_measurement_done() in micro_spec.c
+	 * [1] see sensor_wait_for_measurement_done() in micro_spec.c
 	 *
 	 */
 
@@ -190,7 +190,6 @@ void TIM1_CC_IRQHandler(void)
 	{
 		// clear IR flag
 		__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC2 );
-//		TIM1->SR &= ~TIM_SR_CC2IF;
 
 		// Disable IR for ADC-busy-line. We also disable EOS,
 		// as we may got it early and we don't want to catch
@@ -199,13 +198,15 @@ void TIM1_CC_IRQHandler(void)
 		NVIC_DisableIRQ( EXTI2_IRQn );
 
 		// do we got the eos to early ?
+		// this may happen if EOS is crosstalked by
+		// other signals. shielding (GND) it well.
 		if( TIM1->CCR2 < TRG_TO_EOS )
 		{
-			hms1.status = MS_ERR_EOS_EARLY;
+			sens1.status = SENS_ERR_EOS_EARLY;
 		}
 		else
 		{
-			hms1.status = MS_EOS_CAPTURED;
+			sens1.status = SENS_EOS_CAPTURED;
 		}
 		__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_CC2 );
 	}
@@ -216,8 +217,8 @@ void TIM1_CC_IRQHandler(void)
 	 *
 	 * If we counted MSPARAM_CAPTURE_PXL_ST many TRG edges we start capturing the
 	 * values from the ADC. Here we enable the IR for the ADC-Busy-Line. To examine
-	 * the start of capturing, the TEST signal is set high here (automatically by the
-	 * TIM1). One can read TEST on the oscilloscope.
+	 * the start of capturing, the TEST signal is set high at the same time
+	 * (automatically by the TIM1). One can read TEST on the oscilloscope.
 	 */
 	if( (TIM1->SR & TIM_SR_CC4IF) && (TIM1->DIER & TIM_DIER_CC4IE) )
 	{
@@ -230,7 +231,7 @@ void TIM1_CC_IRQHandler(void)
 		NVIC_ClearPendingIRQ( EXTI2_IRQn );
 		NVIC_EnableIRQ( EXTI2_IRQn );
 
-		hms1.status = MS_CAPTURE_DATA;
+		sens1.status = SENS_CAPTURE_DATA;
 	}
 
 #ifndef DO_NOT_USE_HAL_IRQ_HANDLER
@@ -269,9 +270,9 @@ void USART3_IRQHandler(void)
 		__HAL_UART_DISABLE_IT( &huart3, UART_IT_CM );
 
 		uart3_cmd_bytes = huart3.RxXferSize - huart3.hdmarx->Instance->CNDTR;
-		uart3_cmd_CR_recvd = true;
+		uart3_CR_recvd = true;
 
-		cpu_enter_run_mode();
+		cpu_enter_run_mode(); // TODO TEST without a2
 	}
 
 #define USART3_IRQHandler__OK
@@ -295,7 +296,7 @@ void TIM5_IRQHandler(void)
 	// ..and the EOS capturing.
 	__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_CC2 );
 
-	hms1.status = MS_ERR_TIMEOUT;
+	sens1.status = SENS_ERR_TIMEOUT;
 
 #define TIM5_IRQHandler__OK
   /* USER CODE END TIM5_IRQn 1 */

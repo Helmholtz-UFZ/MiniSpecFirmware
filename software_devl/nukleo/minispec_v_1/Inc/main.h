@@ -61,6 +61,8 @@
 #define EXTADC1_BUSY_EXTI_IRQn EXTI2_IRQn
 
 /* USER CODE BEGIN Private defines */
+
+// redefine to prevent strange behavior
 #ifdef __packed
 #undef __packed
 #define __packed __attribute__((__packed__))
@@ -71,9 +73,23 @@
 #define __weak 	__attribute__((weak))
 #endif /*__weak */
 
+/** the data format specifies the datatype of the
+ * arguments and the data to/from external system.*/
 #define DATA_FORMAT_BIN		0
+
+/** @sa DATA_FORMAT_BIN */
 #define DATA_FORMAT_ASCII	1
 
+/** header for data in ASCII format
+ *  make data look nice on terminal */
+#define HEADER_STR	"          0     1     2     3     4     5     6     7     8     9"
+
+/** @sa DATA_FORMAT_BIN */
+#define DELIMITER_STR   "-----------------------------------------------------------------"
+
+/**
+ * error code enumeration
+ */
 typedef enum
 {
 	ERRC_NO_ERROR = 0,
@@ -83,21 +99,22 @@ typedef enum
 	ERRC_TIMEOUT
 } error_code;
 
+/**
+ * enum for the defined commands
+ */
 typedef enum usr_cmd_enum
 {
 	USR_CMD_UNKNOWN,
 	USR_CMD_SET_FORMAT, // 0 - raw/bin or 1 - ascii
-	USR_CMD_SET_SENSOR, // choose if sens 1 or sens 2 (for future use)
+	USR_CMD_SET_SENSOR, // UNUSED (for future use) - choose if sens 1 or sens 2
 	USR_CMD_WRITE_ITIME,
 	USR_CMD_READ_ITIME,
-	USR_CMD_GET_DATA, // not implemented
+	USR_CMD_GET_DATA, // UNUSED (for future use) save data and return on request
 	USR_CMD_SINGLE_MEASURE_START,
 	USR_CMD_STREAM_START,
 	USR_CMD_STREAM_END,
 } usr_cmd_enum_t;
 
-#define HEADER_STR	"          0     1     2     3     4     5     6     7     8     9"
-#define DELIMITER_STR   "-----------------------------------------------------------------"
 
 int usr_main( void );
 void cpu_enter_sleep_mode( void );

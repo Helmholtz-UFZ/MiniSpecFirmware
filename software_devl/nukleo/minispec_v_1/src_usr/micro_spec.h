@@ -8,14 +8,15 @@
 #ifndef MICRO_SPEC_H_
 #define MICRO_SPEC_H_
 
-
-#define MICROSPEC_DATA_BUFFER_MAX_WORDS		(350)
+/** desired size in words */
+#define SENSOR_DATA_BUFFER_MAX_WORDS		(350)
 
 /**word size in bytes*/
-#define MICROSPEC_WORD_SIZE			(2)
+#define SENSOR_WORD_SIZE			(2)
 
 /**size in bytes*/
-#define MICROSPEC_DATA_BUFFER_SIZE		(MICROSPEC_DATA_BUFFER_MAX_WORDS*MICROSPEC_WORD_SIZE)
+#define SENSOR_DATA_BUFFER_SIZE			((SENSOR_DATA_BUFFER_MAX_WORDS)*(SENSOR_WORD_SIZE))
+
 
 typedef struct
 {
@@ -23,39 +24,38 @@ typedef struct
 	const uint16_t words; /*                !< buffer size in (16bit-)words  */
 	uint16_t* base; /*			!< pointer to the start of the buffer  */
 	volatile uint16_t volatile *wptr; /*	!< write pointer for the data, points to the next empty location  */
-} microspec_buffer_t;
+} sensor_buffer_t;
 
 
 typedef enum
 {
-	MS_UNINITIALIZED = 0,
-	MS_INITIALIZED,
-	MS_MEASURE_STARTED,
-	MS_CAPTURE_DATA,
-	MS_EOS_CAPTURED,
-	MS_MEASURE_DONE,
+	SENS_UNINITIALIZED = 0,
+	SENS_INITIALIZED,
+	SENS_MEASURE_STARTED,
+	SENS_CAPTURE_DATA,
+	SENS_EOS_CAPTURED,
+	SENS_MEASURE_DONE,
 
 	//errors
-	MS_ERR_EOS_EARLY,
-	MS_ERR_NO_EOS,
-	MS_ERR_TIMEOUT,
-} microspec_status_enum_t;
+	SENS_ERR_EOS_EARLY,
+	SENS_ERR_NO_EOS,
+	SENS_ERR_TIMEOUT,
+} sensor_status_enum_t;
 
 typedef struct
 {
-	volatile microspec_status_enum_t status;
-	volatile microspec_buffer_t *data;
-	uint32_t integrtion_time;
+	volatile sensor_status_enum_t status;
+	volatile sensor_buffer_t *data;
+	uint32_t itime;
+} sensor_t;
 
-} microspec_t;
+extern sensor_t sens1;
 
-extern microspec_t hms1;
+void sensor_init( void );
+void sensor_deinit( void );
 
-void micro_spec_init( void );
-void micro_spec_deinit( void );
+uint8_t sensor_measure( void );
 
-uint8_t micro_spec_measure_start( void );
-
-uint32_t micro_spec_set_integration_time( uint32_t int_time );
+uint32_t sensor_set_itime( uint32_t int_time );
 
 #endif /* MICRO_SPEC_H_ */

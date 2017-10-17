@@ -7,15 +7,17 @@
  *	General Procedure:
  *	-------------------
  *
+ *	0. TIM3 provide the CLK
+ *
  *	1. TIM2 is started and generate the start signal (ST) for the sensor with the
  *	length of integration time - 48us.
  *
- *	2. With the falling edge of ST (TIM2 counter reached TIM2ARR) TIM1 is started
+ *	2. With the falling edge of ST (TIM2 counter reached TIM2_ARR) TIM1 is started
  *	automatically and count the rising edges of the sensors trigger (TRG) signal.
  *	(Actually we count the falling edges of the inverted TRG signal, what is the
  *	same, but the inversion is needed for the ADC).
  *
- *	3. When TIM1 counter reaches the value in the CCR4 the IR for the ADC_BUSY is
+ *	3. When TIM1 counter reaches the value in its CCR4 the IR for the ADC_BUSY is
  *	enabled. With every rising edge on the ADC_BUSY line a new conversion is done
  *	and we read the result on the ADC parallel port.
  *
@@ -25,38 +27,32 @@
  *	until all valid values are transmitted.
  *
  *	5. After 288 valid values (should be on the 377(288+88+1) TRG edge) the sensor
- *	generates the end of signal (EOS) signal. We capture the current TRG count in
+ *	generates the end of scan (EOS) signal. We capture the current TRG count in
  *	the TIM1 CCR2 and an IR is generated. There we disable the IR for the
- *	ADC_BUSY line, stop TIM1 and return to the main program which should be waiting
- *	in the function micro_spec_wait_for_measurement_done(). At this point we know
+ *	ADC_BUSY line and return to the main program which should be waiting
+ *	in the function sens_wait_for_measurement_done(). At this point we know
  *	that the last written value in the data buffer is valid and the first valid lies
  *	288 values before the last one.
  *
  *	Safety Mechanisms / Error Handling:
  *	------------------------------------
  *
- *	a) If and only if EOS is not generated or not detected by any mischance.
- *	The TIM1 counter will count up to TIM1ARR, where we throw an IR and do the same
- *	as procedure as described in 5. additional we set a warning-flag to inform about
- *	the missing EOS.
- *
- *	b) For any reason may none or not enough TRG pulses occur. This would lock
+ *	a) kind of watch dog
+ *	For any reason may none or not enough TRG pulses occur. This would lock
  *	the whole program as we wait for the MS_MEASUREMENT_DONE flag in the function
- *	micro_spec_wait_for_measurement_done(). Therefore we set a third timer (TIM5)
- *	clocked by the internal clock and wait for the time 400 TRG pulses would normally
- *	need. If the timer is not disabled before it will throw an IR where we unlock the
- *	program and return to a certain state and of course we will set an error-flag.
+ *	micro_spec_wait_for_measurement_done(). Therefore we set a fourth timer (TIM5)
+ *	clocked by the internal clock and wait for 500us. If the timer is not disabled
+ *	before it will throw an IR where we unlock the program and return to a certain
+ *	state and of course we will set an error-flag.
  *
  *
  *	Call hierarchy for this module
  *	-------------------------------
  *
- *	1. micro_spec_init()					\n
- * 	2. micro_spec_measure_init()                            \n
- * 	3. micro_spec_measure_start()                           \n
- * 	4. micro_spec_wait_for_measurement_done()               \n
- * 	5. when a new measurement is desired go back to 2.      \n
- * 	6. micro_spec_deinit()                                  \n
+ *      1. sens_init()					    \n
+ *      2. sens_measure()                                   \n
+ *     (3.) when a new measurement is desired go back to 2. \n
+ *      4. sens_deinit()                                    \n
  */
 
 #include "stm32l4xx_hal.h"
@@ -65,73 +61,81 @@
 #include "global_include.h"
 #include "tim.h"
 
-static uint16_t mem_block1[MICROSPEC_DATA_BUFFER_MAX_WORDS + 1];
+static uint16_t mem_block1[SENSOR_DATA_BUFFER_MAX_WORDS + 1];
 
-static microspec_buffer_t ms1_buf =
-        { MICROSPEC_DATA_BUFFER_SIZE, MICROSPEC_DATA_BUFFER_MAX_WORDS, mem_block1, mem_block1 };
+static sensor_buffer_t sens_buf =
+        { SENSOR_DATA_BUFFER_SIZE, SENSOR_DATA_BUFFER_MAX_WORDS, mem_block1, mem_block1 };
 
-/* Handle for the micro sprectrometer 1 */
-microspec_t hms1 =
-        { MS_UNINITIALIZED, &ms1_buf, DEFAULT_INTEGRATION_TIME };
+/* Handle for the micro sprectrometer */
+sensor_t sens1 =
+        { SENS_UNINITIALIZED, &sens_buf, DEFAULT_INTEGRATION_TIME };
 
-static void enable_sensor_clk( void );
-static void disable_sensor_clk( void );
 static void post_process_values( void );
 static void wait_for_measure_done( void );
 
 /**
- *Init all internal data structs and buffer needed by the sensor(s).
+ * Init all internal data structs and buffer
+ * and timer needed by the sensor.
  */
-void micro_spec_init( void )
+void sensor_init( void )
 {
-	hms1.data = &ms1_buf;
-	hms1.data->base = mem_block1;
-	hms1.data->wptr = mem_block1;
+	sens1.data = &sens_buf;
+	sens1.data->base = mem_block1;
+	sens1.data->wptr = mem_block1;
 
 	// enable TIM channels
-	// Don't use TIM_CCxChannelCmd() (which also use the HAL) because it
-	// will generate a short uncertain state, which will result in a high output
-	// with an external pull-up resistor (as the level-translator has them internal!).
-	// TIM_CCxChannelCmd() is also used by the HAL.
 
-	//TIM1
-	// enable the IR's for channel 2 and 4 in the module
-	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC4 );
-	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC4 );
-	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC2 );
-	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC2 );
+	// Do not use TIM_CCxChannelCmd() see
+	// tim2_Init() in usr_tim.c for explanation
+	// use TIMx->CCER |= TIM_CCER_CCyE
 
-	// prepare channel 2 for capturing EOS
+	// TIM2 for: output ST
+	// en channel
+	TIM2->CCER |= TIM_CCER_CC3E;
+
+	// TIM1 for: count TRG(clock-source), capture EOS,
+	// [output TEST enable EXTI2(capture Data) in its ISR]
+	//
+	// (EOS) en channel
 	TIM1->CCER |= TIM_CCER_CC2E;
-	TIM1->CCR2 = 0;
 
-	// enable channel 4 to output TEST
+	// (TEST) en channel, en IR
 	TIM1->CCER |= TIM_CCER_CC4E;
-	__HAL_TIM_MOE_ENABLE( &htim1 );
 
-	// Enable TIM1 IR in the NVIC
+
+	// MAIN OUT PUT enable
+	__HAL_TIM_MOE_ENABLE( &htim1 );
+	// all CCRx-IR in the NVIC
 	NVIC_ClearPendingIRQ( TIM1_CC_IRQn );
 	NVIC_EnableIRQ( TIM1_CC_IRQn );
 
-	//TIM2
-	// enable tim2 channel 3 to output ST
-	TIM2->CCER |= TIM_CCER_CC3E;
-
-	//TIM5
+	// TIM5 - safty timer
+	// en IR in module
 	__HAL_TIM_CLEAR_IT( &htim5, TIM_IT_UPDATE );
 	__HAL_TIM_ENABLE_IT( &htim5, TIM_IT_UPDATE );
 
-	enable_sensor_clk();
+	// TIM3 - CLK for sensor
+	TIM3->CCER |= TIM_CCER_CC3E;
+	TIM3->CCER |= TIM_CCER_CC4E;
+
+	// start CLK
+	__HAL_TIM_ENABLE( &htim3 );
 	HAL_Delay( 1 );
-	hms1.status = MS_INITIALIZED;
+
+	sens1.status = SENS_INITIALIZED;
 }
 
-void micro_spec_deinit( void )
+void sensor_deinit( void )
 {
+
+	// disable CLK
 	HAL_Delay( 1 );
-	disable_sensor_clk();
+	TIM3->CR1 &= ~TIM_CR1_CEN;
+
 	NVIC_DisableIRQ( TIM1_CC_IRQn );
-	hms1.status = MS_UNINITIALIZED;
+	NVIC_DisableIRQ( EXTI2_IRQn );
+
+	sens1.status = SENS_UNINITIALIZED;
 }
 
 /**
@@ -146,52 +150,56 @@ void micro_spec_deinit( void )
  * measurement is done.
  *
  */
-uint8_t micro_spec_measure_start( void )
+uint8_t sensor_measure( void )
 {
-	if( hms1.status < MS_INITIALIZED )
+	uint32_t int_time_cnt;
+
+	if( sens1.status < SENS_INITIALIZED )
 	{
 		return 1;
 	}
-
+	
 	// reset data buffer
-	memset( hms1.data->base, 0, hms1.data->size );
-	hms1.data->wptr = hms1.data->base;
-
-	uint32_t int_time_cnt;
+	memset( sens1.data->base, 0, sens1.data->size );
+	sens1.data->wptr = sens1.data->base;
+	
 	
 	// prevent SysTick to stretch time critical sections
 	HAL_SuspendTick();
 	
 	// 48 clock-cycles are added by the sensor to "high" of the ST-signal
-	// resulting in the integrationtime (see c12880ma_kacc1226e.pdf)
-	int_time_cnt = MAX( hms1.integrtion_time, MIN_INTERGATION_TIME );
+	// resulting in the integration-time (see c12880ma_kacc1226e.pdf)
+	int_time_cnt = MAX( sens1.itime, MIN_INTERGATION_TIME );
 	int_time_cnt -= ITIME_CORRECTION;
+
+	// prepare ST
+	__HAL_TIM_SET_AUTORELOAD( &htim2, int_time_cnt );
 	
-	// EOS prepare.
-	// Reset the capturing reg and enable the capturing IR
-	TIM1->CCR2 = 0; // todo use HAL everywhere
-//	__HAL_TIM_SET_COMPARE();
+	// prepare CAPTURE DATA START
+	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC4 );
+	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC4 );
+
+	// prepare EOS - CAPTURE DATA END
+	// Reset the CCR, enable its IR
+	__HAL_TIM_SET_COMPARE( &htim1, TIM_IT_CC2, 0 );
 	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC2 );
 	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC2 );
 	
-	// set the countervalue for integrationtime on TIM2
-	__HAL_TIM_SET_AUTORELOAD( &htim2, int_time_cnt );
-	
-	TIM2->CR1 |= TIM_CR1_CEN;
-	hms1.status = MS_MEASURE_STARTED;
+	// lets go
+	__HAL_TIM_ENABLE( &htim2 );
+	sens1.status = SENS_MEASURE_STARTED;
 	
 	wait_for_measure_done();
-
+	
 	post_process_values();
-
-	if( hms1.status == MS_EOS_CAPTURED )
+	
+	if( sens1.status == SENS_EOS_CAPTURED )
 	{
-		hms1.status = MS_MEASURE_DONE;
+		sens1.status = SENS_MEASURE_DONE;
 		return 0;
 	}
 	else
 	{
-		HAL_Delay( 1 );
 		return 1;
 	}
 }
@@ -205,12 +213,16 @@ uint8_t micro_spec_measure_start( void )
  */
 static void wait_for_measure_done( void )
 {
-	while( hms1.status < MS_EOS_CAPTURED )
+	while( sens1.status < SENS_EOS_CAPTURED )
 	{
 		// busy waiting
 	}
 	__HAL_TIM_DISABLE_IT( &htim5, TIM_IT_UPDATE );
+	
 	HAL_ResumeTick();
+	
+	// this ensures TIM5 is done
+	HAL_Delay( 1 );
 }
 
 /**
@@ -232,9 +244,9 @@ static void post_process_values( void )
 {
 	
 	uint16_t res, val;
-	uint16_t *rptr = hms1.data->base;
+	uint16_t *rptr = sens1.data->base;
 	
-	while( rptr < hms1.data->wptr )
+	while( rptr < sens1.data->wptr )
 	{
 		val = *rptr;
 
@@ -264,55 +276,28 @@ static void post_process_values( void )
 /**
  * @brief 	Set the integration time in us for the sensor.
  *
- * The minimum is defined by MIN_INTERGATION_TIME ( 50 us )
- * The maximum is 1 second
+ * The minimum is defined by MIN_INTERGATION_TIME
+ * The maximum by MAX_INTERGATION_TIME
  *
  * @param int_time	The integration time in us
  * @return The integration time value set
  */
-uint32_t micro_spec_set_integration_time( uint32_t int_time )
+uint32_t sensor_set_itime( uint32_t itime )
 {
 	
-	if( int_time < MIN_INTERGATION_TIME )
+	if( itime < MIN_INTERGATION_TIME )
 	{
-		hms1.integrtion_time = MIN_INTERGATION_TIME;
+		sens1.itime = MIN_INTERGATION_TIME;
 	}
-	else if( int_time > MAX_INTERGATION_TIME )
+	else if( itime > MAX_INTERGATION_TIME )
 	{
-		hms1.integrtion_time = MAX_INTERGATION_TIME;
+		sens1.itime = MAX_INTERGATION_TIME;
 	}
 	else
 	{
-		hms1.integrtion_time = int_time;
+		sens1.itime = itime;
 	}
 	
-	return hms1.integrtion_time;
-}
-
-/**
- * Enables the clock signal for the sensor.
- *
- * This clock gated through the sensor (with a delay of about
- * half a CLK-cycle ~542ns) and is given back as TRG-signal
- * from the sensor. The inverted version of the TRG is send to
- * the ADC-trigger input and also we count the falling edges of
- * the inverted TRG as clock source of TIM1. So the sensor clock
- * should stay enabled for the whole cycle of all measurements,
- * until this (micro-sprectrometer-)module is disabled or the
- * nukleo is powered down.
- */
-static void enable_sensor_clk( void )
-{
-	TIM3->CCER |= TIM_CCER_CC3E;
-	TIM3->CCER |= TIM_CCER_CC4E;
-	TIM3->CR1 |= TIM_CR1_CEN;
-}
-/**
- * Disable the sensor clock. When the CLK-signal is deactivated,
- * also the TRG-signal is deactivated. @sa enable_sensor_clk()
- */
-static void disable_sensor_clk( void )
-{
-	TIM3->CR1 &= ~TIM_CR1_CEN;
+	return sens1.itime;
 }
 
