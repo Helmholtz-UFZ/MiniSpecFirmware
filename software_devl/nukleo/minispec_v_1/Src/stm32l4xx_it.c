@@ -200,7 +200,7 @@ void TIM1_CC_IRQHandler(void)
 		// do we got the eos to early ?
 		// this may happen if EOS is crosstalked by
 		// other signals. shielding (GND) it well.
-		if( TIM1->CCR2 < TRG_TO_EOS )
+		if( TIM1->CCR2 < TRG_TO_EOS - 1 )
 		{
 			sens1.status = SENS_ERR_EOS_EARLY;
 		}
