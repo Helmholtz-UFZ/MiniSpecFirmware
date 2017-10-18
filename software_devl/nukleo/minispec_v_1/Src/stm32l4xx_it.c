@@ -272,7 +272,8 @@ void USART3_IRQHandler(void)
 		uart3_cmd_bytes = huart3.RxXferSize - huart3.hdmarx->Instance->CNDTR;
 		uart3_CR_recvd = true;
 
-		cpu_enter_run_mode(); // TODO TEST without a2
+
+		cpu_enter_run_mode();
 	}
 
 #define USART3_IRQHandler__OK

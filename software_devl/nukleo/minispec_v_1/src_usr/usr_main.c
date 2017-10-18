@@ -255,8 +255,14 @@ void cpu_enter_sleep_mode( void )
 	HAL_SuspendTick();
 
 	// go back to sleep after handling an IR
-	HAL_PWR_EnableSleepOnExit(); // TODO TEST without a1
+	// cleared by calling cpu_enter_run_mode() from ISR
+	HAL_PWR_EnableSleepOnExit();
+
+	//sleep + WaintForInterrupt-----------------------------------------
 	HAL_PWR_EnterSLEEPMode( PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI );
+	//awake again ------------------------------------------------------
+
+	HAL_ResumeTick();
 }
 
 /**
@@ -267,8 +273,8 @@ void cpu_enter_run_mode( void )
 {
 	// wake up after handling the actual IR
 	CLEAR_BIT( SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk) );
-	HAL_ResumeTick();
 }
+
 
 /*
  * check and parse for an command and set the
