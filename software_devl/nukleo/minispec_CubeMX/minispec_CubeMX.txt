@@ -1,6 +1,6 @@
 Configuration	minispec_CubeMX
-STM32CubeMX 	4.27.0
-Date	09/25/2018
+STM32CubeMX 	4.23.0
+Date	11/22/2018
 MCU	STM32L476RGTx
 
 
@@ -43,33 +43,41 @@ USART1	Asynchronous	USART1_TX	PB6
 
 
 Pin Nb	PINs	FUNCTIONs	LABELs
+2	PC13	GPIO_Output	Button NucleoBoard
 3	PC14-OSC32_IN (PC14)	RCC_OSC32_IN	
 4	PC15-OSC32_OUT (PC15)	RCC_OSC32_OUT	
-8	PC0	GPIO_Input	
-9	PC1	GPIO_Input	
-10	PC2	GPIO_Input	
-11	PC3	GPIO_Input	
-14	PA0	GPIO_Input	
-15	PA1	GPIO_Input	
-16	PA2	GPIO_Input	
-17	PA3	GPIO_Input	
-20	PA4	GPIO_Input	
-21	PA5	GPIO_Input	
-22	PA6	GPIO_Input	
-23	PA7	GPIO_Input	
-24	PC4	GPIO_Input	
-25	PC5	GPIO_Input	
+8	PC0	GPIO_Input	D8
+9	PC1	GPIO_Input	D9
+10	PC2	GPIO_Input	D10
+11	PC3	GPIO_Input	D11
+14	PA0	GPIO_Input	D0
+15	PA1	GPIO_Input	D1
+16	PA2	GPIO_Input	D2
+17	PA3	GPIO_Input	D3
+20	PA4	GPIO_Input	D4
+21	PA5	GPIO_Input	D5
+22	PA6	GPIO_Input	D6
+23	PA7	GPIO_Input	D7
+24	PC4	GPIO_Input	D12
+25	PC5	GPIO_Input	D13
 26	PB0	TIM3_CH3	TIM3CH3_PROBE_1
 27	PB1	TIM3_CH4	TIM3CH4_SENSCLK
 28	PB2	GPIO_EXTI2	EXTADC_BUSY
 29	PB10	TIM2_CH3	TIM2CH3_SENSST
-37	PC6	GPIO_Input	
-38	PC7	GPIO_Input	
+33	PB12	GPIO_Output	POWER5V_SWITCH_ENBL
+36	PB15	GPIO_Input	GPIO_HeaderPin
+37	PC6	GPIO_Input	D14
+38	PC7	GPIO_Input	D15
 39	PC8	SDMMC1_D0	
 40	PC9	SDMMC1_D1	
+41	PA8	GPIO_Output	ADC_RESET
 42	PA9	TIM1_CH2	TIM1CH2_SENSEOS
+43	PA10	GPIO_Output	ADC_PD
 44	PA11	TIM1_CH4	TIM1CH4_PROBE_0
 45	PA12	TIM1_ETR	TIM1ETR_SENSTRG
+46	PA13 (JTMS-SWDIO)	GPIO_Output	W5500_RST
+49	PA14 (JTCK-SWCLK)	GPIO_Output	W5500_SCS
+50	PA15 (JTDI)	GPIO_Input	W5500_INT
 51	PC10	SDMMC1_D2	
 52	PC11	SDMMC1_D3	
 53	PC12	SDMMC1_CK	
@@ -88,9 +96,9 @@ SOFTWARE PROJECT
 
 Project Settings : 
 Project Name : minispec_CubeMX
-Project Folder : /home/palmb_ubu/00_projects/Micro_Spec_STM32/software_devl/nukleo/minispec_CubeMX
+Project Folder : C:\Users\remmlerp\Documents\Altium\2018 Projects\MicroSpecSensorBoard_V2_0\PinUp\Micro_Spec_STM32\software_devl\nukleo\minispec_CubeMX
 Toolchain / IDE : SW4STM32
-Firmware Package Name and Version : STM32Cube FW_L4 V1.8.1
+Firmware Package Name and Version : STM32Cube FW_L4 V1.10.0
 
 
 Code Generation Settings : 
