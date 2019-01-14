@@ -128,9 +128,9 @@ void EXTI2_IRQHandler(void)
 	uint8_t value0, value1;
 
 	// -------------- nomore code here !! --------------
-	if( __HAL_GPIO_EXTI_GET_IT(EXTADC1_BUSY_Pin) != RESET )
+	if( __HAL_GPIO_EXTI_GET_IT(EXTADC_BUSY_Pin) != RESET )
 	{
-		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
+		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC_BUSY_Pin );
 
 		if( sens1.data->wptr < (sens1.data->base + sens1.data->words) )
 		{
@@ -227,7 +227,7 @@ void TIM1_CC_IRQHandler(void)
 //		TIM1->SR &= ~TIM_SR_CC4IF;
 
 		// Enable IR for ADC-busy-line.
-		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
+		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC_BUSY_Pin );
 		NVIC_ClearPendingIRQ( EXTI2_IRQn );
 		NVIC_EnableIRQ( EXTI2_IRQn );
 
@@ -250,11 +250,33 @@ void TIM1_CC_IRQHandler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
+	/*
+	 * Here all u(s)art3 related IRs are handled by the HAL.
+	 *
+	 * We only add a case for handling of capturing a predefined sign ('\r' aka. carriage-return).
+	 * If we capture such a sign we assume the user had entered a complete command and now want us
+	 * to handle it appropriate, as we'll do :). We set some parameter here and handle it in the
+	 * main-loop.
+	 */
 
   /* USER CODE END USART1_IRQn 0 */
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
 
+	// catch carriage return as 'end of cmd'-flag
+	if( ((USART1->ISR & USART_ISR_CMF) != RESET) && ((USART1->CR1 & USART_CR1_CMIE) != RESET) )
+	{
+		__HAL_UART_CLEAR_IT( &huart1, USART_ISR_CMF );
+		__HAL_UART_DISABLE_IT( &huart1, UART_IT_CM );
+
+		uart1_cmd_bytes = huart1.RxXferSize - huart1.hdmarx->Instance->CNDTR;
+		uart1_CR_recvd = true;
+
+
+		cpu_enter_run_mode();
+	}
+
+#define USART1_IRQHandler__OK
   /* USER CODE END USART1_IRQn 1 */
 }
 
@@ -269,10 +291,31 @@ void TIM5_IRQHandler(void)
   HAL_TIM_IRQHandler(&htim5);
   /* USER CODE BEGIN TIM5_IRQn 1 */
 
+	// Disable IR for ADC-busy-line...
+	NVIC_DisableIRQ( EXTI2_IRQn );
+
+	// ..and the EOS capturing.
+	__HAL_TIM_DISABLE_IT( &htim1, TIM_IT_CC2 );
+
+	sens1.status = SENS_ERR_TIMEOUT;
+
+#define TIM5_IRQHandler__OK
   /* USER CODE END TIM5_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
 
+/*
+ * Some security checks, as CubeMX may delete IRQHandler when
+ * they are not needed. This checks are added to easy find this
+ * kinds of errors as they are hard to track and can happen easily.
+ */
+#if (!defined EXTI2_IRQHandler__OK \
+	|| !defined TIM1_CC_IRQHandler__OK \
+	|| !defined USART1_IRQHandler__OK \
+	|| !defined SysTick_Handler__OK \
+	|| !defined TIM5_IRQHandler__OK)
+#warning "IRQ_Handler missing. May it was deleted by CubeMX ?"
+#endif
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

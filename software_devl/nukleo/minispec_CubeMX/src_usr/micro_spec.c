@@ -234,10 +234,11 @@ static void wait_for_measure_done( void )
  * before ordering:
  *             PC[7..0]                PA[7..0]
  * buffer[i] = c7 c6 c5 c4 c3 c2 c1 c0 a7 a6 a5 a4 a3 a2 a1 a0
+ * 		   BIT 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
  *
  * after ordering:
- * buffer[i] = c3 c2 a0 a1 a4 c1 c0 a3 a2 c7 a7 a6 a5 c6 c5 c4
- *
+ * buffer[i] = c7 c6 c5 a5 c0 c3 c1 c2 a6 a7 c4 a4 a2 a3 a1 a0
+ * 			  D15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
  *
  */
 static void post_process_values( void )
@@ -249,24 +250,22 @@ static void post_process_values( void )
 	while( rptr < sens1.data->wptr )
 	{
 		val = *rptr;
-
-		res = 0;
-		res |= (val >> 11) & BIT0; //PC3
-		res |= (val >> 9) & BIT1;  //PC2
-		res |= (val << 2) & BIT2;  //PA0
-		res |= (val << 2) & BIT3;  //PA1
-		res |= (val << 0) & BIT4;  //PA4
-		res |= (val >> 4) & BIT5;  //PC1
-		res |= (val >> 2) & BIT6;  //PC0
-		res |= (val << 4) & BIT7;  //PA3
-		res |= (val << 6) & BIT8;  //PA2
-		res |= (val >> 6) & BIT9;  //PC7
-		res |= (val << 3) & BIT10; //PA7
-		res |= (val << 5) & BIT11; //PA6
-		res |= (val << 7) & BIT12; //PA5
-		res |= (val >> 1) & BIT13; //PC6
-		res |= (val << 1) & BIT14; //PC5
-		res |= (val << 3) & BIT15; //PC4
+		res |= (((val & BIT0)  >> (BIT0  -1)) <<  0) & BIT0;
+		res |= (((val & BIT1)  >> (BIT1  -1)) <<  1) & BIT1;
+		res |= (((val & BIT3)  >> (BIT3  -1)) <<  2) & BIT2;
+		res |= (((val & BIT2)  >> (BIT2  -1)) <<  3) & BIT3;
+		res |= (((val & BIT4)  >> (BIT4  -1)) <<  4) & BIT4;
+		res |= (((val & BIT12) >> (BIT12 -1)) <<  5) & BIT5;
+		res |= (((val & BIT7)  >> (BIT7  -1)) <<  6) & BIT6;
+		res |= (((val & BIT6)  >> (BIT6  -1)) <<  7) & BIT7;
+		res |= (((val & BIT10) >> (BIT10 -1)) <<  8) & BIT8;
+		res |= (((val & BIT9)  >> (BIT9  -1)) <<  9) & BIT9;
+		res |= (((val & BIT11) >> (BIT11 -1)) << 10) & BIT10;
+		res |= (((val & BIT8)  >> (BIT8  -1)) << 11) & BIT11;
+		res |= (((val & BIT5)  >> (BIT5  -1)) << 12) & BIT12;
+		res |= (((val & BIT13) >> (BIT13 -1)) << 13) & BIT13;
+		res |= (((val & BIT14) >> (BIT14 -1)) << 14) & BIT14;
+		res |= (((val & BIT15) >> (BIT15 -1)) << 15) & BIT15;
 
 		*rptr = res;
 		rptr++;
