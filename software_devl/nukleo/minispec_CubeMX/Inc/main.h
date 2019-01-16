@@ -163,6 +163,7 @@ typedef enum usr_cmd_enum
 	USR_CMD_SINGLE_MEASURE_START,
 	USR_CMD_STREAM_START,
 	USR_CMD_STREAM_END,
+	USR_CMD_DEBUG,
 } usr_cmd_enum_t;
 
 

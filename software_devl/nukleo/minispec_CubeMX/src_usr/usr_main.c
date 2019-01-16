@@ -108,6 +108,10 @@ int usr_main( void )
 			data_format = (extcmd_data > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
 			break;
 
+		case USR_CMD_DEBUG:
+			uart_printf(&huart1, &uart1_tx_buffer, "received xxx");
+			break;
+
 		default:
 			break;
 		}
@@ -350,6 +354,14 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
 	{
 		extcmd = USR_CMD_READ_ITIME;
+		return;
+	}
+
+	str = "xxx\r";
+	sz = strlen( str );
+	if( memcmp( buffer, str, sz ) == 0 )
+	{
+		extcmd = USR_CMD_DEBUG;
 		return;
 	}
 }
