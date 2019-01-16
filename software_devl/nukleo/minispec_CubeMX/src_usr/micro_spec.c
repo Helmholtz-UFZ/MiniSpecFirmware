@@ -247,9 +247,12 @@ static void post_process_values( void )
 	uint16_t res, val;
 	uint16_t *rptr = sens1.data->base;
 	
+
 	while( rptr < sens1.data->wptr )
 	{
 		val = *rptr;
+		res = 0;
+#if OFF  // for debugging
 		res |= (((val & BIT0)  >> (BIT0  -1)) <<  0) & BIT0;
 		res |= (((val & BIT1)  >> (BIT1  -1)) <<  1) & BIT1;
 		res |= (((val & BIT3)  >> (BIT3  -1)) <<  2) & BIT2;
@@ -266,7 +269,24 @@ static void post_process_values( void )
 		res |= (((val & BIT13) >> (BIT13 -1)) << 13) & BIT13;
 		res |= (((val & BIT14) >> (BIT14 -1)) << 14) & BIT14;
 		res |= (((val & BIT15) >> (BIT15 -1)) << 15) & BIT15;
-
+#else
+		res |= (val >> 11) & BIT0; //PC3
+		res |= (val >> 9) & BIT1;  //PC2
+		res |= (val << 2) & BIT2;  //PA0
+		res |= (val << 2) & BIT3;  //PA1
+		res |= (val << 0) & BIT4;  //PA4
+		res |= (val >> 4) & BIT5;  //PC1
+		res |= (val >> 2) & BIT6;  //PC0
+		res |= (val << 4) & BIT7;  //PA3
+		res |= (val << 6) & BIT8;  //PA2
+		res |= (val >> 6) & BIT9;  //PC7
+		res |= (val << 3) & BIT10; //PA7
+		res |= (val << 5) & BIT11; //PA6
+		res |= (val << 7) & BIT12; //PA5
+		res |= (val >> 1) & BIT13; //PC6
+		res |= (val << 1) & BIT14; //PC5
+		res |= (val << 3) & BIT15; //PC4
+#endif
 		*rptr = res;
 		rptr++;
 	}
