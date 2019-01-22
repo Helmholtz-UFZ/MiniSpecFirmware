@@ -1,0 +1,120 @@
+Configuration	minispec
+STM32CubeMX 	4.27.0
+Date	01/22/2019
+MCU	STM32L476RGTx
+
+
+
+PERIPHERALS	MODES	FUNCTIONS	PINS
+I2C1	I2C	I2C1_SCL	PB8
+I2C1	I2C	I2C1_SDA	PB9
+RCC	Crystal/Ceramic Resonator	RCC_OSC32_IN	PC14-OSC32_IN (PC14)
+RCC	Crystal/Ceramic Resonator	RCC_OSC32_OUT	PC15-OSC32_OUT (PC15)
+SDMMC1	SD 4 bits Wide bus	SDMMC1_CK	PC12
+SDMMC1	SD 4 bits Wide bus	SDMMC1_CMD	PD2
+SDMMC1	SD 4 bits Wide bus	SDMMC1_D0	PC8
+SDMMC1	SD 4 bits Wide bus	SDMMC1_D1	PC9
+SDMMC1	SD 4 bits Wide bus	SDMMC1_D2	PC10
+SDMMC1	SD 4 bits Wide bus	SDMMC1_D3	PC11
+SPI1	Full-Duplex Master	SPI1_MISO	PB4 (NJTRST)
+SPI1	Full-Duplex Master	SPI1_MOSI	PB5
+SPI1	Full-Duplex Master	SPI1_SCK	PB3 (JTDO-TRACESWO)
+SYS	Serial Wire	SYS_JTCK-SWCLK	PA14 (JTCK-SWCLK)
+SYS	Serial Wire	SYS_JTMS-SWDIO	PA13 (JTMS-SWDIO)
+SYS	SysTick	SYS_VS_Systick	VP_SYS_VS_Systick
+TIM1	Trigger Mode	TIM1_VS_ControllerModeTrigger	VP_TIM1_VS_ControllerModeTrigger
+TIM1	ITR1	TIM1_VS_ClockSourceITR	VP_TIM1_VS_ClockSourceITR
+TIM1	ETR2	TIM1_ETR	PA12
+TIM1	Input Capture direct mode	TIM1_CH2	PA9
+TIM1	PWM Generation CH4	TIM1_CH4	PA11
+TIM1	One pulse	TIM1_VS_OPM	VP_TIM1_VS_OPM
+TIM2	External Clock Mode 1	TIM2_VS_ControllerModeClock	VP_TIM2_VS_ControllerModeClock
+TIM2	ITR2	TIM2_VS_ClockSourceITR	VP_TIM2_VS_ClockSourceITR
+TIM2	PWM Generation CH3	TIM2_CH3	PB10
+TIM2	One pulse	TIM2_VS_OPM	VP_TIM2_VS_OPM
+TIM3	Internal Clock	TIM3_VS_ClockSourceINT	VP_TIM3_VS_ClockSourceINT
+TIM3	Output Compare CH3	TIM3_CH3	PB0
+TIM3	Output Compare CH4	TIM3_CH4	PB1
+TIM5	Trigger Mode	TIM5_VS_ControllerModeTrigger	VP_TIM5_VS_ControllerModeTrigger
+TIM5	ITR0	TIM5_VS_ClockSourceITR	VP_TIM5_VS_ClockSourceITR
+TIM5	Internal Clock	TIM5_VS_ClockSourceINT	VP_TIM5_VS_ClockSourceINT
+TIM5	One pulse	TIM5_VS_OPM	VP_TIM5_VS_OPM
+USART1	Asynchronous	USART1_RX	PB7
+USART1	Asynchronous	USART1_TX	PB6
+
+
+
+Pin Nb	PINs	FUNCTIONs	LABELs
+2	PC13	GPIO_Output	Button NucleoBoard
+3	PC14-OSC32_IN (PC14)	RCC_OSC32_IN	
+4	PC15-OSC32_OUT (PC15)	RCC_OSC32_OUT	
+8	PC0	GPIO_Input	D11
+9	PC1	GPIO_Input	D9
+10	PC2	GPIO_Input	D8
+11	PC3	GPIO_Input	D10
+14	PA0	GPIO_Input	D0
+15	PA1	GPIO_Input	D1
+16	PA2	GPIO_Input	D3
+17	PA3	GPIO_Input	D2
+20	PA4	GPIO_Input	D4
+21	PA5	GPIO_Input	D12
+22	PA6	GPIO_Input	D7
+23	PA7	GPIO_Input	D6
+24	PC4	GPIO_Input	D5
+25	PC5	GPIO_Input	D13
+26	PB0	TIM3_CH3	TIM3CH3_PROBE_1
+27	PB1	TIM3_CH4	TIM3CH4_SENSCLK
+28	PB2	GPIO_EXTI2	EXTADC_BUSY
+29	PB10	TIM2_CH3	TIM2CH3_SENSST
+33	PB12	GPIO_Output	POWER5V_SWITCH_ENBL
+36	PB15	GPIO_Input	GPIO_HeaderPin
+37	PC6	GPIO_Input	D14
+38	PC7	GPIO_Input	D15
+39	PC8	SDMMC1_D0	
+40	PC9	SDMMC1_D1	
+41	PA8	GPIO_Output	ADC_RESET
+42	PA9	TIM1_CH2	TIM1CH2_SENSEOS
+43	PA10	GPIO_Output	ADC_PD
+44	PA11	TIM1_CH4	TIM1CH4_PROBE_0
+45	PA12	TIM1_ETR	TIM1ETR_SENSTRG
+46	PA13 (JTMS-SWDIO)	SYS_JTMS-SWDIO	
+49	PA14 (JTCK-SWCLK)	SYS_JTCK-SWCLK	
+50	PA15 (JTDI)	GPIO_Input	W5500_INT
+51	PC10	SDMMC1_D2	
+52	PC11	SDMMC1_D3	
+53	PC12	SDMMC1_CK	
+54	PD2	SDMMC1_CMD	
+55	PB3 (JTDO-TRACESWO)	SPI1_SCK	
+56	PB4 (NJTRST)	SPI1_MISO	
+57	PB5	SPI1_MOSI	
+58	PB6	USART1_TX	
+59	PB7	USART1_RX	
+61	PB8	I2C1_SCL	
+62	PB9	I2C1_SDA	
+
+
+
+SOFTWARE PROJECT
+
+Project Settings : 
+Project Name : minispec
+Project Folder : /home/palmb_ubu/00_projects/Micro_Spec_STM32/software_devl/nukleo/minispec
+Toolchain / IDE : SW4STM32
+Firmware Package Name and Version : STM32Cube FW_L4 V1.13.0
+
+
+Code Generation Settings : 
+STM32Cube Firmware Library Package : Copy only the necessary library files
+Generate peripheral initialization as a pair of '.c/.h' files per peripheral : Yes
+Backup previously generated files when re-generating : No
+Delete previously generated files when not re-generated : Yes
+Set all free pins as analog (to optimize the power consumption) : No
+
+
+Toolchains Settings : 
+Compiler Optimizations : 
+
+
+
+
+
