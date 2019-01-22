@@ -55,11 +55,10 @@
  *      4. sens_deinit()                                    \n
  */
 
-#include "stm32l4xx_hal.h"
-#include <string.h>
 #include "micro_spec.h"
-#include "global_include.h"
-#include "tim.h"
+#include "global_config.h"
+#include "tim_usr.h"
+#include <string.h>
 
 static uint16_t mem_block1[SENSOR_DATA_BUFFER_MAX_WORDS + 1];
 

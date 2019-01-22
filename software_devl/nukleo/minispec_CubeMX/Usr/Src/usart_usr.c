@@ -1,12 +1,11 @@
 /*
- * usr_uart.c
+ * usart_usr.c
  *
  *  Created on: Aug 7, 2017
  *      Author: Bert Palm
  */
 
-#include "usart.h"
-#include "global_include.h"
+#include "usart_usr.h"
 #include "string.h"
 #include <stdarg.h>
 #include <stdio.h>

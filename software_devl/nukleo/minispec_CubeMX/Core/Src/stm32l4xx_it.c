@@ -38,7 +38,8 @@
 /* USER CODE BEGIN 0 */
 
 #include "usart.h"
-#include "global_include.h"
+#include "usart_usr.h"
+#include "global_config.h"
 #include "micro_spec.h"
 
 /* USER CODE END 0 */

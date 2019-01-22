@@ -1,12 +1,12 @@
 /*
- * usr_tim.c
+ * tim_usr.c
  *
  *  Created on: Aug 7, 2017
  *      Author: Bert Palm
  */
 
-#include "tim.h"
-#include "global_include.h"
+#include "tim_usr.h"
+
 
 /**
  * Init the tim1 interfaces to our needs. Overwrite

@@ -8,18 +8,11 @@
 #ifndef GLOBAL_CONFIG_H_
 #define GLOBAL_CONFIG_H_
 
+#include "main_usr.h"
+#include "stdbool.h"
+#include "stdint.h"
 #include "helper_defines.h"
 
-#define hrxtx huart1
-#define RXTX USART1
-#define RXTX_IRQn USART1_IRQn
-
-// this should be as least as big that we can send one whole
-// measurement data plus some meta data.
-#define UART_DEFAULT_TX_BUFFER_SZ	(1024)
-
-// small as we just need it for receiving user commands
-#define UART_DEFAULT_RX_BUFFER_SZ	(128)
 
 /** The minimal possible integration time is limited by the sensor and the
  *  clock frequency.

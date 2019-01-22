@@ -1,15 +1,15 @@
 /*
- * usr_main.c
+ * main_usr.c
  *
  *  Created on: Aug 7, 2017
  *      Author: Bert Palm
  */
 
-#include "main.h"
-#include "global_include.h"
+#include "main_usr.h"
+#include "global_config.h"
 #include "micro_spec.h"
-#include "usart.h"
-#include "tim.h"
+#include "usart_usr.h"
+#include "tim_usr.h"
 #include "string.h"
 #include <stdio.h>
 
@@ -23,7 +23,7 @@ static uint32_t extcmd_data = 0;
 static uint8_t data_format = DATA_FORMAT_ASCII;
 static bool stream_mode = 0;
 
-int usr_main( void )
+int main_usr( void )
 {
 	uint8_t err = 0;
 

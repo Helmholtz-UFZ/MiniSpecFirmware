@@ -105,24 +105,20 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM5_Init();
   MX_TIM3_Init();
-//  MX_SDMMC1_SD_Init();
   MX_USART1_UART_Init();
-  MX_I2C1_Init();
-  MX_SPI1_Init();
 
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
-	return usr_main();
+  #include "main_usr.h"
+  main_usr();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-
   /* USER CODE END 3 */
 
 }

@@ -70,9 +70,6 @@ void MX_TIM5_Init(void);
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
                                                             
 /* USER CODE BEGIN Prototypes */
-void tim1_Init( void );
-void tim2_Init( void );
-void tim5_Init( void );
 
 /* USER CODE END Prototypes */
 
