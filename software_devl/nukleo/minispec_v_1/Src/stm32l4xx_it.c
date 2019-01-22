@@ -128,9 +128,9 @@ void EXTI2_IRQHandler(void)
 	uint8_t value0, value1;
 
 	// -------------- nomore code here !! --------------
-	if( __HAL_GPIO_EXTI_GET_IT(EXTADC_BUSY_Pin) != RESET )
+	if( __HAL_GPIO_EXTI_GET_IT(EXTADC1_BUSY_Pin) != RESET )
 	{
-		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC_BUSY_Pin );
+		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
 
 		if( sens1.data->wptr < (sens1.data->base + sens1.data->words) )
 		{
@@ -227,7 +227,7 @@ void TIM1_CC_IRQHandler(void)
 //		TIM1->SR &= ~TIM_SR_CC4IF;
 
 		// Enable IR for ADC-busy-line.
-		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC_BUSY_Pin );
+		__HAL_GPIO_EXTI_CLEAR_IT( EXTADC1_BUSY_Pin );
 		NVIC_ClearPendingIRQ( EXTI2_IRQn );
 		NVIC_EnableIRQ( EXTI2_IRQn );
 
@@ -260,26 +260,25 @@ void USART1_IRQHandler(void)
 	 */
 
 	// catch carriage return as 'end of cmd'-flag
-	if( ((USART1->ISR & USART_ISR_CMF) != RESET) && ((USART1->CR1 & USART_CR1_CMIE) != RESET) )
+	if( ((RXTX->ISR & USART_ISR_CMF) != RESET) && ((RXTX->CR1 & USART_CR1_CMIE) != RESET) )
 	{
-		__HAL_UART_CLEAR_IT( &huart1, USART_ISR_CMF );
-		__HAL_UART_DISABLE_IT( &huart1, UART_IT_CM );
+		__HAL_UART_CLEAR_IT( &hrxtx, USART_ISR_CMF );
+		__HAL_UART_DISABLE_IT( &hrxtx, UART_IT_CM );
 
-		uart1_cmd_bytes = huart1.RxXferSize - huart1.hdmarx->Instance->CNDTR;
-		uart1_CR_recvd = true;
+		uart3_cmd_bytes = hrxtx.RxXferSize - hrxtx.hdmarx->Instance->CNDTR;
+		uart3_CR_recvd = true;
 
 
 		cpu_enter_run_mode();
 	}
 
   /* USER CODE END USART1_IRQn 0 */
-  HAL_UART_IRQHandler(&huart1);
+  HAL_UART_IRQHandler(&hrxtx);
   /* USER CODE BEGIN USART1_IRQn 1 */
 
 #define USART1_IRQHandler__OK
   /* USER CODE END USART1_IRQn 1 */
 }
-
 /**
 * @brief This function handles TIM5 global interrupt.
 */
