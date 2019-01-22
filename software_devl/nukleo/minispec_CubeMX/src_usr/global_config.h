@@ -10,6 +10,10 @@
 
 #include "helper_defines.h"
 
+#define hrxtx huart1
+#define RXTX USART1
+#define RXTX_IRQn USART1_IRQn
+
 // this should be as least as big that we can send one whole
 // measurement data plus some meta data.
 #define UART_DEFAULT_TX_BUFFER_SZ	(1024)

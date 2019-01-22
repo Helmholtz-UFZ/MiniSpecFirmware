@@ -66,15 +66,15 @@ extern void _Error_Handler(char *, int);
 void MX_USART1_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-extern uart_buffer_t uart1_rx_buffer;
-extern uart_buffer_t uart1_tx_buffer;
+extern uart_buffer_t rxtx_rxbuffer;
+extern uart_buffer_t rxtx_txbuffer;
 
-extern volatile bool uart1_CR_recvd;
-extern volatile uint16_t uart1_cmd_bytes;
+extern volatile bool rxtx_CR_recvd;
+extern volatile uint16_t rxtx_cmd_bytes;
 
-void usart1_init( void );
-void usart1_receive_handler( void );
-int uart_printf( UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const char *__restrict format, ... )__attribute__( (__format__ (__printf__, 3, 4)) );
+void rxtx_init( void );
+void rx_handler( void );
+int tx_printf( UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const char *__restrict format, ... )__attribute__( (__format__ (__printf__, 3, 4)) );
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

@@ -260,13 +260,13 @@ void USART1_IRQHandler(void)
 	 */
 
 	// catch carriage return as 'end of cmd'-flag
-	if( ((USART1->ISR & USART_ISR_CMF) != RESET) && ((USART1->CR1 & USART_CR1_CMIE) != RESET) )
+	if( ((RXTX->ISR & USART_ISR_CMF) != RESET) && ((RXTX->CR1 & USART_CR1_CMIE) != RESET) )
 	{
-		__HAL_UART_CLEAR_IT( &huart1, USART_ISR_CMF );
-		__HAL_UART_DISABLE_IT( &huart1, UART_IT_CM );
+		__HAL_UART_CLEAR_IT( &hrxtx, USART_ISR_CMF );
+		__HAL_UART_DISABLE_IT( &hrxtx, UART_IT_CM );
 
-		uart1_cmd_bytes = huart1.RxXferSize - huart1.hdmarx->Instance->CNDTR;
-		uart1_CR_recvd = true;
+		rxtx_cmd_bytes = hrxtx.RxXferSize - hrxtx.hdmarx->Instance->CNDTR;
+		rxtx_CR_recvd = true;
 
 
 		cpu_enter_run_mode();

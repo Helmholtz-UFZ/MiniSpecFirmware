@@ -20,7 +20,7 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size );
 static usr_cmd_enum_t extcmd = USR_CMD_UNKNOWN;
 static uint32_t extcmd_data = 0;
 
-static uint8_t data_format = DATA_FORMAT_BIN;
+static uint8_t data_format = DATA_FORMAT_ASCII;
 static bool stream_mode = 0;
 
 int usr_main( void )
@@ -30,11 +30,11 @@ int usr_main( void )
 	/* Pre init - undo CubeMX stuff ---------------------------------------------*/
 
 	// we enable IRs where/when ** WE ** need them.
-	HAL_NVIC_DisableIRQ( USART1_IRQn );
+	HAL_NVIC_DisableIRQ( RXTX_IRQn );
 	HAL_NVIC_DisableIRQ( TIM1_CC_IRQn );
 	HAL_NVIC_DisableIRQ( EXTI2_IRQn );
 
-	usart1_init();
+	rxtx_init();
 	tim1_Init();
 	tim2_Init();
 	tim5_Init();
@@ -42,30 +42,30 @@ int usr_main( void )
 	/* Run the system ------------------------------------------------------------*/
 
 	// enabling usart receiving
-	NVIC_EnableIRQ( USART1_IRQn );
-	HAL_UART_Receive_DMA( &huart1, uart1_rx_buffer.base, uart1_rx_buffer.size );
+	NVIC_EnableIRQ( RXTX_IRQn );
+	HAL_UART_Receive_DMA( &hrxtx, rxtx_rxbuffer.base, rxtx_rxbuffer.size );
 
 	if( data_format == DATA_FORMAT_ASCII )
 	{
-		uart_printf( &huart1, &uart1_tx_buffer, "\nstart\n" );
+		tx_printf( &hrxtx, &rxtx_txbuffer, "\nstart\n" );
 	}
 	while( 1 )
 	{
 		// IR in uart module
-		__HAL_UART_ENABLE_IT( &huart1, UART_IT_CM  );
+		__HAL_UART_ENABLE_IT( &hrxtx, UART_IT_CM );
 
-		if( uart1_CR_recvd == 0 && stream_mode == 0 )
+		if( rxtx_CR_recvd == 0 && stream_mode == 0 )
 		{
 			cpu_enter_sleep_mode();
 		}
 
 		// redundant in non-stream mode as also disabled in its ISR
-		__HAL_UART_DISABLE_IT( &huart1, UART_IT_CM );
+		__HAL_UART_DISABLE_IT( &hrxtx, UART_IT_CM );
 		
 		extcmd = USR_CMD_UNKNOWN;
-		parse_extcmd( uart1_rx_buffer.base, uart1_rx_buffer.size );
+		parse_extcmd( rxtx_rxbuffer.base, rxtx_rxbuffer.size );
 
-		usart1_receive_handler();
+		rx_handler();
 
 		switch( extcmd ) {
 		case USR_CMD_SINGLE_MEASURE_START:
@@ -86,11 +86,11 @@ int usr_main( void )
 		case USR_CMD_READ_ITIME:
 			if( data_format == DATA_FORMAT_BIN )
 			{
-				HAL_UART_Transmit( &huart1, (uint8_t *) &sens1.itime, 4, 1000 );
+				HAL_UART_Transmit( &hrxtx, (uint8_t *) &sens1.itime, 4, 1000 );
 			}
 			else
 			{
-				uart_printf( &huart1, &uart1_tx_buffer, "integration time = %ld us\n", sens1.itime );
+				tx_printf( &hrxtx, &rxtx_txbuffer, "integration time = %ld us\n", sens1.itime );
 			}
 			break;
 
@@ -106,10 +106,6 @@ int usr_main( void )
 
 		case USR_CMD_SET_FORMAT:
 			data_format = (extcmd_data > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
-			break;
-
-		case USR_CMD_DEBUG:
-			uart_printf(&huart1, &uart1_tx_buffer, "received xxx");
 			break;
 
 		default:
@@ -147,8 +143,8 @@ static void send_data( uint8_t format )
 	{
 		//send data
 		uint32_t no_err = ERRC_NO_ERROR;
-		HAL_UART_Transmit( &huart1, (uint8_t *) &no_err, 2, 200 );
-		HAL_UART_Transmit( &huart1, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL), MSPARAM_PIXEL * 2, MSPARAM_PIXEL * 2 * 100 );
+		HAL_UART_Transmit( &hrxtx, (uint8_t *) &no_err, 2, 200 );
+		HAL_UART_Transmit( &hrxtx, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL), MSPARAM_PIXEL * 2, MSPARAM_PIXEL * 2 * 100 );
 		
 	}
 
@@ -167,24 +163,24 @@ static void send_data( uint8_t format )
 			
 			if( rptr == (sens1.data->wptr - MSPARAM_PIXEL) )
 			{
-				uart_printf( &huart1, &uart1_tx_buffer, "\n"DELIMITER_STR );
-				uart_printf( &huart1, &uart1_tx_buffer, "\n"HEADER_STR );
+				tx_printf( &hrxtx, &rxtx_txbuffer, "\n"DELIMITER_STR );
+				tx_printf( &hrxtx, &rxtx_txbuffer, "\n"HEADER_STR );
 				i = 0;
 			}
 			
 			if( i % 10 == 0 )
 			{
-				uart_printf( &huart1, &uart1_tx_buffer, "\n%03d   %05d ", i, *rptr );
+				tx_printf( &hrxtx, &rxtx_txbuffer, "\n%03d   %05d ", i, *rptr );
 			}
 			else
 			{
-				uart_printf( &huart1, &uart1_tx_buffer, "%05d ", *rptr );
+				tx_printf( &hrxtx, &rxtx_txbuffer, "%05d ", *rptr );
 			}
 			
 			rptr++;
 			i++;
 		}
-		uart_printf( &huart1, &uart1_tx_buffer, "\n"DELIMITER_STR"\n\n" );
+		tx_printf( &hrxtx, &rxtx_txbuffer, "\n"DELIMITER_STR"\n\n" );
 	}
 	
 }
@@ -204,7 +200,7 @@ static void error_handler( uint8_t err )
 	case SENS_ERR_TIMEOUT:
 		if( data_format == DATA_FORMAT_ASCII )
 		{
-			uart_printf( &huart1, &uart1_tx_buffer, "ERR: TIMEOUT. Please check the following:\n"
+			tx_printf( &hrxtx, &rxtx_txbuffer, "ERR: TIMEOUT. Please check the following:\n"
 				"1. is sensor plugged ?\n"
 				"2. ADC/sensor powered ?\n"
 				"3. check physical connections\n" );
@@ -217,7 +213,7 @@ static void error_handler( uint8_t err )
 	case SENS_ERR_NO_EOS:
 		if( data_format == DATA_FORMAT_ASCII )
 		{
-			uart_printf( &huart1, &uart1_tx_buffer, "ERR: NO EOS. Something went wrong, please debug manually.\n" );
+			tx_printf( &hrxtx, &rxtx_txbuffer, "ERR: NO EOS. Something went wrong, please debug manually.\n" );
 		}
 
 		errcode = ERRC_NO_EOS;
@@ -228,7 +224,7 @@ static void error_handler( uint8_t err )
 	case SENS_ERR_EOS_EARLY:
 		if( data_format == DATA_FORMAT_ASCII )
 		{
-			uart_printf( &huart1, &uart1_tx_buffer, "ERR: EOS EARLY. Something went wrong, please debug manually.\n" );
+			tx_printf( &hrxtx, &rxtx_txbuffer, "ERR: EOS EARLY. Something went wrong, please debug manually.\n" );
 		}
 
 		errcode = ERRC_EOS_EARLY;
@@ -243,7 +239,7 @@ static void error_handler( uint8_t err )
 	// send error code
 	if( data_format == DATA_FORMAT_BIN )
 	{
-		HAL_UART_Transmit( &huart1, (uint8_t *) &errcode, 2, 200 );
+		HAL_UART_Transmit( &hrxtx, (uint8_t *) &errcode, 2, 200 );
 	}
 }
 
@@ -354,14 +350,6 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
 	{
 		extcmd = USR_CMD_READ_ITIME;
-		return;
-	}
-
-	str = "xxx\r";
-	sz = strlen( str );
-	if( memcmp( buffer, str, sz ) == 0 )
-	{
-		extcmd = USR_CMD_DEBUG;
 		return;
 	}
 }
