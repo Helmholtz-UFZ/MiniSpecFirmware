@@ -110,6 +110,10 @@ int main(void)
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
+
+  /* add the dir 'USR/Inc' to Sources. Therefor
+  Properties -> C/C++ General -> Paths and Symbols
+  */
   #include "main_usr.h"
   main_usr();
   /* USER CODE END 2 */
