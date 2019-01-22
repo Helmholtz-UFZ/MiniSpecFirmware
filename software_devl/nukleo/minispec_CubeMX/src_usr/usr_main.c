@@ -47,7 +47,7 @@ int usr_main( void )
 
 	if( data_format == DATA_FORMAT_ASCII )
 	{
-		tx_printf( &hrxtx, &rxtx_txbuffer, "\nstart\n" );
+		tx_printf( "\nstart\n" );
 	}
 	while( 1 )
 	{
@@ -69,6 +69,10 @@ int usr_main( void )
 
 		switch( extcmd ) {
 		case USR_CMD_SINGLE_MEASURE_START:
+
+			if(data_format == DATA_FORMAT_ASCII)
+				tx_printf( "ok\n" );
+
 			sensor_init();
 
 			err = sensor_measure();
@@ -80,6 +84,10 @@ int usr_main( void )
 			break;
 
 		case USR_CMD_WRITE_ITIME:
+
+			if(data_format == DATA_FORMAT_ASCII)
+				tx_printf( "ok\n" );
+
 			sensor_set_itime( extcmd_data );
 			break;
 
@@ -90,11 +98,15 @@ int usr_main( void )
 			}
 			else
 			{
-				tx_printf( &hrxtx, &rxtx_txbuffer, "integration time = %ld us\n", sens1.itime );
+				tx_printf( "integration time = %ld us\n", sens1.itime );
 			}
 			break;
 
 		case USR_CMD_STREAM_START:
+
+			if(data_format == DATA_FORMAT_ASCII)
+				tx_printf( "ok\n" );
+
 			sensor_init();
 			stream_mode = 1;
 			break;
@@ -102,10 +114,18 @@ int usr_main( void )
 		case USR_CMD_STREAM_END:
 			sensor_deinit();
 			stream_mode = 0;
+
+			if(data_format == DATA_FORMAT_ASCII)
+				tx_printf( "ok\n" );
+
 			break;
 
 		case USR_CMD_SET_FORMAT:
 			data_format = (extcmd_data > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
+
+			if(data_format == DATA_FORMAT_ASCII)
+				tx_printf( "ok\n" );
+
 			break;
 
 		default:
@@ -163,24 +183,24 @@ static void send_data( uint8_t format )
 			
 			if( rptr == (sens1.data->wptr - MSPARAM_PIXEL) )
 			{
-				tx_printf( &hrxtx, &rxtx_txbuffer, "\n"DELIMITER_STR );
-				tx_printf( &hrxtx, &rxtx_txbuffer, "\n"HEADER_STR );
+				tx_printf( "\n"DELIMITER_STR );
+				tx_printf( "\n"HEADER_STR );
 				i = 0;
 			}
 			
 			if( i % 10 == 0 )
 			{
-				tx_printf( &hrxtx, &rxtx_txbuffer, "\n%03d   %05d ", i, *rptr );
+				tx_printf( "\n%03d   %05d ", i, *rptr );
 			}
 			else
 			{
-				tx_printf( &hrxtx, &rxtx_txbuffer, "%05d ", *rptr );
+				tx_printf( "%05d ", *rptr );
 			}
 			
 			rptr++;
 			i++;
 		}
-		tx_printf( &hrxtx, &rxtx_txbuffer, "\n"DELIMITER_STR"\n\n" );
+		tx_printf( "\n"DELIMITER_STR"\n\n" );
 	}
 	
 }
@@ -200,7 +220,7 @@ static void error_handler( uint8_t err )
 	case SENS_ERR_TIMEOUT:
 		if( data_format == DATA_FORMAT_ASCII )
 		{
-			tx_printf( &hrxtx, &rxtx_txbuffer, "ERR: TIMEOUT. Please check the following:\n"
+			tx_printf( "ERR: TIMEOUT. Please check the following:\n"
 				"1. is sensor plugged ?\n"
 				"2. ADC/sensor powered ?\n"
 				"3. check physical connections\n" );
@@ -213,7 +233,7 @@ static void error_handler( uint8_t err )
 	case SENS_ERR_NO_EOS:
 		if( data_format == DATA_FORMAT_ASCII )
 		{
-			tx_printf( &hrxtx, &rxtx_txbuffer, "ERR: NO EOS. Something went wrong, please debug manually.\n" );
+			tx_printf( "ERR: NO EOS. Something went wrong, please debug manually.\n" );
 		}
 
 		errcode = ERRC_NO_EOS;
@@ -224,7 +244,7 @@ static void error_handler( uint8_t err )
 	case SENS_ERR_EOS_EARLY:
 		if( data_format == DATA_FORMAT_ASCII )
 		{
-			tx_printf( &hrxtx, &rxtx_txbuffer, "ERR: EOS EARLY. Something went wrong, please debug manually.\n" );
+			tx_printf( "ERR: EOS EARLY. Something went wrong, please debug manually.\n" );
 		}
 
 		errcode = ERRC_EOS_EARLY;

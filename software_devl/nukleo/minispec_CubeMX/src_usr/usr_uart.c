@@ -9,6 +9,7 @@
 #include "global_include.h"
 #include "string.h"
 #include <stdarg.h>
+#include <stdio.h>
 
 volatile bool rxtx_CR_recvd;
 volatile uint16_t rxtx_cmd_bytes;
@@ -78,7 +79,7 @@ void rx_handler( void )
  *\param format 	A printf-style format string.
  *
  */
-int tx_printf( UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const char *__restrict format, ... )
+int uart_printf( UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const char *__restrict format, ... )
 {
 	int32_t len;
 	uint8_t err;
@@ -97,3 +98,24 @@ int tx_printf( UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const 
 	len = err ? -1 : len;
 	return len;
 }
+
+int tx_printf( const char *__restrict format, ... )
+{
+	int32_t len;
+	uint8_t err;
+	va_list argptr;
+	va_start( argptr, format );
+	len = vsnprintf( (char *) rxtx_txbuffer.base, rxtx_txbuffer.size, format, argptr );
+	va_end( argptr );
+
+	// printf-like functions return negative values on error
+	if( len < 0 )
+	{
+		// error occurred
+		return len;
+	}
+	err = HAL_UART_Transmit( &hrxtx, rxtx_txbuffer.base, len, len * 10 );
+	len = err ? -1 : len;
+	return len;
+}
+

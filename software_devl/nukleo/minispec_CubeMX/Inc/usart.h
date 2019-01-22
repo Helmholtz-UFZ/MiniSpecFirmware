@@ -74,7 +74,9 @@ extern volatile uint16_t rxtx_cmd_bytes;
 
 void rxtx_init( void );
 void rx_handler( void );
-int tx_printf( UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const char *__restrict format, ... )__attribute__( (__format__ (__printf__, 3, 4)) );
+int uart_printf( UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const char *__restrict format, ... )__attribute__( (__format__ (__printf__, 3, 4)) );
+
+int tx_printf( const char *__restrict format, ... )__attribute__( (__format__ (__printf__, 1, 2)) );
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
