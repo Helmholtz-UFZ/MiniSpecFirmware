@@ -72,7 +72,7 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(Button_NucleoBoard_GPIO_Port, Button_NucleoBoard_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, ADC_RESET_Pin|ADC_PD_Pin, GPIO_PIN_RESET);
