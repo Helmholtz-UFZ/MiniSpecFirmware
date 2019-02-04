@@ -62,22 +62,20 @@
 
 static uint16_t mem_block1[SENSOR_DATA_BUFFER_MAX_WORDS + 1];
 
-static sensor_buffer_t sens_buf =
-        { SENSOR_DATA_BUFFER_SIZE, SENSOR_DATA_BUFFER_MAX_WORDS, mem_block1, mem_block1 };
+static sensor_buffer_t sens_buf = { SENSOR_DATA_BUFFER_SIZE,
+		SENSOR_DATA_BUFFER_MAX_WORDS, mem_block1, mem_block1 };
 
 /* Handle for the micro sprectrometer */
-sensor_t sens1 =
-        { SENS_UNINITIALIZED, &sens_buf, DEFAULT_INTEGRATION_TIME };
+sensor_t sens1 = { SENS_UNINITIALIZED, &sens_buf, DEFAULT_INTEGRATION_TIME };
 
-static void post_process_values( void );
-static void wait_for_measure_done( void );
+static void post_process_values(void);
+static void wait_for_measure_done(void);
 
 /**
  * Init all internal data structs and buffer
  * and timer needed by the sensor.
  */
-void sensor_init( void )
-{
+void sensor_init(void) {
 	sens1.data = &sens_buf;
 	sens1.data->base = mem_block1;
 	sens1.data->wptr = mem_block1;
@@ -101,38 +99,36 @@ void sensor_init( void )
 	// (TEST) en channel, en IR
 	TIM1->CCER |= TIM_CCER_CC4E;
 
-
 	// MAIN OUT PUT enable
-	__HAL_TIM_MOE_ENABLE( &htim1 );
+	__HAL_TIM_MOE_ENABLE(&htim1);
 	// all CCRx-IR in the NVIC
-	NVIC_ClearPendingIRQ( TIM1_CC_IRQn );
-	NVIC_EnableIRQ( TIM1_CC_IRQn );
+	NVIC_ClearPendingIRQ(TIM1_CC_IRQn);
+	NVIC_EnableIRQ(TIM1_CC_IRQn);
 
 	// TIM5 - safty timer
 	// en IR in module
-	__HAL_TIM_CLEAR_IT( &htim5, TIM_IT_UPDATE );
-	__HAL_TIM_ENABLE_IT( &htim5, TIM_IT_UPDATE );
+	__HAL_TIM_CLEAR_IT(&htim5, TIM_IT_UPDATE);
+	__HAL_TIM_ENABLE_IT(&htim5, TIM_IT_UPDATE);
 
 	// TIM3 - CLK for sensor
 	TIM3->CCER |= TIM_CCER_CC3E;
 	TIM3->CCER |= TIM_CCER_CC4E;
 
 	// start CLK
-	__HAL_TIM_ENABLE( &htim3 );
-	HAL_Delay( 1 );
+	__HAL_TIM_ENABLE(&htim3);
+	HAL_Delay(1);
 
 	sens1.status = SENS_INITIALIZED;
 }
 
-void sensor_deinit( void )
-{
+void sensor_deinit(void) {
 
 	// disable CLK
-	HAL_Delay( 1 );
+	HAL_Delay(1);
 	TIM3->CR1 &= ~TIM_CR1_CEN;
 
-	NVIC_DisableIRQ( TIM1_CC_IRQn );
-	NVIC_DisableIRQ( EXTI2_IRQn );
+	NVIC_DisableIRQ(TIM1_CC_IRQn);
+	NVIC_DisableIRQ(EXTI2_IRQn);
 
 	sens1.status = SENS_UNINITIALIZED;
 }
@@ -149,56 +145,50 @@ void sensor_deinit( void )
  * measurement is done.
  *
  */
-uint8_t sensor_measure( void )
-{
+uint8_t sensor_measure(void) {
 	uint32_t int_time_cnt;
 
-	if( sens1.status < SENS_INITIALIZED )
-	{
+	if (sens1.status < SENS_INITIALIZED) {
 		return 1;
 	}
-	
+
 	// reset data buffer
-	memset( sens1.data->base, 0, sens1.data->size );
+	memset(sens1.data->base, 0, sens1.data->size);
 	sens1.data->wptr = sens1.data->base;
-	
-	
+
 	// prevent SysTick to stretch time critical sections
 	HAL_SuspendTick();
-	
+
 	// 48 clock-cycles are added by the sensor to "high" of the ST-signal
 	// resulting in the integration-time (see c12880ma_kacc1226e.pdf)
-	int_time_cnt = MAX( sens1.itime, MIN_INTERGATION_TIME );
+	int_time_cnt = MAX(sens1.itime, MIN_INTERGATION_TIME);
 	int_time_cnt -= ITIME_CORRECTION;
 
 	// prepare ST
-	__HAL_TIM_SET_AUTORELOAD( &htim2, int_time_cnt );
-	
+	__HAL_TIM_SET_AUTORELOAD(&htim2, int_time_cnt);
+
 	// prepare CAPTURE DATA START
-	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC4 );
-	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC4 );
+	__HAL_TIM_CLEAR_IT(&htim1, TIM_IT_CC4);
+	__HAL_TIM_ENABLE_IT(&htim1, TIM_IT_CC4);
 
 	// prepare EOS - CAPTURE DATA END
 	// Reset the CCR, enable its IR
-	__HAL_TIM_SET_COMPARE( &htim1, TIM_IT_CC2, 0 );
-	__HAL_TIM_CLEAR_IT( &htim1, TIM_IT_CC2 );
-	__HAL_TIM_ENABLE_IT( &htim1, TIM_IT_CC2 );
-	
+	__HAL_TIM_SET_COMPARE(&htim1, TIM_IT_CC2, 0);
+	__HAL_TIM_CLEAR_IT(&htim1, TIM_IT_CC2);
+	__HAL_TIM_ENABLE_IT(&htim1, TIM_IT_CC2);
+
 	// lets go
-	__HAL_TIM_ENABLE( &htim2 );
+	__HAL_TIM_ENABLE(&htim2);
 	sens1.status = SENS_MEASURE_STARTED;
-	
+
 	wait_for_measure_done();
-	
+
 	post_process_values();
-	
-	if( sens1.status == SENS_EOS_CAPTURED )
-	{
+
+	if (sens1.status == SENS_EOS_CAPTURED) {
 		sens1.status = SENS_MEASURE_DONE;
 		return 0;
-	}
-	else
-	{
+	} else {
 		return 1;
 	}
 }
@@ -210,18 +200,16 @@ uint8_t sensor_measure( void )
  * If a new measurement after this is desired call micro_spec_measure_init().
  *
  */
-static void wait_for_measure_done( void )
-{
-	while( sens1.status < SENS_EOS_CAPTURED )
-	{
+static void wait_for_measure_done(void) {
+	while (sens1.status < SENS_EOS_CAPTURED) {
 		// busy waiting
 	}
-	__HAL_TIM_DISABLE_IT( &htim5, TIM_IT_UPDATE );
-	
+	__HAL_TIM_DISABLE_IT(&htim5, TIM_IT_UPDATE);
+
 	HAL_ResumeTick();
-	
+
 	// this ensures TIM5 is done
-	HAL_Delay( 1 );
+	HAL_Delay(1);
 }
 
 /**
@@ -231,62 +219,91 @@ static void wait_for_measure_done( void )
  * are not in the correct order.
  *
  * before ordering:
- *             PC[7..0]                PA[7..0]
- * buffer[i] = c7 c6 c5 c4 c3 c2 c1 c0 a7 a6 a5 a4 a3 a2 a1 a0
- * 		   BIT 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
+ *             PC[7..0]              __     PA[7..0]
+ * value     = c7 c6 c5 c4 c3 c2 c1 |c0| a7 a6 a5 a4 a3 a2 a1 a0
+ * BIT         15 14 13 12 11 10 09 |08| 07 06 05 04 03 02 01 00
+ * example c0:  1. x= value >> 08
  *
- * after ordering:
- * buffer[i] = c7 c6 c5 a5 c0 c3 c1 c2 a6 a7 c4 a4 a2 a3 a1 a0
- * 			  D15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
- *
+ * after ordering:          __
+ * d         = c7 c6 c5 a5 |c0| c3 c1 c2 a6 a7 c4 a4 a2 a3 a1 a0
+ * BIT         15 14 13 12 |11| 10 09 08 07 06 05 04 03 02 01 00
+ * example c0:  2. d |= x << 11
  */
-static void post_process_values( void )
-{
-	
-	uint16_t res, val;
+static void post_process_values(void) {
+	uint8_t x;
+	uint16_t d, val;
 	uint16_t *rptr = sens1.data->base;
-	
 
-	while( rptr < sens1.data->wptr )
-	{
+	rptr = sens1.data->base;
+	while (rptr < sens1.data->wptr) {
 		val = *rptr;
-		res = 0;
-#if OFF  // for debugging
-		res |= (((val & BIT0)  >> (BIT0  -1)) <<  0) & BIT0;
-		res |= (((val & BIT1)  >> (BIT1  -1)) <<  1) & BIT1;
-		res |= (((val & BIT3)  >> (BIT3  -1)) <<  2) & BIT2;
-		res |= (((val & BIT2)  >> (BIT2  -1)) <<  3) & BIT3;
-		res |= (((val & BIT4)  >> (BIT4  -1)) <<  4) & BIT4;
-		res |= (((val & BIT12) >> (BIT12 -1)) <<  5) & BIT5;
-		res |= (((val & BIT7)  >> (BIT7  -1)) <<  6) & BIT6;
-		res |= (((val & BIT6)  >> (BIT6  -1)) <<  7) & BIT7;
-		res |= (((val & BIT10) >> (BIT10 -1)) <<  8) & BIT8;
-		res |= (((val & BIT9)  >> (BIT9  -1)) <<  9) & BIT9;
-		res |= (((val & BIT11) >> (BIT11 -1)) << 10) & BIT10;
-		res |= (((val & BIT8)  >> (BIT8  -1)) << 11) & BIT11;
-		res |= (((val & BIT5)  >> (BIT5  -1)) << 12) & BIT12;
-		res |= (((val & BIT13) >> (BIT13 -1)) << 13) & BIT13;
-		res |= (((val & BIT14) >> (BIT14 -1)) << 14) & BIT14;
-		res |= (((val & BIT15) >> (BIT15 -1)) << 15) & BIT15;
-#else
-		res |= (val >> 11) & BIT0; //PC3
-		res |= (val >> 9) & BIT1;  //PC2
-		res |= (val << 2) & BIT2;  //PA0
-		res |= (val << 2) & BIT3;  //PA1
-		res |= (val << 0) & BIT4;  //PA4
-		res |= (val >> 4) & BIT5;  //PC1
-		res |= (val >> 2) & BIT6;  //PC0
-		res |= (val << 4) & BIT7;  //PA3
-		res |= (val << 6) & BIT8;  //PA2
-		res |= (val >> 6) & BIT9;  //PC7
-		res |= (val << 3) & BIT10; //PA7
-		res |= (val << 5) & BIT11; //PA6
-		res |= (val << 7) & BIT12; //PA5
-		res |= (val >> 1) & BIT13; //PC6
-		res |= (val << 1) & BIT14; //PC5
-		res |= (val << 3) & BIT15; //PC4
-#endif
-		*rptr = res;
+		d = 0;
+
+		// a0
+		x = (val >> 0) & 0x01;
+		d |= (x << 0);
+
+		// a1
+		x = (val >> 1) & 0x01;
+		d |= (x << 1);
+
+		// a2
+		x = (val >> 2) & 0x01;
+		d |= (x << 3);
+
+		// a3
+		x = (val >> 3) & 0x01;
+		d |= (x << 2);
+
+		// a4
+		x = (val >> 4) & 0x01;
+		d |= (x << 4);
+
+		// a5
+		x = (val >> 5) & 0x01;
+		d |= (x << 12);
+
+		// a6
+		x = (val >> 6) & 0x01;
+		d |= (x << 7);
+
+		// a7
+		x = (val >> 7) & 0x01;
+		d |= (x << 6);
+
+		// C0
+		x = (val >> 8) & 0x01;
+		d |= (x << 11);
+
+		// C1
+		x = (val >> 9) & 0x01;
+		d |= (x << 9);
+
+		// C2
+		x = (val >> 10) & 0x01;
+		d |= (x << 8);
+
+		// C3
+		x = (val >> 11) & 0x01;
+		d |= (x << 10);
+
+		// C4
+		x = (val >> 12) & 0x01;
+		d |= (x << 5);
+
+		// C5
+		x = (val >> 13) & 0x01;
+		d |= (x << 13);
+
+		// C6
+		x = (val >> 14) & 0x01;
+		d |= (x << 14);
+
+		// C7
+		x = (val >> 15) & 0x01;
+		d |= (x << 15);
+
+		*rptr = d;
 		rptr++;
 	}
 }
@@ -300,22 +317,16 @@ static void post_process_values( void )
  * @param int_time	The integration time in us
  * @return The integration time value set
  */
-uint32_t sensor_set_itime( uint32_t itime )
-{
-	
-	if( itime < MIN_INTERGATION_TIME )
-	{
+uint32_t sensor_set_itime(uint32_t itime) {
+
+	if (itime < MIN_INTERGATION_TIME) {
 		sens1.itime = MIN_INTERGATION_TIME;
-	}
-	else if( itime > MAX_INTERGATION_TIME )
-	{
+	} else if (itime > MAX_INTERGATION_TIME) {
 		sens1.itime = MAX_INTERGATION_TIME;
-	}
-	else
-	{
+	} else {
 		sens1.itime = itime;
 	}
-	
+
 	return sens1.itime;
 }
 
