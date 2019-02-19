@@ -10,11 +10,13 @@
 #include "micro_spec.h"
 #include "usart_usr.h"
 #include "tim_usr.h"
+#include "sd_card.h"
 #include "string.h"
 #include <stdio.h>
 
 static void send_data( uint8_t format );
 static void error_handler( uint8_t err );
+static void testtest(void);
 
 static void parse_extcmd( uint8_t *buffer, uint16_t size );
 static usr_cmd_enum_t extcmd = USR_CMD_UNKNOWN;
@@ -44,6 +46,8 @@ int main_usr( void )
 	// enabling usart receiving
 	NVIC_EnableIRQ( RXTX_IRQn );
 	HAL_UART_Receive_DMA( &hrxtx, rxtx_rxbuffer.base, rxtx_rxbuffer.size );
+
+	testtest();
 
 	if( data_format == DATA_FORMAT_ASCII )
 	{
@@ -375,3 +379,17 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 	}
 }
 
+
+static void testtest(void){
+	uint8_t res = 0;
+	res = sd_mount();
+	printf("mount: %i\n", res);
+	res = sd_write_file("new", "some in line1\r\nline2\r\n");
+	printf("first: %i\n", res);
+	res = sd_write_file("new", "more here");
+	printf("sec: %i\n", res);
+
+	while(1){
+		__NOP();
+	}
+}

@@ -43,7 +43,7 @@ typedef enum
 /**
  * enum for the defined commands
  */
-typedef enum usr_cmd_enum
+typedef enum
 {
 	USR_CMD_UNKNOWN,
 	USR_CMD_SET_FORMAT, // 0 - raw/bin or 1 - ascii
