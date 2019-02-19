@@ -1,8 +1,7 @@
 /**
   ******************************************************************************
-  * File Name          : gpio.h
-  * Description        : This file contains all the functions prototypes for 
-  *                      the gpio  
+  * @file    sd_diskio.h (based on sd_diskio_template.h v2.0.2)
+  * @brief   Header for sd_diskio.c module
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -48,41 +47,25 @@
   */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __gpio_H
-#define __gpio_H
-#ifdef __cplusplus
- extern "C" {
-#endif
+#ifndef __SD_DISKIO_H
+#define __SD_DISKIO_H
+
+/* USER CODE BEGIN firstSection */ 
+/* can be used to modify / undefine following code or add new definitions */
+/* USER CODE END firstSection */
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32l4xx_hal.h"
-#include "main.h"
+#include "bsp_driver_sd.h"
+/* Exported types ------------------------------------------------------------*/
+/* Exported constants --------------------------------------------------------*/
+/* Exported functions ------------------------------------------------------- */
+extern const Diskio_drvTypeDef  SD_Driver;
 
-/* USER CODE BEGIN Includes */
+/* USER CODE BEGIN lastSection */ 
+/* can be used to modify / undefine previous code or add new definitions */
+/* USER CODE END lastSection */
 
-/* USER CODE END Includes */
-
-/* USER CODE BEGIN Private defines */
-
-/* USER CODE END Private defines */
-
-void MX_GPIO_Init(void);
-
-/* USER CODE BEGIN Prototypes */
-
-/* USER CODE END Prototypes */
-
-#ifdef __cplusplus
-}
-#endif
-#endif /*__ pinoutConfig_H */
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
+#endif /* __SD_DISKIO_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+
