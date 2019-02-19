@@ -12,6 +12,8 @@
 #include "stdbool.h"
 #include "stdint.h"
 #include "helper_defines.h"
+//for printf
+#include "usart_usr.h"
 
 
 /** The minimal possible integration time is limited by the sensor and the

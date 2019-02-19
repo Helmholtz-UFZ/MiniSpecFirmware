@@ -20,6 +20,25 @@ uart_buffer_t rxtx_rxbuffer =
 uart_buffer_t rxtx_txbuffer =
 { UART_DEFAULT_TX_BUFFER_SZ, tx_mem_block3 };
 
+
+/** Overwrite weak _write function, to make printf print to serial. */
+int _write(int file, char *ptr, int len)
+{
+    switch (file)
+    {
+    case STDOUT_FILENO: /*stdout*/
+		HAL_UART_Transmit(&hprintf, (uint8_t *) ptr, len, 0xFFFF);
+        break;
+    case STDERR_FILENO: /* stderr */
+		HAL_UART_Transmit(&hprintf, (uint8_t *) "error: ", 7, 0xFFFF);
+		HAL_UART_Transmit(&hprintf, (uint8_t *) ptr, len, 0xFFFF);
+        break;
+    default:
+        return -1;
+    }
+    return len;
+}
+
 /**
  * Init the all used uart interfaces to our needs.
  * May overwrite some preferences CubeMx made.

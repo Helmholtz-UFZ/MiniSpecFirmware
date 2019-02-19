@@ -48,6 +48,7 @@ int main_usr( void )
 	if( data_format == DATA_FORMAT_ASCII )
 	{
 		tx_printf( "\nstart\n" );
+		printf("foooo\n");
 	}
 	while( 1 )
 	{

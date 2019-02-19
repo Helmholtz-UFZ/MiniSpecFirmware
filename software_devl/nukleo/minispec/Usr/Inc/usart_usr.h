@@ -13,6 +13,12 @@
 #include "usart.h"
 #include "global_config.h"
 
+// configure printf
+#define STDOUT_FILENO   1
+#define STDERR_FILENO   2
+#define hprintf huart1
+int _write(int file, char *ptr, int len);
+
 // configure the usr comunication interface
 #define hrxtx huart1
 #define RXTX USART1
