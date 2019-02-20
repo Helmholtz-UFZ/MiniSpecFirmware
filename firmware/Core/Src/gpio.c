@@ -95,11 +95,9 @@ void MX_GPIO_Init(void)
   HAL_GPIO_Init(Button_NucleoBoard_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PCPin PCPin PCPin PCPin 
-                           PCPin PCPin PCPin PCPin 
-                           PCPin */
+                           PCPin PCPin PCPin PCPin */
   GPIO_InitStruct.Pin = D11_Pin|D9_Pin|D8_Pin|D10_Pin 
-                          |D5_Pin|D13_Pin|D14_Pin|D15_Pin 
-                          |SDcard_CD_Pin;
+                          |D5_Pin|D13_Pin|D14_Pin|D15_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -127,11 +125,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(POWER5V_SWITCH_ENBL_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PtPin */
-  GPIO_InitStruct.Pin = GPIO_HeaderPin_Pin;
+  /*Configure GPIO pins : PB13 PBPin */
+  GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_HeaderPin_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIO_HeaderPin_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PAPin PAPin */
   GPIO_InitStruct.Pin = ADC_RESET_Pin|ADC_PD_Pin;

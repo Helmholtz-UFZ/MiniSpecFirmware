@@ -48,7 +48,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l4xx_hal.h"           
 /* Defines ------------------------------------------------------------------*/
-#define SD_PIN                   GPIO_PIN_11
-#define SD_PORT                  GPIOC
+#define SD_PIN                   GPIO_PIN_13
+#define SD_PORT                  GPIOB
 /* Prototypes ---------------------------------------------------------------*/
 uint8_t	BSP_PlatformIsDetected(void);

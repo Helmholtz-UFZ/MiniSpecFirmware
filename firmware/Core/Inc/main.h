@@ -55,7 +55,7 @@
 #include "stm32l4xx_hal.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "main_usr.h"
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
@@ -119,8 +119,6 @@
 #define TIM1ETR_SENSTRG_GPIO_Port GPIOA
 #define W5500_INT_Pin GPIO_PIN_15
 #define W5500_INT_GPIO_Port GPIOA
-#define SDcard_CD_Pin GPIO_PIN_11
-#define SDcard_CD_GPIO_Port GPIOC
 
 /* ########################## Assert Selection ############################## */
 /**
