@@ -8,12 +8,15 @@
 #ifndef GLOBAL_CONFIG_H_
 #define GLOBAL_CONFIG_H_
 
+/**This is (also) included by main.h
+ * Avoid including high level stuff here.
+ * Otherwise conflicts arise, as the HAL
+ * isn't initialized yet. **/
 #include "main_usr.h"
 #include "stdbool.h"
 #include "stdint.h"
 #include "helper_defines.h"
-//for printf
-#include "usart_usr.h"
+
 
 
 /** The minimal possible integration time is limited by the sensor and the
@@ -99,5 +102,8 @@
  * only send the valid samples (for DATA_FORMAT_ASCII only)*/
 #define DBG_SEND_ALL		ON
 
+/* If defined no HW detection (Pin high) is done
+ * by SD_initialize() in sd_diskio.c */
+#define DISABLE_SD_INIT
 
 #endif /* GLOBAL_CONFIG_H_ */
