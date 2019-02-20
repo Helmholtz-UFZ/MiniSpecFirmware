@@ -384,9 +384,9 @@ static void testtest(void){
 	uint8_t res = 0;
 	res = sd_mount();
 	printf("mount: %i\n", res);
-	res = sd_write_file("new", "some in line1\r\nline2\r\n");
+	res = sd_write_file("F1.TXT", "some in line1\r\nline2\r\n");
 	printf("first: %i\n", res);
-	res = sd_write_file("new", "more here");
+	res = sd_write_file("F1.TXT", "more here");
 	printf("sec: %i\n", res);
 
 	while(1){

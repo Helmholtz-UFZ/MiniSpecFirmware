@@ -9,34 +9,28 @@
 #include "fatfs.h"
 #include "string.h"
 
-FIL _file;
 /* File system object for SD card logical drive */
-FATFS SDFatFs;
-
+//FATFS SDFatFs;
 uint8_t sd_mount(void) {
-	int8_t res = 0;
-	FATFS *fs = &SDFatFS;
-	res = f_mount(&SDFatFs, (TCHAR const*) SDPath, 0);
-	if (res != FR_OK) {
-		return res;
-	}
-	return 0;
+	return f_mount(&SDFatFS, (TCHAR const*) SDPath, 0);
 }
 
+/* Append strings to file if it exist or create it.*/
 uint8_t sd_write_file(char *fname, char *wtxt) {
-	FIL *f = &_file;
+	FIL *f = &SDFile;
 	int8_t res = 0;
 	int16_t byteswritten = -1;
 
-	memset(f, 0, sizeof(FIL));
-	res = f_open(&_file, "XXX.TXT", FA_WRITE | FA_CREATE_ALWAYS);
+	// try create a File
+	res = f_open(f, fname, FA_WRITE | FA_CREATE_NEW);
 	switch (res) {
+
 	case FR_OK:
 		// new file continue
 		break;
+
 	case FR_EXIST:
-		// open in append
-		memset(f, 0, sizeof(FIL));
+		// if exist open in append
 		res = f_open(f, fname, FA_WRITE | FA_OPEN_APPEND);
 		if (res != FR_OK) {
 			return res;
@@ -54,6 +48,7 @@ uint8_t sd_write_file(char *fname, char *wtxt) {
 		return ERR_NODATA;
 	}
 
+	f_close(f);
+
 	return 0;
 }
-
