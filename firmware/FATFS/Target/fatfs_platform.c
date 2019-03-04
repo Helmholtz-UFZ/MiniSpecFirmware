@@ -54,7 +54,9 @@ uint8_t	BSP_PlatformIsDetected(void) {
     status = (uint8_t)0x00;
   }
   /* USER CODE BEGIN 1 */
-  /* user code can be inserted here */
+#if SD_DISABLE_HW_DETECTION == ON
+	status = (uint8_t) 0x01;
+#endif
   /* USER CODE END 1 */ 
   return status;
 }  

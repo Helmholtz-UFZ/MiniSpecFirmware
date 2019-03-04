@@ -102,8 +102,10 @@
  * only send the valid samples (for DATA_FORMAT_ASCII only)*/
 #define DBG_SEND_ALL		ON
 
-/* If defined no HW detection (Pin high) is done
- * by SD_initialize() in sd_diskio.c */
-#define DISABLE_SD_INIT
+/* If defined no HW detection (Pin high/low) is done
+ * by BSP_PlatformIsDetected() in fatfs_platform.c
+ * ATTENTION don't use DISABLE_SD_INIT here as this will
+ * also disable HAL initialization of SD.*/
+#define SD_DISABLE_HW_DETECTION		OFF
 
 #endif /* GLOBAL_CONFIG_H_ */

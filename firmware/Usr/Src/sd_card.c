@@ -9,6 +9,8 @@
 #include "fatfs.h"
 #include "string.h"
 
+uint8_t workBuffer[_MAX_SS];
+
 /* File system object for SD card logical drive */
 //FATFS SDFatFs;
 uint8_t sd_mount(void) {
@@ -17,6 +19,10 @@ uint8_t sd_mount(void) {
 
 uint8_t sd_umount(void) {
 	return f_mount(NULL, SDPath, 0);
+}
+
+uint8_t sd_format(void) {
+	return f_mkfs(SDPath, FM_ANY, 0, workBuffer, sizeof(workBuffer));
 }
 
 /* Append strings to file if it exist or create it.*/
