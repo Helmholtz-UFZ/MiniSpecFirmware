@@ -47,12 +47,9 @@ int main_usr( void )
 	NVIC_EnableIRQ( RXTX_IRQn );
 	HAL_UART_Receive_DMA( &hrxtx, rxtx_rxbuffer.base, rxtx_rxbuffer.size );
 
-	testtest();
-
 	if( data_format == DATA_FORMAT_ASCII )
 	{
 		tx_printf( "\nstart\n" );
-		printf("foooo\n");
 	}
 	while( 1 )
 	{
@@ -131,6 +128,10 @@ int main_usr( void )
 			if(data_format == DATA_FORMAT_ASCII)
 				tx_printf( "ok\n" );
 
+			break;
+
+		case USR_CMD_DEBUG:
+			testtest();
 			break;
 
 		default:
@@ -377,6 +378,16 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 		extcmd = USR_CMD_READ_ITIME;
 		return;
 	}
+
+	str = "debug\r";
+	alias = "d\r";
+	sz = strlen( str );
+	aliassz = strlen( alias );
+	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
+	{
+		extcmd = USR_CMD_DEBUG;
+		return;
+	}
 }
 
 
@@ -388,8 +399,5 @@ static void testtest(void){
 	printf("first: %i\n", res);
 	res = sd_write_file("F1.TXT", "more here");
 	printf("sec: %i\n", res);
-
-	while(1){
-		__NOP();
-	}
+	res = sd_umount();
 }

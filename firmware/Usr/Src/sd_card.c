@@ -12,7 +12,11 @@
 /* File system object for SD card logical drive */
 //FATFS SDFatFs;
 uint8_t sd_mount(void) {
-	return f_mount(&SDFatFS, (TCHAR const*) SDPath, 0);
+	return f_mount(&SDFatFS, SDPath, 0);
+}
+
+uint8_t sd_umount(void) {
+	return f_mount(NULL, SDPath, 0);
 }
 
 /* Append strings to file if it exist or create it.*/

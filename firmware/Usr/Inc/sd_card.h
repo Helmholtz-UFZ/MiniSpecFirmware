@@ -13,6 +13,7 @@
 #define ERR_NODATA 100
 
 uint8_t sd_mount(void);
+uint8_t sd_umount(void);
 uint8_t sd_write_file(char *fname, char *wtxt);
 
 
