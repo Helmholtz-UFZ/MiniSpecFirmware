@@ -34,6 +34,9 @@
 /** @sa DATA_FORMAT_BIN */
 #define DELIMITER_STR   "-----------------------------------------------------------------"
 
+/** Size of the argument buffer in usr_cmd_typedef */
+#define ARGBUFFSZ	30
+
 /**
  * error code enumeration
  */
@@ -61,7 +64,22 @@ typedef enum
 	USR_CMD_STREAM_START,
 	USR_CMD_STREAM_END,
 	USR_CMD_DEBUG,
+	USR_CMD_SET_RTC_TIME,
+	USR_CMD_GET_RTC_TIME,
 } usr_cmd_enum_t;
+
+
+
+typedef struct
+{
+	/* Holds the actual command - nevertheless of parsing errors.*/
+	usr_cmd_enum_t cmd;
+
+	/* Holds a pointer to the argument string after the '=' sign in
+	 * a user command. */
+	char arg_buffer[ARGBUFFSZ];
+
+} usr_cmd_typedef;
 
 
 int main_usr( void );

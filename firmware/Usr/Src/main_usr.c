@@ -6,6 +6,7 @@
  */
 
 #include "main_usr.h"
+#include "rtc.h"
 #include "global_config.h"
 #include "micro_spec.h"
 #include "usart_usr.h"
@@ -19,15 +20,21 @@ static void error_handler( uint8_t err );
 static void testtest(void);
 
 static void parse_extcmd( uint8_t *buffer, uint16_t size );
-static usr_cmd_enum_t extcmd = USR_CMD_UNKNOWN;
-static uint32_t extcmd_data = 0;
+static usr_cmd_typedef extcmd;
 
 static uint8_t data_format = DATA_FORMAT_ASCII;
 static bool stream_mode = 0;
 
+static RTC_TimeTypeDef sTime;
+static RTC_DateTypeDef sDate;
+
 int main_usr( void )
 {
 	uint8_t err = 0;
+	uint32_t tmp;
+	char *p;
+	uint8_t c;
+
 
 	/* Pre init - undo CubeMX stuff ---------------------------------------------*/
 
@@ -64,12 +71,11 @@ int main_usr( void )
 		// redundant in non-stream mode as also disabled in its ISR
 		__HAL_UART_DISABLE_IT( &hrxtx, UART_IT_CM );
 		
-		extcmd = USR_CMD_UNKNOWN;
 		parse_extcmd( rxtx_rxbuffer.base, rxtx_rxbuffer.size );
 
 		rx_handler();
 
-		switch( extcmd ) {
+		switch( extcmd.cmd ) {
 		case USR_CMD_SINGLE_MEASURE_START:
 
 			if(data_format == DATA_FORMAT_ASCII)
@@ -87,10 +93,19 @@ int main_usr( void )
 
 		case USR_CMD_WRITE_ITIME:
 
+			/* parse argument */
+			if (extcmd.arg_buffer[0] == 0) {
+				break;
+			}else{
+				sscanf(extcmd.arg_buffer, "%lu", &tmp);
+			}
+
+			/* check and set argument */
+			sensor_set_itime( tmp );
+
 			if(data_format == DATA_FORMAT_ASCII)
 				tx_printf( "ok\n" );
 
-			sensor_set_itime( extcmd_data );
 			break;
 
 		case USR_CMD_READ_ITIME:
@@ -123,7 +138,15 @@ int main_usr( void )
 			break;
 
 		case USR_CMD_SET_FORMAT:
-			data_format = (extcmd_data > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
+			/* parse argument */
+			if (extcmd.arg_buffer[0] == 0) {
+				tmp = 1;
+			}else{
+				sscanf(extcmd.arg_buffer, "%lu", &tmp);
+			}
+
+			/* check and set argument */
+			data_format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
 
 			if(data_format == DATA_FORMAT_ASCII)
 				tx_printf( "ok\n" );
@@ -132,6 +155,93 @@ int main_usr( void )
 
 		case USR_CMD_DEBUG:
 			testtest();
+			break;
+
+		case USR_CMD_GET_RTC_TIME:
+			/* Always call GetDate after GetTime ! see HAL-documentation */
+			HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+			HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+			if(data_format == DATA_FORMAT_ASCII){
+				printf("20%i-%02i-%02iT%02i:%02i:%02i\n", sDate.Year, sDate.Month, sDate.Date,
+						sTime.Hours, sTime.Minutes, sTime.Seconds);
+			}else{
+				/* Transmit binary */
+				HAL_UART_Transmit( &hrxtx, (uint8_t *) &sDate.Year, 1, 1000 );
+				HAL_UART_Transmit( &hrxtx, (uint8_t *) &sDate.Month, 1, 1000 );
+				HAL_UART_Transmit( &hrxtx, (uint8_t *) &sDate.Date, 1, 1000 );
+				HAL_UART_Transmit( &hrxtx, (uint8_t *) &sTime.Hours, 1, 1000 );
+				HAL_UART_Transmit( &hrxtx, (uint8_t *) &sTime.Minutes, 1, 1000 );
+				HAL_UART_Transmit( &hrxtx, (uint8_t *) &sTime.Seconds, 1, 1000 );
+			}
+			break;
+
+		case USR_CMD_SET_RTC_TIME:
+
+			/* parse argument */
+			/* The Format should look like this:
+			 * 20YY-(M)M-(D)DT(H)H:(m)m:(s)s
+			 * 2099-12-05T23:59:59
+			 */
+			if (extcmd.arg_buffer[0] == 0) {
+				break;
+			}else{
+				p = extcmd.arg_buffer;
+			}
+
+			/* Scan year.
+			 * %hhui means scan to unsigned(u) char(hh) */
+			sscanf( p, "%lu", &tmp);
+			tmp = tmp > 2000 ? tmp - 2000 : tmp;
+			c = (uint8_t) tmp;
+			if(!IS_RTC_YEAR(c)){
+				break;
+			}
+			sDate.Year = c;
+
+			/* Scan month
+			 * search the '-', and let str point to the char right after it. */
+			p = (char*) memchr( p, '-', 10 ) + 1;
+			sscanf( p, "%hhui", &c);
+			if(!IS_RTC_MONTH(c)){
+				break;
+			}
+			sDate.Month = c;
+
+			p = (char*) memchr( p, '-', 10 ) + 1;
+			sscanf( p, "%hhui", &c);
+			if(!IS_RTC_MONTH(c)){
+				break;
+			}
+			sDate.Date = c;
+
+			p = (char*) memchr( p, 'T', 10 ) + 1;
+			sscanf( p, "%hhui", &c);
+			if(!IS_RTC_HOUR24(c)){
+				break;
+			}
+			sTime.Hours = c;
+
+			p = (char*) memchr( p, ':', 10 ) + 1;
+			sscanf( p, "%hhui", &c);
+			if(!IS_RTC_MINUTES(c)){
+				break;
+			}
+			sTime.Minutes = c;
+
+			p = (char*) memchr( p, ':', 10 ) + 1;
+			sscanf( p, "%hhui", &c);
+			if(!IS_RTC_SECONDS(c)){
+				break;
+			}
+			sTime.Seconds = c;
+
+			HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+			HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+			if(data_format == DATA_FORMAT_ASCII)
+				tx_printf( "ok\n" );
+
 			break;
 
 		default:
@@ -321,14 +431,9 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 	char *str, *alias;
 	uint16_t sz, aliassz;
 
-	str = "format=";
-	sz = strlen( str );
-	if( memcmp( buffer, str, sz ) == 0 )
-	{
-		sscanf( (char*) (buffer + sz), "%lu", &extcmd_data );
-		extcmd = USR_CMD_SET_FORMAT;
-		return;
-	}
+	/* init cmd structure */
+	extcmd.cmd = USR_CMD_UNKNOWN;
+	memset(&extcmd.arg_buffer, 0, ARGBUFFSZ);
 
 	str = "measure\r";
 	alias = "m\r";
@@ -336,7 +441,7 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 	aliassz = strlen( alias );
 	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
 	{
-		extcmd = USR_CMD_SINGLE_MEASURE_START;
+		extcmd.cmd = USR_CMD_SINGLE_MEASURE_START;
 		return;
 	}
 
@@ -344,7 +449,7 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 	sz = strlen( str );
 	if( memcmp( buffer, str, sz ) == 0 )
 	{
-		extcmd = USR_CMD_STREAM_START;
+		extcmd.cmd = USR_CMD_STREAM_START;
 		return;
 	}
 
@@ -352,30 +457,7 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 	sz = strlen( str );
 	if( memcmp( buffer, str, sz ) == 0 )
 	{
-		extcmd = USR_CMD_STREAM_END;
-		return;
-	}
-
-	str = "itime=";
-	alias = "i=";
-	sz = strlen( str );
-	aliassz = strlen( alias );
-	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
-	{
-		// search the '=', than parse the value
-		str = memchr( buffer, '=', sz );
-		sscanf( str + 1, "%lu", &extcmd_data );
-		extcmd = USR_CMD_WRITE_ITIME;
-		return;
-	}
-
-	str = "itime?\r";
-	alias = "i?\r";
-	sz = strlen( str );
-	aliassz = strlen( alias );
-	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
-	{
-		extcmd = USR_CMD_READ_ITIME;
+		extcmd.cmd = USR_CMD_STREAM_END;
 		return;
 	}
 
@@ -385,7 +467,69 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 	aliassz = strlen( alias );
 	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
 	{
-		extcmd = USR_CMD_DEBUG;
+		extcmd.cmd = USR_CMD_DEBUG;
+		return;
+	}
+
+	str = "rtc?\r";
+	sz = strlen( str );
+	if( memcmp( buffer, str, sz ) == 0 )
+	{
+		extcmd.cmd = USR_CMD_GET_RTC_TIME;
+		return;
+	}
+
+	str = "itime?\r";
+	alias = "i?\r";
+	sz = strlen( str );
+	aliassz = strlen( alias );
+	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
+	{
+		extcmd.cmd = USR_CMD_READ_ITIME;
+		return;
+	}
+
+	str = "itime=";
+	alias = "i=";
+	sz = strlen( str );
+	aliassz = strlen( alias );
+	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
+	{
+		extcmd.cmd = USR_CMD_WRITE_ITIME;
+		/* Set pointer to char after the '=' */
+		str = (char*) memchr( buffer, '=', sz ) + 1;
+		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
+		 * listening again on the rx line. */
+		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
+		return;
+	}
+
+	str = "format=";
+	sz = strlen( str );
+	if( memcmp( buffer, str, sz ) == 0 )
+	{
+		extcmd.cmd = USR_CMD_SET_FORMAT;
+		/* Set pointer to char after the '=' */
+		str = (char*) memchr( buffer, '=', sz ) + 1;
+		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
+		 * listening again on the rx line. */
+		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
+		/* Set pointer to char after the '=' */
+		return;
+	}
+
+	str = "rtc=";
+	sz = strlen( str );
+	if( memcmp( buffer, str, sz ) == 0 )
+	{
+
+		extcmd.cmd = USR_CMD_SET_RTC_TIME;
+		/* Set pointer to char after the '=' */
+		str = (char*) memchr( buffer, '=', sz ) + 1;
+		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
+		 * listening again on the rx line. */
+		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
+
 		return;
 	}
 }
