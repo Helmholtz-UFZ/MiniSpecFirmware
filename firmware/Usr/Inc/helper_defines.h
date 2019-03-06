@@ -5,6 +5,20 @@
  *      Author: Bert Palm
  */
 
+
+/**
+ * XXX: ATTENTION
+ * This header is included by main.h.
+ * Avoid including high level stuff here.
+ * Otherwise conflicts arise, as the HAL
+ * isn't initialized yet. **/
+
+#undef __weak
+#undef __packed
+#define __weak   __attribute__((weak))
+#define __packed __attribute__((__packed__))
+
+
 #ifndef HELPER_DEFINES_H_
 #define HELPER_DEFINES_H_
 

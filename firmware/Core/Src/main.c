@@ -127,7 +127,6 @@ int main(void)
   /* add the dir 'USR/Inc' to Sources. Therefor
   Properties -> C/C++ General -> Paths and Symbols
   */
-  #include "main_usr.h"
   main_usr();
   /* USER CODE END 2 */
 

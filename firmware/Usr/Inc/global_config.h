@@ -8,14 +8,16 @@
 #ifndef GLOBAL_CONFIG_H_
 #define GLOBAL_CONFIG_H_
 
-/**This is (also) included by main.h
+/**
+ * XXX: ATTENTION
+ * This header is included by main.h.
  * Avoid including high level stuff here.
  * Otherwise conflicts arise, as the HAL
  * isn't initialized yet. **/
+#include "helper_defines.h"
 #include "main_usr.h"
 #include "stdbool.h"
 #include "stdint.h"
-#include "helper_defines.h"
 
 
 

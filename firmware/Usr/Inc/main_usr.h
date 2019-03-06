@@ -11,6 +11,12 @@
 #define __MAIN_USR_H__
 
 /* Includes ------------------------------------------------------------------*/
+/**
+ * XXX: ATTENTION
+ * This header is included by main.h.
+ * Avoid including high level stuff here.
+ * Otherwise conflicts arise, as the HAL
+ * isn't initialized yet. **/
 #include "main.h"
 #include "global_config.h"
 
