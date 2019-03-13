@@ -10,6 +10,9 @@
 #include "string.h"
 #include "stdio.h"
 
+/* Holds the interval that updates alarmA.*/
+RTC_TimeTypeDef rtc_ival;
+
 /**
  * Parse a string to a date and time object.
  * The datetime string should be in ISO 8601 format and should look like this:
@@ -79,7 +82,6 @@ uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *s
 	return 0;
 }
 
-
 /**
  * Parse a interval string to a time object
  * The interval string should be in like ISO 8601 Time format and should look like this:
@@ -87,7 +89,7 @@ uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *s
  *
  * Return 0 on success, non-zero otherwise
  */
-uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime){
+uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime) {
 
 	char *p = str;
 	uint8_t c;
@@ -119,7 +121,54 @@ uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime){
 	return 0;
 }
 
-uint8_t rtc_set_alarmA_interval(RTC_TimeTypeDef *ival){
-	RTC_TimeTypeDef t;
-	RTC_DateTypeDef d;
+/**
+ * Set Alarm a based on a given time.
+ *
+ */
+uint8_t rtc_set_alarmA_interval(RTC_TimeTypeDef *time, RTC_TimeTypeDef *ival) {
+
+	uint8_t sum, carry;
+	RTC_AlarmTypeDef a;
+
+	a.Alarm = RTC_ALARM_A;
+	a.AlarmDateWeekDaySel = RTC_ALARMDATEWEEKDAYSEL_DATE;
+	a.AlarmDateWeekDay = 1; // is masked anyway
+	a.AlarmMask = RTC_ALARMMASK_DATEWEEKDAY;
+	a.AlarmSubSecondMask = RTC_ALARMSUBSECONDMASK_ALL;
+
+	/*set all fields that are not overwritten to original struct,
+	 * e.g. subseconds are taken from time struct. */
+	memcpy(&a.AlarmTime, time, sizeof(RTC_TimeTypeDef));
+
+	if (ival->Hours != 24) {
+
+		sum = time->Seconds + ival->Seconds;
+		if (sum < 60) {
+			a.AlarmTime.Seconds = sum;
+			carry = 0;
+		} else {
+			a.AlarmTime.Seconds = sum - 60;
+			carry = 1;
+		}
+
+		sum = time->Minutes + ival->Minutes + carry;
+		if (sum < 60) {
+			a.AlarmTime.Minutes = sum;
+			carry = 0;
+		} else {
+			a.AlarmTime.Minutes = sum - 60;
+			carry = 1;
+		}
+
+		sum = time->Hours + ival->Hours + carry;
+		if (sum < 24) {
+			a.AlarmTime.Hours = sum;
+		} else {
+			a.AlarmTime.Hours = sum - 24;
+		}
+
+	}
+
+	return HAL_RTC_SetAlarm_IT(&hrtc, &a, RTC_FORMAT_BIN);
 }
+

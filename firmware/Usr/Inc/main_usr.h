@@ -34,8 +34,9 @@
 /** @sa DATA_FORMAT_BIN */
 #define DELIMITER_STR   "-----------------------------------------------------------------"
 
-/** Size of the argument buffer in usr_cmd_typedef */
-#define ARGBUFFSZ	30
+/** Size of the argument buffer in usr_cmd_typedef
+ * must not exceed UART_DEFAULT_RX_BUFFER_SZ */
+#define ARGBUFFSZ	100
 
 /**
  * error code enumeration

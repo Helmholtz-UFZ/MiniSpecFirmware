@@ -28,7 +28,7 @@ static bool stream_mode = 0;
 
 static RTC_DateTypeDef sDate;
 static RTC_TimeTypeDef sTime;
-static RTC_TimeTypeDef ival;
+static RTC_TimeTypeDef tmp;
 
 int main_usr( void )
 {
@@ -202,13 +202,13 @@ int main_usr( void )
 		case USR_CMD_GET_INTERVAL:
 
 			if(data_format == DATA_FORMAT_ASCII){
-				printf("%02i:%02i:%02i\n", ival.Hours, ival.Minutes, ival.Seconds);
+				printf("%02i:%02i:%02i\n", rtc_ival.Hours, rtc_ival.Minutes, rtc_ival.Seconds);
 
 			}else{
 				/* Transmit binary */
-				HAL_UART_Transmit( &hrxtx, (uint8_t *) &ival.Hours, 1, 1000 );
-				HAL_UART_Transmit( &hrxtx, (uint8_t *) &ival.Minutes, 1, 1000 );
-				HAL_UART_Transmit( &hrxtx, (uint8_t *) &ival.Seconds, 1, 1000 );
+				HAL_UART_Transmit( &hrxtx, (uint8_t *) &rtc_ival.Hours, 1, 1000 );
+				HAL_UART_Transmit( &hrxtx, (uint8_t *) &rtc_ival.Minutes, 1, 1000 );
+				HAL_UART_Transmit( &hrxtx, (uint8_t *) &rtc_ival.Seconds, 1, 1000 );
 			}
 			break;
 
@@ -224,14 +224,17 @@ int main_usr( void )
 				break;
 			}
 
-			if( ival.Hours == 0 && ival.Minutes == 0 && ival.Seconds < MIN_IVAL ){
+			if( rtc_ival.Hours == 0 && rtc_ival.Minutes == 0 && rtc_ival.Seconds < MIN_IVAL ){
 				break;
 			}
 
 			/* if all ok update the ival */
-			ival.Hours = sTime.Hours;
-			ival.Minutes = sTime.Minutes;
-			ival.Seconds = sTime.Seconds;
+			rtc_ival.Hours = sTime.Hours;
+			rtc_ival.Minutes = sTime.Minutes;
+			rtc_ival.Seconds = sTime.Seconds;
+
+			/*and set the alarm*/
+			// todo
 
 			if(data_format == DATA_FORMAT_ASCII)
 				tx_printf( "ok\n" );

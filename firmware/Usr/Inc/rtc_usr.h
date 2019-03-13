@@ -10,6 +10,8 @@
 
 #include "rtc.h"
 
+extern RTC_TimeTypeDef rtc_ival;
+
 uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
 uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime);
 
