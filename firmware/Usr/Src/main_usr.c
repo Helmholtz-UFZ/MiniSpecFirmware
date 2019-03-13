@@ -7,6 +7,7 @@
 
 #include "main_usr.h"
 #include "rtc.h"
+#include "rtc_usr.h"
 #include "global_config.h"
 #include "micro_spec.h"
 #include "usart_usr.h"
@@ -32,7 +33,7 @@ int main_usr( void )
 {
 	uint8_t err = 0;
 	uint32_t tmp;
-	char *p;
+	char *str;
 	uint8_t c;
 
 
@@ -178,63 +179,16 @@ int main_usr( void )
 
 		case USR_CMD_SET_RTC_TIME:
 
-			/* parse argument */
-			/* The Format should look like this:
-			 * 20YY-(M)M-(D)DT(H)H:(m)m:(s)s
-			 * 2099-12-05T23:59:59
-			 */
 			if (extcmd.arg_buffer[0] == 0) {
 				break;
-			}else{
-				p = extcmd.arg_buffer;
+			} else {
+				str = extcmd.arg_buffer;
 			}
 
-			/* Scan year.
-			 * %hhui means scan to unsigned(u) char(hh) */
-			sscanf( p, "%lu", &tmp);
-			tmp = tmp > 2000 ? tmp - 2000 : tmp;
-			c = (uint8_t) tmp;
-			if(!IS_RTC_YEAR(c)){
+			err = rtc_parse_datetime(str, &sTime, &sDate);
+			if (err){
 				break;
 			}
-			sDate.Year = c;
-
-			/* Scan month
-			 * search the '-', and let str point to the char right after it. */
-			p = (char*) memchr( p, '-', 10 ) + 1;
-			sscanf( p, "%hhui", &c);
-			if(!IS_RTC_MONTH(c)){
-				break;
-			}
-			sDate.Month = c;
-
-			p = (char*) memchr( p, '-', 10 ) + 1;
-			sscanf( p, "%hhui", &c);
-			if(!IS_RTC_MONTH(c)){
-				break;
-			}
-			sDate.Date = c;
-
-			p = (char*) memchr( p, 'T', 10 ) + 1;
-			sscanf( p, "%hhui", &c);
-			if(!IS_RTC_HOUR24(c)){
-				break;
-			}
-			sTime.Hours = c;
-
-			p = (char*) memchr( p, ':', 10 ) + 1;
-			sscanf( p, "%hhui", &c);
-			if(!IS_RTC_MINUTES(c)){
-				break;
-			}
-			sTime.Minutes = c;
-
-			p = (char*) memchr( p, ':', 10 ) + 1;
-			sscanf( p, "%hhui", &c);
-			if(!IS_RTC_SECONDS(c)){
-				break;
-			}
-			sTime.Seconds = c;
 
 			HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 			HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
@@ -514,7 +468,6 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
 		 * listening again on the rx line. */
 		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
-		/* Set pointer to char after the '=' */
 		return;
 	}
 
