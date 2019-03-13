@@ -26,8 +26,9 @@ static usr_cmd_typedef extcmd;
 static uint8_t data_format = DATA_FORMAT_ASCII;
 static bool stream_mode = 0;
 
-static RTC_TimeTypeDef sTime;
 static RTC_DateTypeDef sDate;
+static RTC_TimeTypeDef sTime;
+static RTC_TimeTypeDef ival;
 
 int main_usr( void )
 {
@@ -192,6 +193,45 @@ int main_usr( void )
 
 			HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 			HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+			if(data_format == DATA_FORMAT_ASCII)
+				tx_printf( "ok\n" );
+
+			break;
+
+		case USR_CMD_GET_INTERVAL:
+
+			if(data_format == DATA_FORMAT_ASCII){
+				printf("%02i:%02i:%02i\n", ival.Hours, ival.Minutes, ival.Seconds);
+
+			}else{
+				/* Transmit binary */
+				HAL_UART_Transmit( &hrxtx, (uint8_t *) &ival.Hours, 1, 1000 );
+				HAL_UART_Transmit( &hrxtx, (uint8_t *) &ival.Minutes, 1, 1000 );
+				HAL_UART_Transmit( &hrxtx, (uint8_t *) &ival.Seconds, 1, 1000 );
+			}
+			break;
+
+		case USR_CMD_SET_INTERVAL:
+			if (extcmd.arg_buffer[0] == 0) {
+				break;
+			} else {
+				str = extcmd.arg_buffer;
+			}
+
+			err = rtc_parse_interval(str, &sTime);
+			if (err){
+				break;
+			}
+
+			if( ival.Hours == 0 && ival.Minutes == 0 && ival.Seconds < MIN_IVAL ){
+				break;
+			}
+
+			/* if all ok update the ival */
+			ival.Hours = sTime.Hours;
+			ival.Minutes = sTime.Minutes;
+			ival.Seconds = sTime.Seconds;
 
 			if(data_format == DATA_FORMAT_ASCII)
 				tx_printf( "ok\n" );
@@ -433,6 +473,14 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 		return;
 	}
 
+	str = "ival?\r";
+	sz = strlen( str );
+	if( memcmp( buffer, str, sz ) == 0 )
+	{
+		extcmd.cmd = USR_CMD_GET_INTERVAL;
+		return;
+	}
+
 	str = "itime?\r";
 	alias = "i?\r";
 	sz = strlen( str );
@@ -477,6 +525,21 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 	{
 
 		extcmd.cmd = USR_CMD_SET_RTC_TIME;
+		/* Set pointer to char after the '=' */
+		str = (char*) memchr( buffer, '=', sz ) + 1;
+		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
+		 * listening again on the rx line. */
+		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
+
+		return;
+	}
+
+	str = "ival=";
+	sz = strlen( str );
+	if( memcmp( buffer, str, sz ) == 0 )
+	{
+
+		extcmd.cmd = USR_CMD_SET_INTERVAL;
 		/* Set pointer to char after the '=' */
 		str = (char*) memchr( buffer, '=', sz ) + 1;
 		/* Copy arg str to arg_buffer, so we can reset the receive buffer and

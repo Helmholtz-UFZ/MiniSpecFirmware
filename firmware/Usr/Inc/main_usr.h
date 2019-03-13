@@ -66,6 +66,8 @@ typedef enum
 	USR_CMD_DEBUG,
 	USR_CMD_SET_RTC_TIME,
 	USR_CMD_GET_RTC_TIME,
+	USR_CMD_SET_INTERVAL,
+	USR_CMD_GET_INTERVAL,
 } usr_cmd_enum_t;
 
 

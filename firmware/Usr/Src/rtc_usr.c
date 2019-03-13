@@ -79,3 +79,47 @@ uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *s
 	return 0;
 }
 
+
+/**
+ * Parse a interval string to a time object
+ * The interval string should be in like ISO 8601 Time format and should look like this:
+ * HH:mm:ss, example: 23:59:59
+ *
+ * Return 0 on success, non-zero otherwise
+ */
+uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime){
+
+	char *p = str;
+	uint8_t c;
+
+	/* search the 'T', and let str point to the char right after it. */
+	p = (char*) memchr(p, 'T', 10) + 1;
+	sscanf(p, "%hhui", &c);
+	if (!IS_RTC_HOUR24(c)) {
+		return 4;
+	}
+	sTime->Hours = c;
+
+	/* search the ':', and let str point to the char right after it. */
+	p = (char*) memchr(p, ':', 10) + 1;
+	sscanf(p, "%hhui", &c);
+	if (!IS_RTC_MINUTES(c)) {
+		return 5;
+	}
+	sTime->Minutes = c;
+
+	/* search the ':', and let str point to the char right after it. */
+	p = (char*) memchr(p, ':', 10) + 1;
+	sscanf(p, "%hhui", &c);
+	if (!IS_RTC_SECONDS(c)) {
+		return 6;
+	}
+	sTime->Seconds = c;
+
+	return 0;
+}
+
+uint8_t rtc_set_alarmA_interval(RTC_TimeTypeDef *ival){
+	RTC_TimeTypeDef t;
+	RTC_DateTypeDef d;
+}

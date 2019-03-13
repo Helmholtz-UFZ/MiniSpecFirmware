@@ -110,4 +110,9 @@
  * also disable HAL initialization of SD.*/
 #define SD_DISABLE_HW_DETECTION		OFF
 
+/* Minimal possible repetition of measurements by setting
+ * the interval which updates timerA.
+ * Take maximal integration time and processing in account.
+ * In seconds. */
+#define MIN_IVAL	11
 #endif /* GLOBAL_CONFIG_H_ */
