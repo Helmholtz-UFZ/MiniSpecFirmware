@@ -50,7 +50,7 @@ uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *s
 	/* search the '-', and let str point to the char right after it. */
 	p = (char*) memchr(p, '-', 10) + 1;
 	sscanf(p, "%hhui", &c);
-	if (!IS_RTC_MONTH(c)) {
+	if (!IS_RTC_DATE(c)) {
 		return 3;
 	}
 	sDate->Date = c;
