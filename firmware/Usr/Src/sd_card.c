@@ -6,7 +6,6 @@
  */
 
 #include "sd_card.h"
-#include "fatfs.h"
 #include "string.h"
 
 uint8_t workBuffer[_MAX_SS];
@@ -61,4 +60,22 @@ uint8_t sd_write_file(char *fname, char *wtxt) {
 	f_close(f);
 
 	return 0;
+}
+
+/**
+ * Create a file and return it if it not exist, otherwise
+ * return the file in append mode.
+ * param *f: A File object see SDFile.
+ *
+ * Note: The File object must be initialisized with zero
+ * or unexpected errors will occur. If file object is created
+ * on file/header level it is init by default.
+ */
+uint8_t sd_open_file_neworappend(FIL* f, char *fname) {
+	int8_t res = 0;
+	res = f_open(f, fname, FA_WRITE | FA_CREATE_NEW);
+	if (res ==  FR_EXIST){
+		res = f_open(f, fname, FA_WRITE | FA_OPEN_APPEND);
+	}
+	return res;
 }

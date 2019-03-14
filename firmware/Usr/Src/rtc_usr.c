@@ -205,6 +205,28 @@ uint8_t rtc_set_alarmA_by_offset(RTC_TimeTypeDef *time, RTC_TimeTypeDef *offset)
 	return HAL_RTC_SetAlarm_IT(&hrtc, &a, RTC_FORMAT_BIN);
 }
 
+
+/*
+ * Return a string representation of the current RTC time.
+ * In the ISO 8601 Format 20YY-MM-DDTHH:mm:ss.
+ *
+ * The param buffer must hold enough space to store the
+ * 20 bytes string including the null terminator.
+ * */
+void rtc_get_now_str(char *buffer, uint32_t sz){
+	RTC_TimeTypeDef t;
+	RTC_DateTypeDef d;
+
+	if( sz < 20 ){
+		return;
+	}
+
+	HAL_RTC_GetTime(&hrtc, &t, RTC_FORMAT_BIN );
+	HAL_RTC_GetDate(&hrtc, &d, RTC_FORMAT_BIN );
+
+	sprintf(buffer, "20%02i-%02i-%02iT%02i:%02i:%02i", d.Year, d.Month, d.Date, t.Hours, t.Minutes, t.Seconds);
+}
+
 /**
  * Note: Overwrite __weak function in stm32l4xx_hal_rtc.c
  * Note: This is called from within a interrupt.

@@ -14,6 +14,7 @@
 #include "tim_usr.h"
 #include "sd_card.h"
 #include "string.h"
+#include "fatfs.h"
 #include <stdio.h>
 
 static void send_data( uint8_t format );
@@ -21,7 +22,7 @@ static void error_handler( uint8_t err );
 static void testtest(void);
 
 static void parse_extcmd( uint8_t *buffer, uint16_t size );
-static void alarmA_handler(void);
+static void periodic_alarm_handler(void);
 static usr_cmd_typedef extcmd;
 
 static uint8_t data_format = DATA_FORMAT_ASCII;
@@ -74,7 +75,7 @@ int main_usr( void )
 		
 		if (rtc_alarmA_occured) {
 			rtc_alarmA_occured = 0;
-			alarmA_handler();
+			periodic_alarm_handler();
 		}
 
 		parse_extcmd( rxtx_rxbuffer.base, rxtx_rxbuffer.size );
@@ -309,6 +310,7 @@ static void send_data( uint8_t format )
 			if( rptr == (sens1.data->wptr - MSPARAM_PIXEL) )
 			{
 				tx_printf( "\n"DELIMITER_STR );
+
 				tx_printf( "\n"HEADER_STR );
 				i = 0;
 			}
@@ -565,12 +567,52 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 	}
 }
 
-static void alarmA_handler(void){
+static void periodic_alarm_handler(void){
 
 	RTC_AlarmTypeDef a;
+	int8_t res = 0;
+	uint8_t err = 0;
+	FIL *f = &SDFile;
+	char *fname = "M1.TXT";
+	char ts_buff[32];
 	printf("Alarm A\n");
+
+	/* Set the alarm to new time according to the interval value.*/
 	HAL_RTC_GetAlarm(&hrtc, &a, RTC_ALARM_A, RTC_FORMAT_BIN);
 	rtc_set_alarmA_by_offset(&a.AlarmTime, &rtc_ival);
+
+	/* Generate timestamp*/
+	rtc_get_now_str(ts_buff, 32);
+
+	/* Make a measurement */
+	sensor_init();
+	err = sensor_measure();
+	if (err) {
+		/* Store timestamp and error to SD */
+		res = sd_mount();
+		res = sd_open_file_neworappend(f, fname);
+
+		f_printf(f, "%S err: %U\n", ts_buff, err);
+		sensor_deinit();
+		res = sd_umount();
+		return;
+	}
+	sensor_deinit();
+
+	/* Store the measurement on SD */
+	res = sd_mount();
+	res = sd_open_file_neworappend(f, fname);
+
+	/* Write timestamp to SD */
+	f_printf(f, "%S [", ts_buff);
+
+	/* Lopp through measurement results and store to file */
+	uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
+	for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
+		f_printf(f, "%U,", *(p++));
+	}
+	f_printf(f, "]\n");
+	res = sd_umount();
 }
 
 
