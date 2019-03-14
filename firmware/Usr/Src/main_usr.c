@@ -591,10 +591,11 @@ static void periodic_alarm_handler(void){
 		/* Store timestamp and error to SD */
 		res = sd_mount();
 		res = sd_open_file_neworappend(f, fname);
-
-		f_printf(f, "%S err: %U\n", ts_buff, err);
-		sensor_deinit();
+		f_printf(f, "%S, %U, %UL, \n", ts_buff, err, sens1.itime);
+		f_close(f);
 		res = sd_umount();
+
+		sensor_deinit();
 		return;
 	}
 	sensor_deinit();
@@ -604,7 +605,7 @@ static void periodic_alarm_handler(void){
 	res = sd_open_file_neworappend(f, fname);
 
 	/* Write timestamp to SD */
-	f_printf(f, "%S [", ts_buff);
+	f_printf(f, "%S, %U, %LU, [", ts_buff, 0, sens1.itime);
 
 	/* Lopp through measurement results and store to file */
 	uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
@@ -612,6 +613,7 @@ static void periodic_alarm_handler(void){
 		f_printf(f, "%U,", *(p++));
 	}
 	f_printf(f, "]\n");
+	f_close(f);
 	res = sd_umount();
 }
 
