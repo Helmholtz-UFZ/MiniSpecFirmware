@@ -96,8 +96,7 @@ uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime) {
 	char *p = str;
 	uint8_t c;
 
-	/* search the 'T', and let str point to the char right after it. */
-	p = (char*) memchr(p, 'T', 10) + 1;
+	/* Parse the first number*/
 	sscanf(p, "%hhui", &c);
 	if (!IS_RTC_HOUR24(c)) {
 		return 4;

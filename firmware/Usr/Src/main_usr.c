@@ -29,14 +29,12 @@ static bool stream_mode = 0;
 
 static RTC_DateTypeDef sDate;
 static RTC_TimeTypeDef sTime;
-static RTC_TimeTypeDef tmp;
 
 int main_usr( void )
 {
 	uint8_t err = 0;
 	uint32_t tmp;
 	char *str;
-	uint8_t c;
 
 
 	/* Pre init - undo CubeMX stuff ---------------------------------------------*/
@@ -230,11 +228,11 @@ int main_usr( void )
 				break;
 			}
 
-			if( rtc_ival.Hours == 0 && rtc_ival.Minutes == 0 && rtc_ival.Seconds < MIN_IVAL ){
+			if( sTime.Hours == 0 && sTime.Minutes == 0 && sTime.Seconds < MIN_IVAL ){
 				break;
 			}
 
-			/* if all ok update the rtc ival which periodically updated the alarmA. */
+			/* if all ok update the rtc ival variable which periodically updated the alarmA. */
 			rtc_ival.Hours = sTime.Hours;
 			rtc_ival.Minutes = sTime.Minutes;
 			rtc_ival.Seconds = sTime.Seconds;
@@ -565,8 +563,10 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 
 static void alarmA_handler(void){
 
-	printf('ALARM \n');
-
+	RTC_AlarmTypeDef a;
+//	printf("Alarm A\n");
+	HAL_RTC_GetAlarm(&hrtc, &a, RTC_ALARM_A, RTC_FORMAT_BIN);
+	rtc_set_alarmA_interval(&a.AlarmTime, &rtc_ival);
 }
 
 
