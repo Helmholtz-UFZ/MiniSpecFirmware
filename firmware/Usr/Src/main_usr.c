@@ -228,7 +228,11 @@ int main_usr( void )
 				break;
 			}
 
-			if( sTime.Hours == 0 && sTime.Minutes == 0 && sTime.Seconds < MIN_IVAL ){
+			if( sTime.Hours == 0 && sTime.Minutes == 0 && sTime.Seconds == 0 ){
+				/* All zero deactivates the periodically alarm, so this is a valid case.*/
+				;
+			} else if( sTime.Hours == 0 && sTime.Minutes == 0 && sTime.Seconds < MIN_IVAL ){
+				/* Ensure that the interval is long enough to operate safely.*/
 				break;
 			}
 
@@ -242,7 +246,7 @@ int main_usr( void )
 			HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 
 			/* and finally set the alarm.*/
-			rtc_set_alarmA_interval(&sTime, &rtc_ival);
+			rtc_set_alarmA_by_offset(&sTime, &rtc_ival);
 
 			if(data_format == DATA_FORMAT_ASCII)
 				tx_printf( "ok\n" );
@@ -564,9 +568,9 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 static void alarmA_handler(void){
 
 	RTC_AlarmTypeDef a;
-//	printf("Alarm A\n");
+	printf("Alarm A\n");
 	HAL_RTC_GetAlarm(&hrtc, &a, RTC_ALARM_A, RTC_FORMAT_BIN);
-	rtc_set_alarmA_interval(&a.AlarmTime, &rtc_ival);
+	rtc_set_alarmA_by_offset(&a.AlarmTime, &rtc_ival);
 }
 
 

@@ -123,10 +123,22 @@ uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime) {
 }
 
 /**
- * Set Alarm a based on a given time.
+ * Set or deactivate AlarmA, based on a given time.
+ *
+ * param time: The base time. The interval is set relative to that.
+ * So next alarm = base time + interval
+ *
+ * param ival: the interval.
+ *
+ * Note: Only Hours, Minutes and Seconds from both parameter are taken in
+ * account, other fields are ignored.
+ *
+ * Note: If Hours, Minutes and Seconds of ival is set to zero, the alarm is
+ * deactivated. Also if Hours is set to 24, Minutes and Seconds are ignored
+ * and the alarm is set to 1day aka. 24h.
  *
  */
-uint8_t rtc_set_alarmA_interval(RTC_TimeTypeDef *time, RTC_TimeTypeDef *ival) {
+uint8_t rtc_set_alarmA_by_offset(RTC_TimeTypeDef *time, RTC_TimeTypeDef *offset) {
 
 	uint8_t sum, carry;
 	RTC_AlarmTypeDef a;
@@ -140,16 +152,22 @@ uint8_t rtc_set_alarmA_interval(RTC_TimeTypeDef *time, RTC_TimeTypeDef *ival) {
 	a.AlarmMask = RTC_ALARMMASK_DATEWEEKDAY;
 	a.AlarmSubSecondMask = RTC_ALARMSUBSECONDMASK_ALL;
 
-	/*set all fields that are not overwritten to original struct,
+	/* For Futur Use...
+	 * Set all fields that are not overwritten to original struct,
 	 * e.g. subseconds are taken from time struct. */
-	memcpy(&a.AlarmTime, time, sizeof(RTC_TimeTypeDef));
+//	memcpy(&a.AlarmTime, time, sizeof(RTC_TimeTypeDef));
+	a.AlarmTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+	a.AlarmTime.SecondFraction = 0;
+	a.AlarmTime.SubSeconds = 0;
+	a.AlarmTime.StoreOperation = RTC_STOREOPERATION_RESET;
+	a.AlarmTime.TimeFormat = RTC_HOURFORMAT_24;
 
-	if (ival->Seconds == 0 && ival->Minutes == 0 && ival->Hours == 0 ){
+	if (offset->Seconds == 0 && offset->Minutes == 0 && offset->Hours == 0 ){
 		/*Special case: Alarm off. Alarm is already deactivated. So we are done.*/
 		return 0;
 	}
 
-	if (ival->Hours == 24) {
+	if (offset->Hours == 24) {
 		/*Special case one day interval.*/
 		a.AlarmTime.Seconds = time->Seconds;
 		a.AlarmTime.Minutes = time->Minutes;
@@ -157,7 +175,7 @@ uint8_t rtc_set_alarmA_interval(RTC_TimeTypeDef *time, RTC_TimeTypeDef *ival) {
 
 	} else {
 
-		sum = time->Seconds + ival->Seconds;
+		sum = time->Seconds + offset->Seconds;
 		if (sum < 60) {
 			a.AlarmTime.Seconds = sum;
 			carry = 0;
@@ -166,7 +184,7 @@ uint8_t rtc_set_alarmA_interval(RTC_TimeTypeDef *time, RTC_TimeTypeDef *ival) {
 			carry = 1;
 		}
 
-		sum = time->Minutes + ival->Minutes + carry;
+		sum = time->Minutes + offset->Minutes + carry;
 		if (sum < 60) {
 			a.AlarmTime.Minutes = sum;
 			carry = 0;
@@ -175,7 +193,7 @@ uint8_t rtc_set_alarmA_interval(RTC_TimeTypeDef *time, RTC_TimeTypeDef *ival) {
 			carry = 1;
 		}
 
-		sum = time->Hours + ival->Hours + carry;
+		sum = time->Hours + offset->Hours + carry;
 		if (sum < 24) {
 			a.AlarmTime.Hours = sum;
 		} else {
