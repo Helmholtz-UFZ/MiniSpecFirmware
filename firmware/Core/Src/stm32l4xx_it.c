@@ -49,6 +49,7 @@ extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim5;
 extern DMA_HandleTypeDef hdma_uart4_rx;
 extern DMA_HandleTypeDef hdma_usart1_rx;
+extern UART_HandleTypeDef huart4;
 extern UART_HandleTypeDef huart1;
 
 /******************************************************************************/
@@ -306,6 +307,41 @@ void TIM5_IRQHandler(void)
 }
 
 /**
+* @brief This function handles UART4 global interrupt.
+*/
+void UART4_IRQHandler(void)
+{
+  /* USER CODE BEGIN UART4_IRQn 0 */
+	/*
+	 * Here all u(s)art4 related IRs are handled by the HAL.
+	 *
+	 * We only add a case for handling of capturing a predefined sign ('\r' aka. carriage-return).
+	 * If we capture such a sign we assume the user had entered a complete command and now want us
+	 * to handle it appropriate, as we'll do :). We set some parameter here and handle it in the
+	 * main-loop.
+	 */
+
+	// catch carriage return as 'end of cmd'-flag
+	if( ((RXTX->ISR & USART_ISR_CMF) != RESET) && ((RXTX->CR1 & USART_CR1_CMIE) != RESET) )
+	{
+		__HAL_UART_CLEAR_IT( &hrxtx, USART_ISR_CMF );
+		__HAL_UART_DISABLE_IT( &hrxtx, UART_IT_CM );
+
+		rxtx_cmd_bytes = hrxtx.RxXferSize - hrxtx.hdmarx->Instance->CNDTR;
+		rxtx_CR_recvd = true;
+
+
+		cpu_enter_run_mode();
+	}
+
+  /* USER CODE END UART4_IRQn 0 */
+  HAL_UART_IRQHandler(&huart4);
+  /* USER CODE BEGIN UART4_IRQn 1 */
+#define USART4_IRQHandler__OK
+  /* USER CODE END UART4_IRQn 1 */
+}
+
+/**
 * @brief This function handles DMA2 channel5 global interrupt.
 */
 void DMA2_Channel5_IRQHandler(void)
@@ -329,6 +365,7 @@ void DMA2_Channel5_IRQHandler(void)
 #if (!defined EXTI2_IRQHandler__OK \
 	|| !defined TIM1_CC_IRQHandler__OK \
 	|| !defined USART1_IRQHandler__OK \
+	|| !defined USART4_IRQHandler__OK \
 	|| !defined SysTick_Handler__OK \
 	|| !defined TIM5_IRQHandler__OK)
 #warning "IRQ_Handler missing. May it was deleted by CubeMX ?"

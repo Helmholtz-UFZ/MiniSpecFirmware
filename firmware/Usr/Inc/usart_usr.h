@@ -16,12 +16,12 @@
 // configure printf
 #define STDOUT_FILENO   1
 #define STDERR_FILENO   2
-#define hprintf huart1
+#define hprintf huart4
 
 // configure the usr comunication interface
-#define hrxtx huart1
-#define RXTX USART1
-#define RXTX_IRQn USART1_IRQn
+#define hrxtx huart4
+#define RXTX UART4
+#define RXTX_IRQn UART4_IRQn
 
 // this should be as least as big that we can send one whole
 // measurement data plus some meta data.
