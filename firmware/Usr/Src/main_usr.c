@@ -21,6 +21,7 @@ static void error_handler( uint8_t err );
 static void testtest(void);
 
 static void parse_extcmd( uint8_t *buffer, uint16_t size );
+static void alarmA_handler(void);
 static usr_cmd_typedef extcmd;
 
 static uint8_t data_format = DATA_FORMAT_ASCII;
@@ -65,7 +66,7 @@ int main_usr( void )
 		// IR in uart module
 		__HAL_UART_ENABLE_IT( &hrxtx, UART_IT_CM );
 
-		if( rxtx_CR_recvd == 0 && stream_mode == 0 )
+		if( rxtx_CR_recvd == 0 && stream_mode == 0 && rtc_alarmA_occured == 0)
 		{
 			cpu_enter_sleep_mode();
 		}
@@ -73,6 +74,11 @@ int main_usr( void )
 		// redundant in non-stream mode as also disabled in its ISR
 		__HAL_UART_DISABLE_IT( &hrxtx, UART_IT_CM );
 		
+		if (rtc_alarmA_occured) {
+			rtc_alarmA_occured = 0;
+			alarmA_handler();
+		}
+
 		parse_extcmd( rxtx_rxbuffer.base, rxtx_rxbuffer.size );
 
 		rx_handler();
@@ -228,13 +234,17 @@ int main_usr( void )
 				break;
 			}
 
-			/* if all ok update the ival */
+			/* if all ok update the rtc ival which periodically updated the alarmA. */
 			rtc_ival.Hours = sTime.Hours;
 			rtc_ival.Minutes = sTime.Minutes;
 			rtc_ival.Seconds = sTime.Seconds;
 
-			/*and set the alarm*/
-			// todo
+			/* Get the current time (ignore date, but always call both) */
+			HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+			HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+			/* and finally set the alarm.*/
+			rtc_set_alarmA_interval(&sTime, &rtc_ival);
 
 			if(data_format == DATA_FORMAT_ASCII)
 				tx_printf( "ok\n" );
@@ -551,6 +561,12 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 
 		return;
 	}
+}
+
+static void alarmA_handler(void){
+
+	printf('ALARM \n');
+
 }
 
 

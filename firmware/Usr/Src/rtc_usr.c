@@ -12,6 +12,7 @@
 
 /* Holds the interval that updates alarmA.*/
 RTC_TimeTypeDef rtc_ival;
+volatile bool rtc_alarmA_occured = 0;
 
 /**
  * Parse a string to a date and time object.
@@ -187,3 +188,15 @@ uint8_t rtc_set_alarmA_interval(RTC_TimeTypeDef *time, RTC_TimeTypeDef *ival) {
 	return HAL_RTC_SetAlarm_IT(&hrtc, &a, RTC_FORMAT_BIN);
 }
 
+/**
+ * Note: Overwrite __weak function in stm32l4xx_hal_rtc.c
+ * Note: This is called from within a interrupt.
+ */
+void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
+{
+	UNUSED(hrtc);
+
+	rtc_alarmA_occured = 1;
+
+	cpu_enter_run_mode();
+}
