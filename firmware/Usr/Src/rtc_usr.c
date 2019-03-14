@@ -21,7 +21,8 @@ RTC_TimeTypeDef rtc_ival;
  *
  * Return 0 on success, non-zero otherwise
  */
-uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate) {
+uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime,
+		RTC_DateTypeDef *sDate) {
 
 	char *p = str;
 	uint16_t cc;
@@ -130,6 +131,9 @@ uint8_t rtc_set_alarmA_interval(RTC_TimeTypeDef *time, RTC_TimeTypeDef *ival) {
 	uint8_t sum, carry;
 	RTC_AlarmTypeDef a;
 
+	/*First deactivate alarm, to write alarm register.*/
+	HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
+
 	a.Alarm = RTC_ALARM_A;
 	a.AlarmDateWeekDaySel = RTC_ALARMDATEWEEKDAYSEL_DATE;
 	a.AlarmDateWeekDay = 1; // is masked anyway
@@ -140,7 +144,18 @@ uint8_t rtc_set_alarmA_interval(RTC_TimeTypeDef *time, RTC_TimeTypeDef *ival) {
 	 * e.g. subseconds are taken from time struct. */
 	memcpy(&a.AlarmTime, time, sizeof(RTC_TimeTypeDef));
 
-	if (ival->Hours != 24) {
+	if (ival->Seconds == 0 && ival->Minutes == 0 && ival->Hours == 0 ){
+		/*Special case: Alarm off. Alarm is already deactivated. So we are done.*/
+		return 0;
+	}
+
+	if (ival->Hours == 24) {
+		/*Special case one day interval.*/
+		a.AlarmTime.Seconds = time->Seconds;
+		a.AlarmTime.Minutes = time->Minutes;
+		a.AlarmTime.Hours = time->Hours;
+
+	} else {
 
 		sum = time->Seconds + ival->Seconds;
 		if (sum < 60) {
