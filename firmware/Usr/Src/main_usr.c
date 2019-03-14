@@ -625,6 +625,11 @@ static void testtest(void){
 	res = sd_mount();
 	printf("mount: %i\n", res);
 	res = sd_write_file("F1.TXT", "some in line1\r\nline2\r\n");
+	if (res == FR_DISK_ERR){
+		/* Try to reinitialize driver.*/
+		FATFS_UnLinkDriver(SDPath);
+		MX_FATFS_Init();
+	}
 	printf("first: %i\n", res);
 	res = sd_write_file("F1.TXT", "more here");
 	printf("sec: %i\n", res);

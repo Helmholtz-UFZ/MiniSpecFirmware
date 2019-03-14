@@ -29,6 +29,7 @@ uint8_t sd_write_file(char *fname, char *wtxt) {
 	FIL *f = &SDFile;
 	int8_t res = 0;
 	int16_t byteswritten = -1;
+	memset(f,0,sizeof(FIL));
 
 	// try create a File
 	res = f_open(f, fname, FA_WRITE | FA_CREATE_NEW);
