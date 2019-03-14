@@ -121,6 +121,7 @@ int main(void)
   MX_USART1_UART_Init();
   MX_FATFS_Init();
   MX_RTC_Init();
+  MX_UART4_Init();
 
   /* Initialize interrupts */
   MX_NVIC_Init();
@@ -195,8 +196,10 @@ void SystemClock_Config(void)
   }
 
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_USART1
-                              |RCC_PERIPHCLK_I2C1|RCC_PERIPHCLK_SDMMC1;
+                              |RCC_PERIPHCLK_UART4|RCC_PERIPHCLK_I2C1
+                              |RCC_PERIPHCLK_SDMMC1;
   PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
+  PeriphClkInit.Uart4ClockSelection = RCC_UART4CLKSOURCE_PCLK1;
   PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_PCLK1;
   PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
   PeriphClkInit.Sdmmc1ClockSelection = RCC_SDMMC1CLKSOURCE_MSI;
