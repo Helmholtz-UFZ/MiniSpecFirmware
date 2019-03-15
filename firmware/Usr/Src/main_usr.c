@@ -17,8 +17,7 @@
 #include "fatfs.h"
 #include <stdio.h>
 
-static void send_data( uint8_t format );
-static void error_handler( uint8_t err );
+static void send_data( uint8_t err, uint8_t format );
 static void testtest(void);
 
 static void parse_extcmd( uint8_t *buffer, uint16_t size );
@@ -62,6 +61,8 @@ int main_usr( void )
 	}
 	while( 1 )
 	{
+		err = 0;
+
 		// IR in uart module
 		__HAL_UART_ENABLE_IT( &hrxtx, UART_IT_CM );
 
@@ -84,18 +85,12 @@ int main_usr( void )
 
 		switch( extcmd.cmd ) {
 		case USR_CMD_SINGLE_MEASURE_START:
-
 			if(data_format == DATA_FORMAT_ASCII)
 				tx_printf( "ok\n" );
-
 			sensor_init();
-
 			err = sensor_measure();
-			if( err ) break;
-
+			send_data( err, data_format);
 			sensor_deinit();
-
-			send_data( data_format );
 			break;
 
 		case USR_CMD_WRITE_ITIME:
@@ -184,6 +179,7 @@ int main_usr( void )
 			break;
 
 		case USR_CMD_SET_RTC_TIME:
+			/* todo: update alarm on rtc update*. */
 
 			if (extcmd.arg_buffer[0] == 0) {
 				break;
@@ -261,133 +257,93 @@ int main_usr( void )
 		if( stream_mode )
 		{
 			err = sensor_measure();
-			if( err == 0 )
-			{
-				send_data( data_format );
+			send_data( err, data_format );
+			if(err){
+				stream_mode = 0;
+				sensor_deinit();
 			}
 		}
 
-		if( err )
-		{
-			error_handler( sens1.status );
-			err = 0;
-		}
 	}
 	
 	return 0;
 }
 
 /**
- * Local helper for sending data via the uart3 interface.
+ * Local helper for sending data via the uart interface.
  *
  * \param format	0 (DATA_FORMAT_BIN) send raw data, byte per byte.(eg. (dez) 1000 -> 0xE8 0x03)\n
  * \param format	1 (DATA_FORMAT_ASCII) send the data as in ASCII, as human readable text. (eg. (dez) 1000 -> '1' '0' '0' '0')
  */
-static void send_data( uint8_t format )
+static void send_data( uint8_t err, uint8_t format )
 {
-	if( format == DATA_FORMAT_BIN )
-	{
-		//send data
-		uint32_t no_err = ERRC_NO_ERROR;
-		HAL_UART_Transmit( &hrxtx, (uint8_t *) &no_err, 2, 200 );
-		HAL_UART_Transmit( &hrxtx, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL), MSPARAM_PIXEL * 2, MSPARAM_PIXEL * 2 * 100 );
-		
-	}
-
-	else if( format == DATA_FORMAT_ASCII )
-	{
-		uint16_t *rptr = sens1.data->base;
-		uint16_t i = 0;
-		
-		while( rptr < sens1.data->wptr )
-		{
-			if( DBG_SEND_ALL == OFF && rptr < (sens1.data->wptr - MSPARAM_PIXEL) )
-			{
-				rptr++;
-				continue;
-			}
-			
-			if( rptr == (sens1.data->wptr - MSPARAM_PIXEL) )
-			{
-				tx_printf( "\n"DELIMITER_STR );
-
-				tx_printf( "\n"HEADER_STR );
-				i = 0;
-			}
-			
-			if( i % 10 == 0 )
-			{
-				tx_printf( "\n%03d   %05d ", i, *rptr );
-			}
-			else
-			{
-				tx_printf( "%05d ", *rptr );
-			}
-			
-			rptr++;
-			i++;
-		}
-		tx_printf( "\n"DELIMITER_STR"\n\n" );
-	}
 	
-}
+	char *errstr;
+	uint32_t errcode = ERRC_NO_ERROR;
+	uint16_t *rptr;
+	uint16_t i = 0;
 
-/**
- * Handles error.
- * So far only errors from a measurement.
- */
-static void error_handler( uint8_t err )
-{
-
-	uint32_t errcode = ERRC_UNKNOWN;
-	switch( err ) {
-	case 0:
-		return;
-		
+	switch (err) {
 	case SENS_ERR_TIMEOUT:
-		if( data_format == DATA_FORMAT_ASCII )
-		{
-			tx_printf( "ERR: TIMEOUT. Please check the following:\n"
+		errstr = "ERR: TIMEOUT. Please check the following:\n"
 				"1. is sensor plugged ?\n"
 				"2. ADC/sensor powered ?\n"
-				"3. check physical connections\n" );
-		}
+				"3. check physical connections\n";
 		errcode = ERRC_TIMEOUT;
-		stream_mode = 0;
-		sensor_deinit();
 		break;
-		
 	case SENS_ERR_NO_EOS:
-		if( data_format == DATA_FORMAT_ASCII )
-		{
-			tx_printf( "ERR: NO EOS. Something went wrong, please debug manually.\n" );
-		}
-
+		errstr = "ERR: NO EOS. Something went wrong, please debug manually.\n";
 		errcode = ERRC_NO_EOS;
-		stream_mode = 0;
-		sensor_deinit();
 		break;
-
 	case SENS_ERR_EOS_EARLY:
-		if( data_format == DATA_FORMAT_ASCII )
-		{
-			tx_printf( "ERR: EOS EARLY. Something went wrong, please debug manually.\n" );
-		}
-
+		errstr = "ERR: EOS EARLY. Something went wrong, please debug manually.\n";
 		errcode = ERRC_EOS_EARLY;
-		stream_mode = 0;
-		sensor_deinit();
 		break;
-		
 	default:
 		break;
 	}
 
-	// send error code
-	if( data_format == DATA_FORMAT_BIN )
-	{
-		HAL_UART_Transmit( &hrxtx, (uint8_t *) &errcode, 2, 200 );
+	if (format == DATA_FORMAT_ASCII) {
+		if (err){
+			printf(errstr);
+		} else {
+
+#if DBG_SEND_ALL==ON
+			rptr = sens1.data->base;
+#else
+			rptr = (sens1.data->wptr - MSPARAM_PIXEL);
+#endif
+			while (rptr < sens1.data->wptr) {
+				if (rptr == (sens1.data->wptr - MSPARAM_PIXEL)) {
+					/* Pretty print some lines..*/
+					printf("\n"DELIMITER_STR);
+					printf("\n"HEADER_STR);
+					i = 0;
+				}
+
+				if (i % 10 == 0) {
+					/* Break and enumerate line after 10 values.*/
+					printf("\n%03d   %05d ", i, *rptr);
+				} else {
+					printf("%05d ", *rptr);
+				}
+
+				rptr++;
+				i++;
+			}
+			printf("\n"DELIMITER_STR"\n\n");
+		}
+	} else { /* DATA_FORMAT_BIN */
+
+		/*Send the errorcode nevertheless an error occurred or not.*/
+		HAL_UART_Transmit(&hrxtx, (uint8_t *) &errcode, 2, 200);
+		if (!err) {
+			/* send data */
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL), MSPARAM_PIXEL * 2,
+			MSPARAM_PIXEL * 2 * 100);
+		}
 	}
+
 }
 
 /**
