@@ -17,10 +17,10 @@
 #include "fatfs.h"
 #include <stdio.h>
 
-static void send_data( uint8_t err, uint8_t format );
+static void send_data(uint8_t err, uint8_t format);
 static void testtest(void);
 
-static void parse_extcmd( uint8_t *buffer, uint16_t size );
+static void parse_extcmd(uint8_t *buffer, uint16_t size);
 static void periodic_alarm_handler(void);
 static usr_cmd_typedef extcmd;
 
@@ -30,19 +30,17 @@ static bool stream_mode = 0;
 static RTC_DateTypeDef sDate;
 static RTC_TimeTypeDef sTime;
 
-int main_usr( void )
-{
+int main_usr(void) {
 	uint8_t err = 0;
 	uint32_t tmp;
 	char *str;
 
-
 	/* Pre init - undo CubeMX stuff ---------------------------------------------*/
 
 	// we enable IRs where/when ** WE ** need them.
-	HAL_NVIC_DisableIRQ( RXTX_IRQn );
-	HAL_NVIC_DisableIRQ( TIM1_CC_IRQn );
-	HAL_NVIC_DisableIRQ( EXTI2_IRQn );
+	HAL_NVIC_DisableIRQ( RXTX_IRQn);
+	HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
+	HAL_NVIC_DisableIRQ(EXTI2_IRQn);
 
 	rxtx_init();
 	tim1_Init();
@@ -52,80 +50,69 @@ int main_usr( void )
 	/* Run the system ------------------------------------------------------------*/
 
 	// enabling usart receiving
-	NVIC_EnableIRQ( RXTX_IRQn );
-	HAL_UART_Receive_DMA( &hrxtx, rxtx_rxbuffer.base, rxtx_rxbuffer.size );
+	NVIC_EnableIRQ( RXTX_IRQn);
+	HAL_UART_Receive_DMA(&hrxtx, rxtx_rxbuffer.base, rxtx_rxbuffer.size);
 
-	if( data_format == DATA_FORMAT_ASCII )
-	{
-		tx_printf( "\nstart\n" );
+	if (data_format == DATA_FORMAT_ASCII) {
+		tx_printf("\nstart\n");
 	}
-	while( 1 )
-	{
+	while (1) {
 		err = 0;
 
 		// IR in uart module
-		__HAL_UART_ENABLE_IT( &hrxtx, UART_IT_CM );
+		__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);
 
-		if( rxtx_CR_recvd == 0 && stream_mode == 0 && rtc_alarmA_occured == 0)
-		{
+		if (rxtx_CR_recvd == 0 && stream_mode == 0 && rtc_alarmA_occured == 0) {
 			cpu_enter_sleep_mode();
 		}
 
 		// redundant in non-stream mode as also disabled in its ISR
-		__HAL_UART_DISABLE_IT( &hrxtx, UART_IT_CM );
-		
+		__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);
+
 		if (rtc_alarmA_occured) {
 			rtc_alarmA_occured = 0;
 			periodic_alarm_handler();
 		}
 
-		parse_extcmd( rxtx_rxbuffer.base, rxtx_rxbuffer.size );
+		parse_extcmd(rxtx_rxbuffer.base, rxtx_rxbuffer.size);
 
 		rx_handler();
 
-		switch( extcmd.cmd ) {
+		switch (extcmd.cmd) {
+
 		case USR_CMD_SINGLE_MEASURE_START:
-			if(data_format == DATA_FORMAT_ASCII)
-				tx_printf( "ok\n" );
+			if (data_format == DATA_FORMAT_ASCII)
+				tx_printf("ok\n");
 			sensor_init();
 			err = sensor_measure();
-			send_data( err, data_format);
+			send_data(err, data_format);
 			sensor_deinit();
 			break;
 
 		case USR_CMD_WRITE_ITIME:
-
 			/* parse argument */
 			if (extcmd.arg_buffer[0] == 0) {
 				break;
-			}else{
+			} else {
 				sscanf(extcmd.arg_buffer, "%lu", &tmp);
 			}
-
 			/* check and set argument */
-			sensor_set_itime( tmp );
-
-			if(data_format == DATA_FORMAT_ASCII)
-				tx_printf( "ok\n" );
-
+			sensor_set_itime(tmp);
+			if (data_format == DATA_FORMAT_ASCII)
+				tx_printf("ok\n");
 			break;
 
 		case USR_CMD_READ_ITIME:
-			if( data_format == DATA_FORMAT_BIN )
-			{
-				HAL_UART_Transmit( &hrxtx, (uint8_t *) &sens1.itime, 4, 1000 );
-			}
-			else
-			{
-				tx_printf( "integration time = %ld us\n", sens1.itime );
+			if (data_format == DATA_FORMAT_BIN) {
+				HAL_UART_Transmit(&hrxtx, (uint8_t *) &sens1.itime, 4, 1000);
+			} else {
+				tx_printf("integration time = %ld us\n", sens1.itime);
 			}
 			break;
 
 		case USR_CMD_STREAM_START:
-
-			if(data_format == DATA_FORMAT_ASCII)
-				tx_printf( "ok\n" );
-
+			if (data_format == DATA_FORMAT_ASCII)
+				tx_printf("ok\n");
 			sensor_init();
 			stream_mode = 1;
 			break;
@@ -133,26 +120,21 @@ int main_usr( void )
 		case USR_CMD_STREAM_END:
 			sensor_deinit();
 			stream_mode = 0;
-
-			if(data_format == DATA_FORMAT_ASCII)
-				tx_printf( "ok\n" );
-
+			if (data_format == DATA_FORMAT_ASCII)
+				tx_printf("ok\n");
 			break;
 
 		case USR_CMD_SET_FORMAT:
 			/* parse argument */
 			if (extcmd.arg_buffer[0] == 0) {
 				tmp = 1;
-			}else{
+			} else {
 				sscanf(extcmd.arg_buffer, "%lu", &tmp);
 			}
-
 			/* check and set argument */
 			data_format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
-
-			if(data_format == DATA_FORMAT_ASCII)
-				tx_printf( "ok\n" );
-
+			if (data_format == DATA_FORMAT_ASCII)
+				tx_printf("ok\n");
 			break;
 
 		case USR_CMD_DEBUG:
@@ -164,52 +146,45 @@ int main_usr( void )
 			HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 			HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 
-			if(data_format == DATA_FORMAT_ASCII){
-				printf("20%i-%02i-%02iT%02i:%02i:%02i\n", sDate.Year, sDate.Month, sDate.Date,
-						sTime.Hours, sTime.Minutes, sTime.Seconds);
-			}else{
+			if (data_format == DATA_FORMAT_ASCII) {
+				printf("20%i-%02i-%02iT%02i:%02i:%02i\n", sDate.Year, sDate.Month, sDate.Date, sTime.Hours,
+						sTime.Minutes, sTime.Seconds);
+			} else {
 				/* Transmit binary */
-				HAL_UART_Transmit( &hrxtx, (uint8_t *) &sDate.Year, 1, 1000 );
-				HAL_UART_Transmit( &hrxtx, (uint8_t *) &sDate.Month, 1, 1000 );
-				HAL_UART_Transmit( &hrxtx, (uint8_t *) &sDate.Date, 1, 1000 );
-				HAL_UART_Transmit( &hrxtx, (uint8_t *) &sTime.Hours, 1, 1000 );
-				HAL_UART_Transmit( &hrxtx, (uint8_t *) &sTime.Minutes, 1, 1000 );
-				HAL_UART_Transmit( &hrxtx, (uint8_t *) &sTime.Seconds, 1, 1000 );
+				HAL_UART_Transmit(&hrxtx, (uint8_t *) &sDate.Year, 1, 1000);
+				HAL_UART_Transmit(&hrxtx, (uint8_t *) &sDate.Month, 1, 1000);
+				HAL_UART_Transmit(&hrxtx, (uint8_t *) &sDate.Date, 1, 1000);
+				HAL_UART_Transmit(&hrxtx, (uint8_t *) &sTime.Hours, 1, 1000);
+				HAL_UART_Transmit(&hrxtx, (uint8_t *) &sTime.Minutes, 1, 1000);
+				HAL_UART_Transmit(&hrxtx, (uint8_t *) &sTime.Seconds, 1, 1000);
 			}
 			break;
 
 		case USR_CMD_SET_RTC_TIME:
 			/* todo: update alarm on rtc update*. */
-
 			if (extcmd.arg_buffer[0] == 0) {
 				break;
 			} else {
 				str = extcmd.arg_buffer;
 			}
-
 			err = rtc_parse_datetime(str, &sTime, &sDate);
-			if (err){
+			if (err) {
 				break;
 			}
-
 			HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 			HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
-
-			if(data_format == DATA_FORMAT_ASCII)
-				tx_printf( "ok\n" );
-
+			if (data_format == DATA_FORMAT_ASCII)
+				tx_printf("ok\n");
 			break;
 
 		case USR_CMD_GET_INTERVAL:
-
-			if(data_format == DATA_FORMAT_ASCII){
+			if (data_format == DATA_FORMAT_ASCII) {
 				printf("%02i:%02i:%02i\n", rtc_ival.Hours, rtc_ival.Minutes, rtc_ival.Seconds);
-
-			}else{
+			} else {
 				/* Transmit binary */
-				HAL_UART_Transmit( &hrxtx, (uint8_t *) &rtc_ival.Hours, 1, 1000 );
-				HAL_UART_Transmit( &hrxtx, (uint8_t *) &rtc_ival.Minutes, 1, 1000 );
-				HAL_UART_Transmit( &hrxtx, (uint8_t *) &rtc_ival.Seconds, 1, 1000 );
+				HAL_UART_Transmit(&hrxtx, (uint8_t *) &rtc_ival.Hours, 1, 1000);
+				HAL_UART_Transmit(&hrxtx, (uint8_t *) &rtc_ival.Minutes, 1, 1000);
+				HAL_UART_Transmit(&hrxtx, (uint8_t *) &rtc_ival.Seconds, 1, 1000);
 			}
 			break;
 
@@ -219,20 +194,17 @@ int main_usr( void )
 			} else {
 				str = extcmd.arg_buffer;
 			}
-
 			err = rtc_parse_interval(str, &sTime);
-			if (err){
+			if (err) {
 				break;
 			}
-
-			if( sTime.Hours == 0 && sTime.Minutes == 0 && sTime.Seconds == 0 ){
+			if (sTime.Hours == 0 && sTime.Minutes == 0 && sTime.Seconds == 0) {
 				/* All zero deactivates the periodically alarm, so this is a valid case.*/
 				;
-			} else if( sTime.Hours == 0 && sTime.Minutes == 0 && sTime.Seconds < MIN_IVAL ){
+			} else if (sTime.Hours == 0 && sTime.Minutes == 0 && sTime.Seconds < MIN_IVAL) {
 				/* Ensure that the interval is long enough to operate safely.*/
 				break;
 			}
-
 			/* if all ok update the rtc ival variable which periodically updated the alarmA. */
 			rtc_ival.Hours = sTime.Hours;
 			rtc_ival.Minutes = sTime.Minutes;
@@ -245,27 +217,23 @@ int main_usr( void )
 			/* and finally set the alarm.*/
 			rtc_set_alarmA_by_offset(&sTime, &rtc_ival);
 
-			if(data_format == DATA_FORMAT_ASCII)
-				tx_printf( "ok\n" );
-
+			if (data_format == DATA_FORMAT_ASCII)
+				tx_printf("ok\n");
 			break;
 
 		default:
 			break;
 		}
 
-		if( stream_mode )
-		{
+		if (stream_mode) {
 			err = sensor_measure();
-			send_data( err, data_format );
-			if(err){
+			send_data(err, data_format);
+			if (err) {
 				stream_mode = 0;
 				sensor_deinit();
 			}
 		}
-
 	}
-	
 	return 0;
 }
 
@@ -275,9 +243,7 @@ int main_usr( void )
  * \param format	0 (DATA_FORMAT_BIN) send raw data, byte per byte.(eg. (dez) 1000 -> 0xE8 0x03)\n
  * \param format	1 (DATA_FORMAT_ASCII) send the data as in ASCII, as human readable text. (eg. (dez) 1000 -> '1' '0' '0' '0')
  */
-static void send_data( uint8_t err, uint8_t format )
-{
-	
+static void send_data(uint8_t err, uint8_t format) {
 	char *errstr;
 	uint32_t errcode = ERRC_NO_ERROR;
 	uint16_t *rptr;
@@ -291,23 +257,25 @@ static void send_data( uint8_t err, uint8_t format )
 				"3. check physical connections\n";
 		errcode = ERRC_TIMEOUT;
 		break;
+
 	case SENS_ERR_NO_EOS:
 		errstr = "ERR: NO EOS. Something went wrong, please debug manually.\n";
 		errcode = ERRC_NO_EOS;
 		break;
+
 	case SENS_ERR_EOS_EARLY:
 		errstr = "ERR: EOS EARLY. Something went wrong, please debug manually.\n";
 		errcode = ERRC_EOS_EARLY;
 		break;
+
 	default:
 		break;
 	}
 
 	if (format == DATA_FORMAT_ASCII) {
-		if (err){
+		if (err) {
 			printf(errstr);
 		} else {
-
 #if DBG_SEND_ALL==ON
 			rptr = sens1.data->base;
 #else
@@ -327,7 +295,6 @@ static void send_data( uint8_t err, uint8_t format )
 				} else {
 					printf("%05d ", *rptr);
 				}
-
 				rptr++;
 				i++;
 			}
@@ -343,7 +310,6 @@ static void send_data( uint8_t err, uint8_t format )
 			MSPARAM_PIXEL * 2 * 100);
 		}
 	}
-
 }
 
 /**
@@ -352,20 +318,15 @@ static void send_data( uint8_t err, uint8_t format )
  *
  * @sa cpu_awake()
  */
-void cpu_enter_sleep_mode( void )
-{
-	
+void cpu_enter_sleep_mode(void) {
 	// to prevent wakeup by Systick interrupt.
 	HAL_SuspendTick();
-
 	// go back to sleep after handling an IR
 	// cleared by calling cpu_enter_run_mode() from ISR
 	HAL_PWR_EnableSleepOnExit();
-
 	//sleep + WaintForInterrupt-----------------------------------------
-	HAL_PWR_EnterSLEEPMode( PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI );
+	HAL_PWR_EnterSLEEPMode( PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
 	//awake again ------------------------------------------------------
-
 	HAL_ResumeTick();
 }
 
@@ -373,12 +334,10 @@ void cpu_enter_sleep_mode( void )
  * @brief cpu_awake()
  * EXECUTED BY ISR - KEEP IT SHORT
  */
-void cpu_enter_run_mode( void )
-{
+void cpu_enter_run_mode(void) {
 	// wake up after handling the actual IR
-	CLEAR_BIT( SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk) );
+	CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));
 }
-
 
 /*
  * check and parse for an command and set the
@@ -392,9 +351,8 @@ void cpu_enter_run_mode( void )
  *
  * todo (future release) check the whole buffer up to size
  */
-static void parse_extcmd( uint8_t *buffer, uint16_t size )
-{
-	UNUSED( size );
+static void parse_extcmd(uint8_t *buffer, uint16_t size) {
+	UNUSED(size);
 	char *str, *alias;
 	uint16_t sz, aliassz;
 
@@ -404,75 +362,67 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 
 	str = "measure\r";
 	alias = "m\r";
-	sz = strlen( str );
-	aliassz = strlen( alias );
-	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
-	{
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
 		extcmd.cmd = USR_CMD_SINGLE_MEASURE_START;
 		return;
 	}
 
 	str = "stream\r";
-	sz = strlen( str );
-	if( memcmp( buffer, str, sz ) == 0 )
-	{
+	sz = strlen(str);
+	if (memcmp(buffer, str, sz) == 0) {
 		extcmd.cmd = USR_CMD_STREAM_START;
 		return;
 	}
 
 	str = "end\r";
-	sz = strlen( str );
-	if( memcmp( buffer, str, sz ) == 0 )
-	{
+	sz = strlen(str);
+	if (memcmp(buffer, str, sz) == 0) {
 		extcmd.cmd = USR_CMD_STREAM_END;
 		return;
 	}
 
 	str = "debug\r";
 	alias = "d\r";
-	sz = strlen( str );
-	aliassz = strlen( alias );
-	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
-	{
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
 		extcmd.cmd = USR_CMD_DEBUG;
 		return;
 	}
 
 	str = "rtc?\r";
-	sz = strlen( str );
-	if( memcmp( buffer, str, sz ) == 0 )
-	{
+	sz = strlen(str);
+	if (memcmp(buffer, str, sz) == 0) {
 		extcmd.cmd = USR_CMD_GET_RTC_TIME;
 		return;
 	}
 
 	str = "ival?\r";
-	sz = strlen( str );
-	if( memcmp( buffer, str, sz ) == 0 )
-	{
+	sz = strlen(str);
+	if (memcmp(buffer, str, sz) == 0) {
 		extcmd.cmd = USR_CMD_GET_INTERVAL;
 		return;
 	}
 
 	str = "itime?\r";
 	alias = "i?\r";
-	sz = strlen( str );
-	aliassz = strlen( alias );
-	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
-	{
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
 		extcmd.cmd = USR_CMD_READ_ITIME;
 		return;
 	}
 
 	str = "itime=";
 	alias = "i=";
-	sz = strlen( str );
-	aliassz = strlen( alias );
-	if( memcmp( buffer, str, sz ) == 0 || memcmp( buffer, alias, aliassz ) == 0 )
-	{
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
 		extcmd.cmd = USR_CMD_WRITE_ITIME;
 		/* Set pointer to char after the '=' */
-		str = (char*) memchr( buffer, '=', sz ) + 1;
+		str = (char*) memchr(buffer, '=', sz) + 1;
 		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
 		 * listening again on the rx line. */
 		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
@@ -480,12 +430,11 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 	}
 
 	str = "format=";
-	sz = strlen( str );
-	if( memcmp( buffer, str, sz ) == 0 )
-	{
+	sz = strlen(str);
+	if (memcmp(buffer, str, sz) == 0) {
 		extcmd.cmd = USR_CMD_SET_FORMAT;
 		/* Set pointer to char after the '=' */
-		str = (char*) memchr( buffer, '=', sz ) + 1;
+		str = (char*) memchr(buffer, '=', sz) + 1;
 		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
 		 * listening again on the rx line. */
 		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
@@ -493,38 +442,31 @@ static void parse_extcmd( uint8_t *buffer, uint16_t size )
 	}
 
 	str = "rtc=";
-	sz = strlen( str );
-	if( memcmp( buffer, str, sz ) == 0 )
-	{
-
+	sz = strlen(str);
+	if (memcmp(buffer, str, sz) == 0) {
 		extcmd.cmd = USR_CMD_SET_RTC_TIME;
 		/* Set pointer to char after the '=' */
-		str = (char*) memchr( buffer, '=', sz ) + 1;
+		str = (char*) memchr(buffer, '=', sz) + 1;
 		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
 		 * listening again on the rx line. */
 		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
-
 		return;
 	}
 
 	str = "ival=";
-	sz = strlen( str );
-	if( memcmp( buffer, str, sz ) == 0 )
-	{
-
+	sz = strlen(str);
+	if (memcmp(buffer, str, sz) == 0) {
 		extcmd.cmd = USR_CMD_SET_INTERVAL;
 		/* Set pointer to char after the '=' */
-		str = (char*) memchr( buffer, '=', sz ) + 1;
+		str = (char*) memchr(buffer, '=', sz) + 1;
 		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
 		 * listening again on the rx line. */
 		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
-
 		return;
 	}
 }
 
-static void periodic_alarm_handler(void){
-
+static void periodic_alarm_handler(void) {
 	RTC_AlarmTypeDef a;
 	int8_t res = 0;
 	uint8_t err = 0;
@@ -547,6 +489,7 @@ static void periodic_alarm_handler(void){
 		/* Store timestamp and error to SD */
 		res = sd_mount();
 		res = sd_open_file_neworappend(f, fname);
+		/* todo: map err to errcode */
 		f_printf(f, "%S, %U, %UL, \n", ts_buff, err, sens1.itime);
 		f_close(f);
 		res = sd_umount();
@@ -573,15 +516,14 @@ static void periodic_alarm_handler(void){
 	res = sd_umount();
 }
 
-
-static void testtest(void){
+static void testtest(void) {
 	uint8_t res = 0;
 //	res = sd_format();
 //	printf("format: %i\n", res);
 	res = sd_mount();
 	printf("mount: %i\n", res);
 	res = sd_write_file("F1.TXT", "some in line1\r\nline2\r\n");
-	if (res == FR_DISK_ERR){
+	if (res == FR_DISK_ERR) {
 		/* Try to reinitialize driver.*/
 		FATFS_UnLinkDriver(SDPath);
 		MX_FATFS_Init();
