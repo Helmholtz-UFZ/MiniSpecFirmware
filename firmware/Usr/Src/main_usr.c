@@ -175,7 +175,6 @@ int main_usr(void) {
 			break;
 
 		case USR_CMD_SET_RTC_TIME:
-			/* todo: update alarm on rtc update*. */
 			if (extcmd.arg_buffer[0] == 0) {
 				break;
 			} else {
@@ -187,6 +186,10 @@ int main_usr(void) {
 			}
 			HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 			HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+			/* If interval was set also update it. If it is disabled (all values zero)
+			 * than the call will have no effect.*/
+			rtc_set_alarmA_by_offset(&sTime, &rtc_ival);
+
 			if (data_format == DATA_FORMAT_ASCII)
 				tx_printf("ok\n");
 			break;
@@ -567,15 +570,20 @@ static void periodic_alarm_handler(void) {
 	f_printf(f, "]\n");
 	f_close(f);
 	res = sd_umount();
-#else
-	debug("Would write to File: %s, data:\n", fname);
-	debug("%s, %u, %lu, [", ts_buff, errc, sens1.itime);
-	uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
-	for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
-		debug("%u,", *(p++));
-	}
-	debug("]\n");
 #endif
+
+	/* Print what we wrote to sd.
+	 * Use printf() instead of debug() to prevent 'dbg:' string before every value.
+	 * If debug is disabled we don't do anything.*/
+	if (tx_dbgflg) {
+		printf("Would write to File: %s, data:\n", fname);
+		printf("%s, %u, %lu, [", ts_buff, errc, sens1.itime);
+		uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
+		for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
+			printf("%u,", *(p++));
+		}
+		printf("]\n");
+	}
 }
 
 static void testtest(void) {
