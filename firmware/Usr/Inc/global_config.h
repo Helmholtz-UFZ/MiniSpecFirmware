@@ -102,13 +102,16 @@
 /* send all data/samples/pixel that we recorded, particularly the data
  * that is lying in the data buffer before the valid data. If off we
  * only send the valid samples (for DATA_FORMAT_ASCII only)*/
-#define DBG_SEND_ALL		ON
+#define DBG_SEND_ALL		1
+
+/* If 0 all code that excess the SD card is disabled. */
+#define HAVE_SD	 0
 
 /* If defined no HW detection (Pin high/low) is done
  * by BSP_PlatformIsDetected() in fatfs_platform.c
  * ATTENTION don't use DISABLE_SD_INIT here as this will
  * also disable HAL initialization of SD.*/
-#define SD_DISABLE_HW_DETECTION		OFF
+#define SD_DISABLE_HW_DETECTION		1
 
 /* Minimal possible repetition of measurements by setting
  * the interval which updates timerA.

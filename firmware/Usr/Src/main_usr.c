@@ -513,11 +513,11 @@ static void periodic_alarm_handler(void) {
 	RTC_AlarmTypeDef a;
 	int8_t res = 0;
 	uint8_t err = 0;
-	uint32_t  errc = 0;
+	uint16_t  errc = 0;
 	FIL *f = &SDFile;
 	char *fname = "M1.TXT";
 	char ts_buff[32];
-	printf("Alarm A\n");
+	debug("Periodic alarm \n");
 
 	/* Set the alarm to new time according to the interval value.*/
 	HAL_RTC_GetAlarm(&hrtc, &a, RTC_ALARM_A, RTC_FORMAT_BIN);
@@ -533,9 +533,12 @@ static void periodic_alarm_handler(void) {
 	errc = map_status2errcode(last_sensor_status);
 	sensor_deinit();
 
+#if HAVE_SD
 	/* Store the measurement on SD */
 	res = sd_mount();
+	debug("mount: %i\n", res);
 	res = sd_open_file_neworappend(f, fname);
+	debug("open: %i\n", res);
 
 	if (res == FR_DISK_ERR) {
 		/* Try to reinitialize driver. This can happen
@@ -544,6 +547,7 @@ static void periodic_alarm_handler(void) {
 		MX_FATFS_Init();
 		/* try again..*/
 		res = sd_open_file_neworappend(f, fname);
+		debug("relink+open: %i\n", res);
 		if (res != FR_OK) {
 			/* Some serios SD problems */
 			return;
@@ -563,6 +567,15 @@ static void periodic_alarm_handler(void) {
 	f_printf(f, "]\n");
 	f_close(f);
 	res = sd_umount();
+#else
+	debug("Would write to File: %s, data:\n", fname);
+	debug("%s, %u, %lu, [", ts_buff, errc, sens1.itime);
+	uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
+	for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
+		debug("%u,", *(p++));
+	}
+	debug("]\n");
+#endif
 }
 
 static void testtest(void) {
@@ -570,15 +583,15 @@ static void testtest(void) {
 //	res = sd_format();
 //	printf("format: %i\n", res);
 	res = sd_mount();
-	printf("mount: %i\n", res);
+	debug("mount: %i\n", res);
 	res = sd_write_file("F1.TXT", "some in line1\r\nline2\r\n");
 	if (res == FR_DISK_ERR) {
 		/* Try to reinitialize driver.*/
 		FATFS_UnLinkDriver(SDPath);
 		MX_FATFS_Init();
 	}
-	printf("first: %i\n", res);
+	debug("first: %i\n", res);
 	res = sd_write_file("F1.TXT", "more here");
-	printf("sec: %i\n", res);
+	debug("sec: %i\n", res);
 	res = sd_umount();
 }
