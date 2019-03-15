@@ -107,6 +107,8 @@
 /* If 0 all code that excess the SD card is disabled. */
 #define HAVE_SD	 0
 
+#define SD_FILENAME		"MINISPEC.TXT"
+
 /* If defined no HW detection (Pin high/low) is done
  * by BSP_PlatformIsDetected() in fatfs_platform.c
  * ATTENTION don't use DISABLE_SD_INIT here as this will

@@ -49,6 +49,13 @@ int main_usr(void) {
 	tim2_Init();
 	tim5_Init();
 
+#if HAVE_SD
+	/* Inform the File that an reset occurred */
+	sd_mount();
+	sd_write_file(SD_FILENAME, "\nThe sensor was reset/powered-down.\n");
+	sd_umount();
+#endif
+
 	/* Run the system ------------------------------------------------------------*/
 
 	// enabling usart receiving
@@ -95,7 +102,6 @@ int main_usr(void) {
 		case USR_CMD_GET_DATA:
 			send_data(last_sensor_status, data_format);
 			break;
-
 
 		case USR_CMD_WRITE_ITIME:
 			/* parse argument */
@@ -518,7 +524,7 @@ static void periodic_alarm_handler(void) {
 	uint8_t err = 0;
 	uint16_t  errc = 0;
 	FIL *f = &SDFile;
-	char *fname = "M1.TXT";
+	char *fname = SD_FILENAME;
 	char ts_buff[32];
 	debug("Periodic alarm \n");
 
