@@ -24,6 +24,7 @@ static void parse_extcmd(uint8_t *buffer, uint16_t size);
 static void periodic_alarm_handler(void);
 static uint32_t map_status2errcode(uint8_t status);
 static usr_cmd_typedef extcmd;
+static uint8_t last_sensor_status = 0;
 
 static uint8_t data_format = DATA_FORMAT_ASCII;
 static bool stream_mode = 0;
@@ -33,7 +34,6 @@ static RTC_TimeTypeDef sTime;
 
 int main_usr(void) {
 	uint8_t err = 0;
-	uint8_t last_sensor_status = 0;
 	uint32_t tmp;
 	char *str;
 
@@ -507,6 +507,7 @@ static void periodic_alarm_handler(void) {
 	RTC_AlarmTypeDef a;
 	int8_t res = 0;
 	uint8_t err = 0;
+	uint32_t  errc = 0;
 	FIL *f = &SDFile;
 	char *fname = "M1.TXT";
 	char ts_buff[32];
@@ -521,32 +522,37 @@ static void periodic_alarm_handler(void) {
 
 	/* Make a measurement */
 	sensor_init();
-	err = sensor_measure();
-	if (err) {
-		/* Store timestamp and error to SD */
-		res = sd_mount();
-		res = sd_open_file_neworappend(f, fname);
-		/* todo: map err to errcode */
-		f_printf(f, "%S, %U, %UL, \n", ts_buff, err, sens1.itime);
-		f_close(f);
-		res = sd_umount();
-
-		sensor_deinit();
-		return;
-	}
+	sensor_measure();
+	last_sensor_status = sens1.status;
+	errc = map_status2errcode(last_sensor_status);
 	sensor_deinit();
 
 	/* Store the measurement on SD */
 	res = sd_mount();
 	res = sd_open_file_neworappend(f, fname);
 
-	/* Write timestamp to SD */
-	f_printf(f, "%S, %U, %LU, [", ts_buff, 0, sens1.itime);
+	if (res == FR_DISK_ERR) {
+		/* Try to reinitialize driver. This can happen
+		 * if Sd card was unplugged.*/
+		FATFS_UnLinkDriver(SDPath);
+		MX_FATFS_Init();
+		/* try again..*/
+		res = sd_open_file_neworappend(f, fname);
+		if (res != FR_OK) {
+			/* Some serios SD problems */
+			return;
+		}
+	}
+	/* Write metadata to SD: timestamp, errorcode, intergartion time */
+	f_printf(f, "%S, %U, %LU, [", ts_buff, errc, sens1.itime);
 
-	/* Lopp through measurement results and store to file */
-	uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
-	for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
-		f_printf(f, "%U,", *(p++));
+	/* Write data */
+	if (!err) {
+		/* Lopp through measurement results and store to file */
+		uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
+		for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
+			f_printf(f, "%U,", *(p++));
+		}
 	}
 	f_printf(f, "]\n");
 	f_close(f);
