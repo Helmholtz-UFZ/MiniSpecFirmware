@@ -26,14 +26,12 @@ uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime,
 		RTC_DateTypeDef *sDate) {
 
 	char *p = str;
-	uint16_t cc;
-	uint8_t c;
+	uint c;
 
 	/* Scan year.
 	 * %hu means scan to unsigned(u) short(h) */
-	sscanf(p, "%hu", &cc);
-	cc = cc > 2000 ? cc - 2000 : cc;
-	c = (uint8_t) cc;
+	sscanf(p, "%u", &c);
+	c = c > 2000 ? c - 2000 : c;
 	if (!IS_RTC_YEAR(c)) {
 		return 1;
 	}
@@ -42,8 +40,7 @@ uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime,
 	/* Scan month
 	 * search the '-', and let str point to the char right after it. */
 	p = (char*) memchr(p, '-', 10) + 1;
-	/* %hhui means scan to unsigned(u) char(hh) */
-	sscanf(p, "%hhui", &c);
+	sscanf(p, "%u", &c);
 	if (!IS_RTC_MONTH(c)) {
 		return 2;
 	}
@@ -51,7 +48,7 @@ uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime,
 
 	/* search the '-', and let str point to the char right after it. */
 	p = (char*) memchr(p, '-', 10) + 1;
-	sscanf(p, "%hhui", &c);
+	sscanf(p, "%u", &c);
 	if (!IS_RTC_DATE(c)) {
 		return 3;
 	}
@@ -59,7 +56,7 @@ uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime,
 
 	/* search the 'T', and let str point to the char right after it. */
 	p = (char*) memchr(p, 'T', 10) + 1;
-	sscanf(p, "%hhui", &c);
+	sscanf(p, "%u", &c);
 	if (!IS_RTC_HOUR24(c)) {
 		return 4;
 	}
@@ -67,7 +64,7 @@ uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime,
 
 	/* search the ':', and let str point to the char right after it. */
 	p = (char*) memchr(p, ':', 10) + 1;
-	sscanf(p, "%hhui", &c);
+	sscanf(p, "%u", &c);
 	if (!IS_RTC_MINUTES(c)) {
 		return 5;
 	}
@@ -75,7 +72,7 @@ uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime,
 
 	/* search the ':', and let str point to the char right after it. */
 	p = (char*) memchr(p, ':', 10) + 1;
-	sscanf(p, "%hhui", &c);
+	sscanf(p, "%u", &c);
 	if (!IS_RTC_SECONDS(c)) {
 		return 6;
 	}
@@ -94,10 +91,10 @@ uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime,
 uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime) {
 
 	char *p = str;
-	uint8_t c;
+	uint c;
 
 	/* Parse the first number*/
-	sscanf(p, "%hhui", &c);
+	sscanf(p, "%u", &c);
 	if (!IS_RTC_HOUR24(c)) {
 		return 4;
 	}
@@ -105,7 +102,7 @@ uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime) {
 
 	/* search the ':', and let str point to the char right after it. */
 	p = (char*) memchr(p, ':', 10) + 1;
-	sscanf(p, "%hhui", &c);
+	sscanf(p, "%u", &c);
 	if (!IS_RTC_MINUTES(c)) {
 		return 5;
 	}
@@ -113,7 +110,7 @@ uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime) {
 
 	/* search the ':', and let str point to the char right after it. */
 	p = (char*) memchr(p, ':', 10) + 1;
-	sscanf(p, "%hhui", &c);
+	sscanf(p, "%u", &c);
 	if (!IS_RTC_SECONDS(c)) {
 		return 6;
 	}
