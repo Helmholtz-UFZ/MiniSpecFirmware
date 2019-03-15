@@ -60,7 +60,7 @@ typedef enum
 	USR_CMD_SET_SENSOR, // UNUSED (for future use) - choose if sens 1 or sens 2
 	USR_CMD_WRITE_ITIME,
 	USR_CMD_READ_ITIME,
-	USR_CMD_GET_DATA, // UNUSED (for future use) save data and return on request
+	USR_CMD_GET_DATA,
 	USR_CMD_SINGLE_MEASURE_START,
 	USR_CMD_STREAM_START,
 	USR_CMD_STREAM_END,

@@ -32,6 +32,7 @@ static RTC_TimeTypeDef sTime;
 
 int main_usr(void) {
 	uint8_t err = 0;
+	uint8_t sensor_err = 0;
 	uint32_t tmp;
 	char *str;
 
@@ -84,10 +85,15 @@ int main_usr(void) {
 			if (data_format == DATA_FORMAT_ASCII)
 				tx_printf("ok\n");
 			sensor_init();
-			err = sensor_measure();
-			send_data(err, data_format);
+			sensor_err = sensor_measure();
+			send_data(sensor_err, data_format);
 			sensor_deinit();
 			break;
+
+		case USR_CMD_GET_DATA:
+			send_data(sensor_err, data_format);
+			break;
+
 
 		case USR_CMD_WRITE_ITIME:
 			/* parse argument */
@@ -226,9 +232,9 @@ int main_usr(void) {
 		}
 
 		if (stream_mode) {
-			err = sensor_measure();
-			send_data(err, data_format);
-			if (err) {
+			sensor_err = sensor_measure();
+			send_data(sensor_err, data_format);
+			if (sensor_err) {
 				stream_mode = 0;
 				sensor_deinit();
 			}
@@ -380,6 +386,15 @@ static void parse_extcmd(uint8_t *buffer, uint16_t size) {
 	sz = strlen(str);
 	if (memcmp(buffer, str, sz) == 0) {
 		extcmd.cmd = USR_CMD_STREAM_END;
+		return;
+	}
+
+	str = "getdata\r";
+	alias = "gd\r";
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+		extcmd.cmd = USR_CMD_GET_DATA;
 		return;
 	}
 
