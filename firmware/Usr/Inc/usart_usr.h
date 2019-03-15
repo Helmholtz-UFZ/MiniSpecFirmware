@@ -41,6 +41,9 @@ extern uart_buffer_t rxtx_rxbuffer;
 extern volatile bool rxtx_CR_recvd;
 extern volatile uint16_t rxtx_cmd_bytes;
 
+/* flag for switching on/off debugging printf during runtime */
+extern uint8_t tx_dbgflg;
+
 // printf support
 int _write(int file, char *ptr, int len);
 void rxtx_init( void );
@@ -48,5 +51,6 @@ void rx_handler( void );
 int uart_printf( UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const char *__restrict format, ... )__attribute__( (__format__ (__printf__, 3, 4)) );
 
 int tx_printf( const char *__restrict format, ... )__attribute__( (__format__ (__printf__, 1, 2)) );
+int debug(const char *__restrict format, ...)__attribute__( (__format__ (__printf__, 1, 2)) );
 
 #endif /*__usart_usr_H */

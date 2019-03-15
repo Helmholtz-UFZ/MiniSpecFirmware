@@ -13,6 +13,8 @@
 volatile bool rxtx_CR_recvd;
 volatile uint16_t rxtx_cmd_bytes;
 
+uint8_t tx_dbgflg = 1;
+
 static uint8_t rx_mem_block3[UART_DEFAULT_RX_BUFFER_SZ];
 static uint8_t tx_mem_block3[UART_DEFAULT_TX_BUFFER_SZ];
 uart_buffer_t rxtx_rxbuffer = { UART_DEFAULT_RX_BUFFER_SZ, rx_mem_block3 };
@@ -106,6 +108,19 @@ int uart_printf(UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer,
 	err = HAL_UART_Transmit(uart_handle, tx_buffer->base, len, len * 10);
 	len = err ? -1 : len;
 	return len;
+}
+
+int debug(const char *__restrict format, ...) {
+	int len;
+	if (tx_dbgflg) {
+		va_list args;
+		va_start(args, format);
+		len = printf(format, args);
+		va_end(args);
+		return len;
+	} else {
+		return 0;
+	}
 }
 
 int tx_printf(const char *__restrict format, ...) {

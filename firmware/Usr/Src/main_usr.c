@@ -146,7 +146,13 @@ int main_usr(void) {
 			break;
 
 		case USR_CMD_DEBUG:
-			testtest();
+//			testtest();
+			tx_dbgflg = tx_dbgflg ? 0 : 1;
+			if(tx_dbgflg){
+				printf("debug on\n");
+			}else{
+				printf("debug off\n");
+			}
 			break;
 
 		case USR_CMD_GET_RTC_TIME:
