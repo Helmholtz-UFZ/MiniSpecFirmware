@@ -13,37 +13,39 @@
 #include "usart.h"
 #include "global_config.h"
 
-// configure printf
+/* Defines for printf support. @sa _write() */
 #define STDOUT_FILENO   1
 #define STDERR_FILENO   2
 #define hprintf huart4
 
-// configure the usr comunication interface
+/* Define which uart interface to use for receiving
+ * and transmitting via HAL_UART_Transmit() and
+ * HAL_UART_Receive{_DMA,_IT}()*/
 #define hrxtx huart4
 #define RXTX UART4
 #define RXTX_IRQn UART4_IRQn
 
-// this should be as least as big that we can send one whole
+// This should be as least as big that we can send one whole
 // measurement data plus some meta data.
 #define UART_TX_BUFFER_SZ	(1024)
 
-// small as we just need it for receiving user commands
+// Small as we just need it for receiving user commands
 #define UART_RX_BUFFER_SZ	(128)
 
+/* used with HAL_UART_Receive() */
 typedef struct {
 	const uint16_t size; /* !< size in bytes. */
 	uint8_t *base; /* !< pointer to the start of the buffer. */
 } uart_buffer_t;
 
+/* used with HAL_UART_Receive() */
 extern uart_buffer_t rxtx_rxbuffer;
 
+/* extern vars, see .c for info */
 extern volatile bool rxtx_CR_recvd;
 extern volatile uint16_t rxtx_cmd_bytes;
-
-/* flag for switching on/off debugging printf during runtime */
 extern uint8_t tx_dbgflg;
 
-// printf support
 int _write(int file, char *ptr, int len);
 void rxtx_init(void);
 void rxtx_restart_listening(void);
