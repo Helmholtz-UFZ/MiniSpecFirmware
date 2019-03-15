@@ -37,9 +37,7 @@ int main_usr(void) {
 	uint32_t tmp;
 	char *str;
 
-	/* Pre init - undo CubeMX stuff ---------------------------------------------*/
-
-	// we enable IRs where/when ** WE ** need them.
+	/* We enable the interrupts later */
 	HAL_NVIC_DisableIRQ( RXTX_IRQn);
 	HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
 	HAL_NVIC_DisableIRQ(EXTI2_IRQn);
@@ -520,10 +518,7 @@ static void parse_extcmd(uint8_t *buffer, uint16_t size) {
 
 static void periodic_alarm_handler(void) {
 	RTC_AlarmTypeDef a;
-	int8_t res = 0;
-	uint8_t err = 0;
 	uint16_t  errc = 0;
-	FIL *f = &SDFile;
 	char *fname = SD_FILENAME;
 	char ts_buff[32];
 	debug("Periodic alarm \n");
@@ -543,6 +538,9 @@ static void periodic_alarm_handler(void) {
 	sensor_deinit();
 
 #if HAVE_SD
+	int8_t res = 0;
+	uint8_t err = 0;
+	FIL *f = &SDFile;
 	/* Store the measurement on SD */
 	res = sd_mount();
 	debug("mount: %i\n", res);

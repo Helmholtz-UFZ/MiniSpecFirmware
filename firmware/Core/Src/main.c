@@ -60,7 +60,7 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "stdio.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -279,6 +279,7 @@ void _Error_Handler(char *file, int line)
   /* User can add his own implementation to report the HAL error return state */
   while(1)
   {
+	  printf("Error in file %s on line %u\n", file, (uint) line);
   }
   /* USER CODE END Error_Handler_Debug */
 }
@@ -296,6 +297,8 @@ void assert_failed(uint8_t* file, uint32_t line)
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+	printf("Assert failed: file %s on line %u\n", file, (uint) line);
+	/* todo: write to error sd file */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
