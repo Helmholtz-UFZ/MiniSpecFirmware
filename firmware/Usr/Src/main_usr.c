@@ -17,11 +17,12 @@
 #include "fatfs.h"
 #include <stdio.h>
 
-static void send_data(uint8_t err, uint8_t format);
+static void send_data(uint8_t sens_status, uint8_t format);
 static void testtest(void);
 
 static void parse_extcmd(uint8_t *buffer, uint16_t size);
 static void periodic_alarm_handler(void);
+static uint32_t map_status2errcode(uint8_t status);
 static usr_cmd_typedef extcmd;
 
 static uint8_t data_format = DATA_FORMAT_ASCII;
@@ -32,7 +33,7 @@ static RTC_TimeTypeDef sTime;
 
 int main_usr(void) {
 	uint8_t err = 0;
-	uint8_t sensor_err = 0;
+	uint8_t last_sensor_status = 0;
 	uint32_t tmp;
 	char *str;
 
@@ -85,13 +86,14 @@ int main_usr(void) {
 			if (data_format == DATA_FORMAT_ASCII)
 				tx_printf("ok\n");
 			sensor_init();
-			sensor_err = sensor_measure();
-			send_data(sensor_err, data_format);
+			sensor_measure();
+			last_sensor_status = sens1.status;
+			send_data(last_sensor_status, data_format);
 			sensor_deinit();
 			break;
 
 		case USR_CMD_GET_DATA:
-			send_data(sensor_err, data_format);
+			send_data(last_sensor_status, data_format);
 			break;
 
 
@@ -232,9 +234,10 @@ int main_usr(void) {
 		}
 
 		if (stream_mode) {
-			sensor_err = sensor_measure();
-			send_data(sensor_err, data_format);
-			if (sensor_err) {
+			err = sensor_measure();
+			last_sensor_status = sens1.status;
+			send_data(last_sensor_status, data_format);
+			if (err) {
 				stream_mode = 0;
 				sensor_deinit();
 			}
@@ -249,37 +252,38 @@ int main_usr(void) {
  * \param format	0 (DATA_FORMAT_BIN) send raw data, byte per byte.(eg. (dez) 1000 -> 0xE8 0x03)\n
  * \param format	1 (DATA_FORMAT_ASCII) send the data as in ASCII, as human readable text. (eg. (dez) 1000 -> '1' '0' '0' '0')
  */
-static void send_data(uint8_t err, uint8_t format) {
+static void send_data(uint8_t sens_status, uint8_t format) {
 	char *errstr;
 	uint32_t errcode = ERRC_NO_ERROR;
 	uint16_t *rptr;
 	uint16_t i = 0;
 
-	switch (err) {
-	case SENS_ERR_TIMEOUT:
-		errstr = "ERR: TIMEOUT. Please check the following:\n"
-				"1. is sensor plugged ?\n"
-				"2. ADC/sensor powered ?\n"
-				"3. check physical connections\n";
-		errcode = ERRC_TIMEOUT;
-		break;
+	errcode = map_status2errcode(sens_status);
 
-	case SENS_ERR_NO_EOS:
+	switch (errcode) {
+	case ERRC_NO_ERROR:
+		errstr = "";
+		break;
+	case ERRC_TIMEOUT:
+		errstr = "ERR: TIMEOUT. Is sensor plugged in ?\n";
+		/* otehr reasons: "ADC/sensor not powered, physical connections bad\n"; */
+		break;
+	case ERRC_NO_EOS:
 		errstr = "ERR: NO EOS. Something went wrong, please debug manually.\n";
-		errcode = ERRC_NO_EOS;
 		break;
-
-	case SENS_ERR_EOS_EARLY:
+	case ERRC_EOS_EARLY:
 		errstr = "ERR: EOS EARLY. Something went wrong, please debug manually.\n";
-		errcode = ERRC_EOS_EARLY;
 		break;
-
+	case ERRC_UNKNOWN:
+		errstr = "ERR: UNKNOWN. Unknown error occurred.\n";
+		break;
 	default:
+		errstr = "ERR: Not implemented.\n";
 		break;
 	}
 
 	if (format == DATA_FORMAT_ASCII) {
-		if (err) {
+		if (errcode != ERRC_NO_ERROR) {
 			printf(errstr);
 		} else {
 #if DBG_SEND_ALL==ON
@@ -295,8 +299,8 @@ static void send_data(uint8_t err, uint8_t format) {
 					i = 0;
 				}
 
+				/* Break and enumerate line after 10 values.*/
 				if (i % 10 == 0) {
-					/* Break and enumerate line after 10 values.*/
 					printf("\n%03d   %05d ", i, *rptr);
 				} else {
 					printf("%05d ", *rptr);
@@ -310,11 +314,29 @@ static void send_data(uint8_t err, uint8_t format) {
 
 		/*Send the errorcode nevertheless an error occurred or not.*/
 		HAL_UART_Transmit(&hrxtx, (uint8_t *) &errcode, 2, 200);
-		if (!err) {
+		if (!sens_status) {
 			/* send data */
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL), MSPARAM_PIXEL * 2,
 			MSPARAM_PIXEL * 2 * 100);
 		}
+	}
+}
+
+/**
+ * Map the sensor status to the appropriate error code.
+ */
+static uint32_t map_status2errcode(uint8_t status) {
+	switch (status){
+	case 0:
+		return ERRC_NO_ERROR;
+	case SENS_ERR_TIMEOUT:
+		return ERRC_TIMEOUT;
+	case SENS_ERR_NO_EOS:
+		return ERRC_NO_EOS;
+	case SENS_ERR_EOS_EARLY:
+		return ERRC_EOS_EARLY;
+	default:
+		return ERRC_UNKNOWN;
 	}
 }
 
