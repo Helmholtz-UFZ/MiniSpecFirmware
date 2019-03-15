@@ -10,17 +10,28 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+/* Flag for signal that a carriage return
+ * from a usr command was received */
 volatile bool rxtx_CR_recvd;
+
+/* additional to rxtx_CR_recvd this is set to
+ * the number of bytes received */
 volatile uint16_t rxtx_cmd_bytes;
 
+/* Flag for enabling /disabling the debug() function
+ * during runtime with a usr command, namely 'debug'.*/
 uint8_t tx_dbgflg = 1;
 
-static uint8_t rx_mem_block3[UART_DEFAULT_RX_BUFFER_SZ];
-static uint8_t tx_mem_block3[UART_DEFAULT_TX_BUFFER_SZ];
-uart_buffer_t rxtx_rxbuffer = { UART_DEFAULT_RX_BUFFER_SZ, rx_mem_block3 };
-uart_buffer_t rxtx_txbuffer = { UART_DEFAULT_TX_BUFFER_SZ, tx_mem_block3 };
+/* Memory blocks and buffer for transmitting and receiving
+ * via uart interface.*/
+static uint8_t rx_mem_block3[UART_RX_BUFFER_SZ];
+static uint8_t tx_mem_block3[UART_TX_BUFFER_SZ];
+uart_buffer_t rxtx_rxbuffer = { UART_RX_BUFFER_SZ, rx_mem_block3 };
+uart_buffer_t rxtx_txbuffer = { UART_TX_BUFFER_SZ, tx_mem_block3 };
 
-/** Overwrite weak _write function, to make printf print to serial. */
+/**
+ * Overwrite weak _write function, to make printf print to serial.
+ **/
 int _write(int file, char *ptr, int len) {
 	switch (file) {
 	case STDOUT_FILENO: /*stdout*/
@@ -37,13 +48,16 @@ int _write(int file, char *ptr, int len) {
 }
 
 /**
- * Init the all used uart interfaces to our needs.
- * May overwrite some preferences CubeMx made.
+ * Init the uart interfaces to our needs.
+ * Mainly set the trigger char to carriage return ('\r')
+ * and enable the character match interrupt.
+ * If then a carriage return is received the character match (CR)
+ * interrupt is generated.
+ *
+ * Other char's does not trigger any interrupt as DMA is
+ * used to transfer these from the uart receive register to memory.
  */
 void rxtx_init(void) {
-	/* Enable character match (CM) IR for
-	 * carriage return (CR) char.*/
-
 	uint32_t cr1 = 0;
 	char trigger_char;
 
@@ -68,31 +82,24 @@ void rxtx_init(void) {
 }
 
 /**
- * resets the uart buffer and restart listening
- * with DMA.
+ * Resets the uart buffer and restart listening in DMA mode.
  */
-void rx_handler(void) {
-	if (rxtx_CR_recvd) {
-		rxtx_CR_recvd = 0;
-
-		// restart listening
-		HAL_UART_AbortReceive(&hrxtx);
-		memset(rxtx_rxbuffer.base, 0, rxtx_cmd_bytes);
-		rxtx_cmd_bytes = 0;
-		HAL_UART_Receive_DMA(&hrxtx, rxtx_rxbuffer.base, rxtx_rxbuffer.size);
-	}
+void rxtx_restart_listening(void) {
+	HAL_UART_AbortReceive(&hrxtx);
+	memset(rxtx_rxbuffer.base, 0, rxtx_rxbuffer.size);
+	HAL_UART_Receive_DMA(&hrxtx, rxtx_rxbuffer.base, rxtx_rxbuffer.size);
 }
 
 /**
- * This function provide an easy print to any available uart line.
+ * This function provide an easy printf style writing
+ * to any available uart line.
  *
  *\param uart_handle 	A pointer to a U(S)ART handle
- *\param tx_buffer	A pointer to a buffer where the following arguments are copied to and send from.
+ *\param tx_buffer	A pointer to a buffer to work with.
  *\param format 	A printf-style format string.
  *
  */
-int uart_printf(UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer,
-		const char *__restrict format, ...) {
+int uart_printf(UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const char *__restrict format, ...) {
 	int32_t len;
 	uint8_t err;
 	va_list argptr;
@@ -110,6 +117,13 @@ int uart_printf(UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer,
 	return len;
 }
 
+/**
+ * Print a string to uart if tx_dbgflg is not zero, otherwise
+ * the function do nothing and return 0.
+ *
+ * Act like printf() but put the string 'dbg: ' upfront the message,
+ * so any format strings printf() can eat are possible.
+ */
 int debug(const char *__restrict format, ...) {
 	int len;
 	if (tx_dbgflg) {
@@ -123,23 +137,3 @@ int debug(const char *__restrict format, ...) {
 		return 0;
 	}
 }
-
-int tx_printf(const char *__restrict format, ...) {
-	int32_t len;
-	uint8_t err;
-	va_list argptr;
-	va_start(argptr, format);
-	len = vsnprintf((char *) rxtx_txbuffer.base, rxtx_txbuffer.size, format,
-			argptr);
-	va_end(argptr);
-
-	// printf-like functions return negative values on error
-	if (len < 0) {
-		// error occurred
-		return len;
-	}
-	err = HAL_UART_Transmit(&hrxtx, rxtx_txbuffer.base, len, len * 10);
-	len = err ? -1 : len;
-	return len;
-}
-

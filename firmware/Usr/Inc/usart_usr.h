@@ -1,10 +1,10 @@
 /**
-  ******************************************************************************
-  * File Name          : USART.h
-  * Description        : This file provides code for the configuration
-  *                      of the USART instances.
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * File Name          : USART.h
+ * Description        : This file provides code for the configuration
+ *                      of the USART instances.
+ ******************************************************************************
+ */
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __usart_usr_H
 #define __usart_usr_H
@@ -25,13 +25,12 @@
 
 // this should be as least as big that we can send one whole
 // measurement data plus some meta data.
-#define UART_DEFAULT_TX_BUFFER_SZ	(1024)
+#define UART_TX_BUFFER_SZ	(1024)
 
 // small as we just need it for receiving user commands
-#define UART_DEFAULT_RX_BUFFER_SZ	(128)
+#define UART_RX_BUFFER_SZ	(128)
 
-typedef struct
-{
+typedef struct {
 	const uint16_t size; /* !< size in bytes. */
 	uint8_t *base; /* !< pointer to the start of the buffer. */
 } uart_buffer_t;
@@ -46,11 +45,9 @@ extern uint8_t tx_dbgflg;
 
 // printf support
 int _write(int file, char *ptr, int len);
-void rxtx_init( void );
-void rx_handler( void );
-int uart_printf( UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const char *__restrict format, ... )__attribute__( (__format__ (__printf__, 3, 4)) );
-
-int tx_printf( const char *__restrict format, ... )__attribute__( (__format__ (__printf__, 1, 2)) );
+void rxtx_init(void);
+void rxtx_restart_listening(void);
+int uart_printf(UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const char *__restrict format, ...)__attribute__( (__format__ (__printf__, 3, 4)) );
 int debug(const char *__restrict format, ...)__attribute__( (__format__ (__printf__, 1, 2)) );
 
 #endif /*__usart_usr_H */

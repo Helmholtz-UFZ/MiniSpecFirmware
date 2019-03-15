@@ -61,7 +61,7 @@ int main_usr(void) {
 	HAL_UART_Receive_DMA(&hrxtx, rxtx_rxbuffer.base, rxtx_rxbuffer.size);
 
 	if (data_format == DATA_FORMAT_ASCII) {
-		tx_printf("\nstart\n");
+		printf("\nstart\n");
 	}
 	while (1) {
 		err = 0;
@@ -79,171 +79,11 @@ int main_usr(void) {
 		if (rtc_alarmA_occured) {
 			rtc_alarmA_occured = 0;
 			periodic_alarm_handler();
-		}
-
-		parse_extcmd(rxtx_rxbuffer.base, rxtx_rxbuffer.size);
-
-		rx_handler();
-
-		switch (extcmd.cmd) {
-
-		case USR_CMD_SINGLE_MEASURE_START:
-			if (data_format == DATA_FORMAT_ASCII)
-				tx_printf("ok\n");
-			sensor_init();
-			sensor_measure();
-			last_sensor_status = sens1.status;
-			send_data(last_sensor_status, data_format);
-			sensor_deinit();
-			break;
-
-		case USR_CMD_GET_DATA:
-			send_data(last_sensor_status, data_format);
-			break;
-
-		case USR_CMD_WRITE_ITIME:
-			/* parse argument */
-			if (extcmd.arg_buffer[0] == 0) {
-				break;
-			} else {
-				sscanf(extcmd.arg_buffer, "%lu", &tmp);
+			if (stream_mode){
+				/* the handler has deinit the sensor,
+				 * undo that now if we are in stream mode */
+				sensor_init();
 			}
-			/* check and set argument */
-			sensor_set_itime(tmp);
-			if (data_format == DATA_FORMAT_ASCII)
-				tx_printf("ok\n");
-			break;
-
-		case USR_CMD_READ_ITIME:
-			if (data_format == DATA_FORMAT_BIN) {
-				HAL_UART_Transmit(&hrxtx, (uint8_t *) &sens1.itime, 4, 1000);
-			} else {
-				tx_printf("integration time = %ld us\n", sens1.itime);
-			}
-			break;
-
-		case USR_CMD_STREAM_START:
-			if (data_format == DATA_FORMAT_ASCII)
-				tx_printf("ok\n");
-			sensor_init();
-			stream_mode = 1;
-			break;
-
-		case USR_CMD_STREAM_END:
-			sensor_deinit();
-			stream_mode = 0;
-			if (data_format == DATA_FORMAT_ASCII)
-				tx_printf("ok\n");
-			break;
-
-		case USR_CMD_SET_FORMAT:
-			/* parse argument */
-			if (extcmd.arg_buffer[0] == 0) {
-				tmp = 1;
-			} else {
-				sscanf(extcmd.arg_buffer, "%lu", &tmp);
-			}
-			/* check and set argument */
-			data_format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
-			if (data_format == DATA_FORMAT_ASCII)
-				tx_printf("ok\n");
-			break;
-
-		case USR_CMD_DEBUG:
-//			testtest();
-			tx_dbgflg = tx_dbgflg ? 0 : 1;
-			if(tx_dbgflg){
-				printf("debug on\n");
-			}else{
-				printf("debug off\n");
-			}
-			break;
-
-		case USR_CMD_GET_RTC_TIME:
-			/* Always call GetDate after GetTime ! see HAL-documentation */
-			HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-			HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
-
-			if (data_format == DATA_FORMAT_ASCII) {
-				printf("20%i-%02i-%02iT%02i:%02i:%02i\n", sDate.Year, sDate.Month, sDate.Date, sTime.Hours,
-						sTime.Minutes, sTime.Seconds);
-			} else {
-				/* Transmit binary */
-				HAL_UART_Transmit(&hrxtx, (uint8_t *) &sDate.Year, 1, 1000);
-				HAL_UART_Transmit(&hrxtx, (uint8_t *) &sDate.Month, 1, 1000);
-				HAL_UART_Transmit(&hrxtx, (uint8_t *) &sDate.Date, 1, 1000);
-				HAL_UART_Transmit(&hrxtx, (uint8_t *) &sTime.Hours, 1, 1000);
-				HAL_UART_Transmit(&hrxtx, (uint8_t *) &sTime.Minutes, 1, 1000);
-				HAL_UART_Transmit(&hrxtx, (uint8_t *) &sTime.Seconds, 1, 1000);
-			}
-			break;
-
-		case USR_CMD_SET_RTC_TIME:
-			if (extcmd.arg_buffer[0] == 0) {
-				break;
-			} else {
-				str = extcmd.arg_buffer;
-			}
-			err = rtc_parse_datetime(str, &sTime, &sDate);
-			if (err) {
-				break;
-			}
-			HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-			HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
-			/* If interval was set also update it. If it is disabled (all values zero)
-			 * than the call will have no effect.*/
-			rtc_set_alarmA_by_offset(&sTime, &rtc_ival);
-
-			if (data_format == DATA_FORMAT_ASCII)
-				tx_printf("ok\n");
-			break;
-
-		case USR_CMD_GET_INTERVAL:
-			if (data_format == DATA_FORMAT_ASCII) {
-				printf("%02i:%02i:%02i\n", rtc_ival.Hours, rtc_ival.Minutes, rtc_ival.Seconds);
-			} else {
-				/* Transmit binary */
-				HAL_UART_Transmit(&hrxtx, (uint8_t *) &rtc_ival.Hours, 1, 1000);
-				HAL_UART_Transmit(&hrxtx, (uint8_t *) &rtc_ival.Minutes, 1, 1000);
-				HAL_UART_Transmit(&hrxtx, (uint8_t *) &rtc_ival.Seconds, 1, 1000);
-			}
-			break;
-
-		case USR_CMD_SET_INTERVAL:
-			if (extcmd.arg_buffer[0] == 0) {
-				break;
-			} else {
-				str = extcmd.arg_buffer;
-			}
-			err = rtc_parse_interval(str, &sTime);
-			if (err) {
-				break;
-			}
-			if (sTime.Hours == 0 && sTime.Minutes == 0 && sTime.Seconds == 0) {
-				/* All zero deactivates the periodically alarm, so this is a valid case.*/
-				;
-			} else if (sTime.Hours == 0 && sTime.Minutes == 0 && sTime.Seconds < MIN_IVAL) {
-				/* Ensure that the interval is long enough to operate safely.*/
-				break;
-			}
-			/* if all ok update the rtc ival variable which periodically updated the alarmA. */
-			rtc_ival.Hours = sTime.Hours;
-			rtc_ival.Minutes = sTime.Minutes;
-			rtc_ival.Seconds = sTime.Seconds;
-
-			/* Get the current time (ignore date, but always call both) */
-			HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-			HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
-
-			/* and finally set the alarm.*/
-			rtc_set_alarmA_by_offset(&sTime, &rtc_ival);
-
-			if (data_format == DATA_FORMAT_ASCII)
-				tx_printf("ok\n");
-			break;
-
-		default:
-			break;
 		}
 
 		if (stream_mode) {
@@ -253,6 +93,177 @@ int main_usr(void) {
 			if (err) {
 				stream_mode = 0;
 				sensor_deinit();
+			}
+		}
+
+		if (rxtx_CR_recvd) {
+			parse_extcmd(rxtx_rxbuffer.base, rxtx_rxbuffer.size);
+
+			rxtx_CR_recvd = 0;
+			rxtx_cmd_bytes = 0;
+			rxtx_restart_listening();
+
+			switch (extcmd.cmd) {
+
+			case USR_CMD_SINGLE_MEASURE_START:
+				if (data_format == DATA_FORMAT_ASCII)
+					printf("ok\n");
+				sensor_init();
+				sensor_measure();
+				last_sensor_status = sens1.status;
+				send_data(last_sensor_status, data_format);
+				sensor_deinit();
+				/* A single measurement in stream mode end stream mode. */
+				stream_mode = 0;
+				break;
+
+			case USR_CMD_GET_DATA:
+				send_data(last_sensor_status, data_format);
+				break;
+
+			case USR_CMD_WRITE_ITIME:
+				/* parse argument */
+				if (extcmd.arg_buffer[0] == 0) {
+					break;
+				} else {
+					sscanf(extcmd.arg_buffer, "%lu", &tmp);
+				}
+				/* check and set argument */
+				sensor_set_itime(tmp);
+				if (data_format == DATA_FORMAT_ASCII)
+					printf("ok\n");
+				break;
+
+			case USR_CMD_READ_ITIME:
+				if (data_format == DATA_FORMAT_BIN) {
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sens1.itime, 4, 1000);
+				} else {
+					printf("integration time = %ld us\n", sens1.itime);
+				}
+				break;
+
+			case USR_CMD_STREAM_START:
+				if (data_format == DATA_FORMAT_ASCII)
+					printf("ok\n");
+				sensor_init();
+				stream_mode = 1;
+				break;
+
+			case USR_CMD_STREAM_END:
+				sensor_deinit();
+				stream_mode = 0;
+				if (data_format == DATA_FORMAT_ASCII)
+					printf("ok\n");
+				break;
+
+			case USR_CMD_SET_FORMAT:
+				/* parse argument */
+				if (extcmd.arg_buffer[0] == 0) {
+					tmp = 1;
+				} else {
+					sscanf(extcmd.arg_buffer, "%lu", &tmp);
+				}
+				/* check and set argument */
+				data_format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
+				if (data_format == DATA_FORMAT_ASCII)
+					printf("ok\n");
+				break;
+
+			case USR_CMD_DEBUG:
+//			testtest();
+				tx_dbgflg = tx_dbgflg ? 0 : 1;
+				if (tx_dbgflg) {
+					printf("debug on\n");
+				} else {
+					printf("debug off\n");
+				}
+				break;
+
+			case USR_CMD_GET_RTC_TIME:
+				/* Always call GetDate after GetTime ! see HAL-documentation */
+				HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+				HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+				if (data_format == DATA_FORMAT_ASCII) {
+					printf("20%i-%02i-%02iT%02i:%02i:%02i\n", sDate.Year, sDate.Month, sDate.Date, sTime.Hours,
+							sTime.Minutes, sTime.Seconds);
+				} else {
+					/* Transmit binary */
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sDate.Year, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sDate.Month, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sDate.Date, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sTime.Hours, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sTime.Minutes, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sTime.Seconds, 1, 1000);
+				}
+				break;
+
+			case USR_CMD_SET_RTC_TIME:
+				if (extcmd.arg_buffer[0] == 0) {
+					break;
+				} else {
+					str = extcmd.arg_buffer;
+				}
+				err = rtc_parse_datetime(str, &sTime, &sDate);
+				if (err) {
+					break;
+				}
+				HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+				HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+				/* If interval was set also update it. If it is disabled (all values zero)
+				 * than the call will have no effect.*/
+				rtc_set_alarmA_by_offset(&sTime, &rtc_ival);
+
+				if (data_format == DATA_FORMAT_ASCII)
+					printf("ok\n");
+				break;
+
+			case USR_CMD_GET_INTERVAL:
+				if (data_format == DATA_FORMAT_ASCII) {
+					printf("%02i:%02i:%02i\n", rtc_ival.Hours, rtc_ival.Minutes, rtc_ival.Seconds);
+				} else {
+					/* Transmit binary */
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rtc_ival.Hours, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rtc_ival.Minutes, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rtc_ival.Seconds, 1, 1000);
+				}
+				break;
+
+			case USR_CMD_SET_INTERVAL:
+				if (extcmd.arg_buffer[0] == 0) {
+					break;
+				} else {
+					str = extcmd.arg_buffer;
+				}
+				err = rtc_parse_interval(str, &sTime);
+				if (err) {
+					break;
+				}
+				if (sTime.Hours == 0 && sTime.Minutes == 0 && sTime.Seconds == 0) {
+					/* All zero deactivates the periodically alarm, so this is a valid case.*/
+					;
+				} else if (sTime.Hours == 0 && sTime.Minutes == 0 && sTime.Seconds < MIN_IVAL) {
+					/* Ensure that the interval is long enough to operate safely.*/
+					break;
+				}
+				/* if all ok update the rtc ival variable which periodically updated the alarmA. */
+				rtc_ival.Hours = sTime.Hours;
+				rtc_ival.Minutes = sTime.Minutes;
+				rtc_ival.Seconds = sTime.Seconds;
+
+				/* Get the current time (ignore date, but always call both) */
+				HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+				HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+				/* and finally set the alarm.*/
+				rtc_set_alarmA_by_offset(&sTime, &rtc_ival);
+
+				if (data_format == DATA_FORMAT_ASCII)
+					printf("ok\n");
+				break;
+
+			default:
+				break;
 			}
 		}
 	}
@@ -339,7 +350,7 @@ static void send_data(uint8_t sens_status, uint8_t format) {
  * Map the sensor status to the appropriate error code.
  */
 static uint32_t map_status2errcode(uint8_t status) {
-	switch (status){
+	switch (status) {
 	case 0:
 		return ERRC_NO_ERROR;
 	case SENS_ERR_TIMEOUT:
@@ -518,7 +529,7 @@ static void parse_extcmd(uint8_t *buffer, uint16_t size) {
 
 static void periodic_alarm_handler(void) {
 	RTC_AlarmTypeDef a;
-	uint16_t  errc = 0;
+	uint16_t errc = 0;
 	char *fname = SD_FILENAME;
 	char ts_buff[32];
 	debug("Periodic alarm \n");
