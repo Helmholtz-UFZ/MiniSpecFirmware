@@ -18,8 +18,6 @@
 #include <stdio.h>
 
 static void send_data(uint8_t sens_status, uint8_t format);
-static void testtest(void);
-
 static void parse_extcmd(uint8_t *buffer, uint16_t size);
 static void periodic_alarm_handler(void);
 static uint32_t map_status2errcode(uint8_t status);
@@ -610,22 +608,4 @@ static void periodic_alarm_handler(void) {
 		}
 		printf("]\n");
 	}
-}
-
-static void testtest(void) {
-	uint8_t res = 0;
-//	res = sd_format();
-//	printf("format: %i\n", res);
-	res = sd_mount();
-	debug("mount: %u\n", res);
-	res = sd_write_file("F1.TXT", "some in line1\r\nline2\r\n");
-	if (res == FR_DISK_ERR) {
-		/* Try to reinitialize driver.*/
-		FATFS_UnLinkDriver(SDPath);
-		MX_FATFS_Init();
-	}
-	debug("first: %u\n", res);
-	res = sd_write_file("F1.TXT", "more here");
-	debug("sec: %u\n", res);
-	res = sd_umount();
 }
