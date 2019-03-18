@@ -112,7 +112,7 @@
 #define SD_FILE_BASENAME		"MSPEC"
 #define SD_FILE_EXTENSION		"CSV"
 
-/*Maximum file size in Byte*/
+/*Maximum file size in Byte (default 1MB)*/
 #define SD_MAX_FILESIZE			(100 * 1024 * 1024)
 
 /* If defined no HW detection (Pin high/low) is done

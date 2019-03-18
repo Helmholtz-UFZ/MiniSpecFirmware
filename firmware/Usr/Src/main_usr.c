@@ -453,11 +453,10 @@ static void parse_extcmd(uint8_t *buffer, uint16_t size) {
 		return;
 	}
 
-	str = "debug\r";
-	alias = "d\r";
+	str = "#DEBUG#\r";
 	sz = strlen(str);
 	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+	if (memcmp(buffer, str, sz) == 0) {
 		extcmd.cmd = USR_CMD_DEBUG;
 		return;
 	}

@@ -20,7 +20,7 @@ volatile uint16_t rxtx_cmd_bytes;
 
 /* Flag for enabling /disabling the debug() function
  * during runtime with a usr command, namely 'debug'.*/
-uint8_t tx_dbgflg = 1;
+uint8_t tx_dbgflg = 0;
 
 /* Memory blocks and buffer for transmitting and receiving
  * via uart interface.*/

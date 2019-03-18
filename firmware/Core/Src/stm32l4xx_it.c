@@ -383,7 +383,7 @@ void DMA2_Channel5_IRQHandler(void)
 	|| !defined USART4_IRQHandler__OK \
 	|| !defined SysTick_Handler__OK \
 	|| !defined TIM5_IRQHandler__OK)
-#warning "IRQ_Handler missing. May it was deleted by CubeMX ?"
+#error "IRQ_Handler missing. May it was deleted by CubeMX ?"
 #endif
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
