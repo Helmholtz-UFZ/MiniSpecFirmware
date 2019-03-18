@@ -7,9 +7,10 @@
 
 #include "sd_card.h"
 #include "string.h"
+#include "stdio.h"
 
 uint8_t workBuffer[_MAX_SS];
-static FRESULT sd_find_highest_postfix(uint offset, uint *postfix, char *namebuf, uint size);
+static FRESULT sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size);
 
 /* File system object for SD card logical drive */
 //FATFS SDFatFs;
@@ -72,16 +73,19 @@ uint8_t sd_write_file(char *fname, char *wtxt) {
  * The name is returned in the param namebuf and the highest number in postfix.
  * The function return FR_OK(0) if the file exist and no error occurred.
  * If no file with the BASENAME exist, the function return FR_NO_FILE(4).
+ *
+ * Return FRESULT(0-19) or BUF_TOOSMALL(21)
  */
-static FRESULT sd_find_highest_postfix(uint offset, uint *postfix, char *namebuf, uint size) {
+static FRESULT sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size) {
 	FILINFO info;
 	FRESULT res;
-	uint N = offset;
-	uint lastN = N;
+	int16_t len;
+	uint16_t N = offset;
+	uint16_t lastN = N;
 	memset(&info, 0, sizeof(FILINFO));
 
 	do {
-		snprintf(namebuf, size, "%s_%u.%s", SD_FILE_BASENAME, N, SD_FILE_EXTENSION);
+		len = snprintf(namebuf, size, "%s_%u.%s", SD_FILE_BASENAME, N, SD_FILE_EXTENSION);
 		res = f_stat(namebuf, &info);
 		if (res == FR_OK) {
 			/* found file, so we check the next one */
@@ -93,26 +97,32 @@ static FRESULT sd_find_highest_postfix(uint offset, uint *postfix, char *namebuf
 					res = FR_OK;
 				}
 				*postfix = N;
-				snprintf(namebuf, size, "%s_%u.%s", SD_FILE_BASENAME, N, SD_FILE_EXTENSION);
+				len = snprintf(namebuf, size, "%s_%u.%s", SD_FILE_BASENAME, N, SD_FILE_EXTENSION);
 			}
 			break;
 		}
 	} while (1);
 
+	if (len < 0 || len >= size) {
+		res = BUF_TOOSMALL;
+		memset(namebuf, 0, size);
+	}
 	return res;
 }
-
 
 /**
  * Find or generate a filename from the default name (see SD_BASENAME) which
  * 	i)  has the highest postfix number and
  * 	ii)	does't exceed the file size limit (see SD_MAX_FILESIZE)
  *
- * 	The file corresponding to the returned name must not necessarily exist.
+ * The file corresponding to the returned name must not necessarily exist.
+ *
+ * Return FRESULT(0-19) or BUF_TOOSMALL(21)
  **/
-FRESULT sd_find_right_filename(uint offset, uint *postfix, char *namebuf, uint size) {
-	FRESULT res;
+FRESULT sd_find_right_filename(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size) {
 	FILINFO info;
+	FRESULT res;
+	int16_t len;
 	memset(&info, 0, sizeof(FILINFO));
 
 	res = sd_find_highest_postfix(offset, postfix, namebuf, size);
@@ -123,9 +133,13 @@ FRESULT sd_find_right_filename(uint offset, uint *postfix, char *namebuf, uint s
 			if (info.fsize > SD_MAX_FILESIZE) {
 				/* Return a fresh new filename */
 				(*postfix)++;
-				snprintf(namebuf, size, "%s_%u.%s", SD_FILE_BASENAME, *postfix, SD_FILE_EXTENSION);
+				len = snprintf(namebuf, size, "%s_%u.%s", SD_FILE_BASENAME, *postfix, SD_FILE_EXTENSION);
 			}
 		}
+	}
+	if (len < 0 || len >= size) {
+		res = BUF_TOOSMALL;
+		memset(namebuf, 0, size);
 	}
 	return res;
 }

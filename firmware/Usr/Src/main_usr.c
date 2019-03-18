@@ -29,6 +29,10 @@ static uint8_t last_sensor_status = 0;
 static uint8_t data_format = DATA_FORMAT_ASCII;
 static bool stream_mode = 0;
 
+#define fname_buf_sz 	128
+char fname_buf[fname_buf_sz];
+uint16_t fname_curr_postfix = 0;
+
 static RTC_DateTypeDef sDate;
 static RTC_TimeTypeDef sTime;
 
@@ -50,7 +54,8 @@ int main_usr(void) {
 #if HAVE_SD
 	/* Inform the File that an reset occurred */
 	sd_mount();
-	sd_write_file(SD_BASE_FILENAME, "\nThe sensor was reset/powered-down.\n");
+	sd_find_right_filename(fname_curr_postfix, &fname_curr_postfix, fname_buf, fname_buf_sz);
+	sd_write_file(fname_buf, "\nThe sensor was reset/powered-down.\n");
 	sd_umount();
 #endif
 
@@ -530,7 +535,6 @@ static void parse_extcmd(uint8_t *buffer, uint16_t size) {
 static void periodic_alarm_handler(void) {
 	RTC_AlarmTypeDef a;
 	uint16_t errc = 0;
-	char *fname = SD_BASE_FILENAME;
 	char ts_buff[32];
 	debug("Periodic alarm \n");
 
@@ -555,7 +559,8 @@ static void periodic_alarm_handler(void) {
 	/* Store the measurement on SD */
 	res = sd_mount();
 	debug("mount: %i\n", res);
-	res = sd_open_file_neworappend(f, fname);
+	res = sd_find_right_filename(fname_curr_postfix, &fname_curr_postfix, fname_buf, fname_buf_sz);
+	res = sd_open_file_neworappend(f, fname_buf);
 	debug("open: %i\n", res);
 
 	if (res == FR_DISK_ERR) {
@@ -564,7 +569,7 @@ static void periodic_alarm_handler(void) {
 		FATFS_UnLinkDriver(SDPath);
 		MX_FATFS_Init();
 		/* try again..*/
-		res = sd_open_file_neworappend(f, fname);
+		res = sd_open_file_neworappend(f, fname_buf);
 		debug("relink+open: %i\n", res);
 		if (res != FR_OK) {
 			/* Some serios SD problems */
@@ -591,7 +596,7 @@ static void periodic_alarm_handler(void) {
 	 * Use printf() instead of debug() to prevent 'dbg:' string before every value.
 	 * If debug is disabled we don't do anything.*/
 	if (tx_dbgflg) {
-		printf("Would write to File: %s, data:\n", fname);
+		printf("Would write to File: %s, data:\n", fname_buf);
 		printf("%s, %u, %lu, [", ts_buff, errc, sens1.itime);
 		uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
 		for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {

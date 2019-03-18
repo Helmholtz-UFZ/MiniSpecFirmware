@@ -19,8 +19,6 @@
 #include "stdbool.h"
 #include "stdint.h"
 
-
-
 /** The minimal possible integration time is limited by the sensor and the
  *  clock frequency.
  *  The minimal high period of ST-pulse:   6 * CLK_freq
@@ -86,7 +84,6 @@
  * with EOS. */
 #define CAPTURE_PXL_END		((TRG_TO_EOS) + (END_LAST_LATE) )
 
-
 /**
  * The time in us after the safty timer throw
  * an IR and stop a failed measurement.
@@ -105,8 +102,7 @@
 #define DBG_SEND_ALL		1
 
 /* If 0 all code that excess the SD card is disabled. */
-#define HAVE_SD	 0
-
+#define HAVE_SD	 			1
 
 /* Base File Name and Extension of the measurement file.
  * The base name is extended by a underscore and a number
@@ -116,8 +112,8 @@
 #define SD_FILE_BASENAME		"MSPEC"
 #define SD_FILE_EXTENSION		"CSV"
 
-/*Maximum file size in MB*/
-#define SD_MAX_FILESIZE			100
+/*Maximum file size in Byte*/
+#define SD_MAX_FILESIZE			(100 * 1024 * 1024)
 
 /* If defined no HW detection (Pin high/low) is done
  * by BSP_PlatformIsDetected() in fatfs_platform.c
@@ -129,5 +125,5 @@
  * the interval which updates timerA.
  * Take maximal integration time and processing in account.
  * In seconds. */
-#define MIN_IVAL	11
+#define MIN_IVAL		11
 #endif /* GLOBAL_CONFIG_H_ */
