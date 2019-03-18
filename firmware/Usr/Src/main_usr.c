@@ -560,7 +560,6 @@ static void periodic_alarm_handler(void) {
 	/* Store the measurement on SD */
 	res = sd_mount();
 	debug("mount: %u\n", res);
-	debug("mount: %u\n", res);
 	res = sd_find_right_filename(fname_curr_postfix, &fname_curr_postfix, fname_buf, fname_buf_sz);
 	debug("find: %u\n", res);
 	res = sd_open_file_neworappend(f, fname_buf);
@@ -576,6 +575,7 @@ static void periodic_alarm_handler(void) {
 		debug("relink+open: %u\n", res);
 		if (res != FR_OK) {
 			/* Some serios SD problems */
+			res = sd_umount();
 			return;
 		}
 	}
