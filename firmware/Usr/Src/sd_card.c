@@ -79,7 +79,7 @@ uint8_t sd_write_file(char *fname, char *wtxt) {
 static FRESULT sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size) {
 	FILINFO info;
 	FRESULT res;
-	int16_t len;
+	int16_t len = -1;
 	uint16_t N = offset;
 	uint16_t lastN = N;
 	memset(&info, 0, sizeof(FILINFO));
@@ -122,7 +122,7 @@ static FRESULT sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char 
 FRESULT sd_find_right_filename(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size) {
 	FILINFO info;
 	FRESULT res;
-	int16_t len;
+	int16_t len = 0;
 	memset(&info, 0, sizeof(FILINFO));
 
 	res = sd_find_highest_postfix(offset, postfix, namebuf, size);

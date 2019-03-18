@@ -128,9 +128,9 @@ int debug(const char *__restrict format, ...) {
 	int len;
 	if (tx_dbgflg) {
 		va_list args;
-		va_start(args, format);
 		printf("dbg: ");
-		len = printf(format, args);
+		va_start(args, format);
+		len = vprintf(format, args);
 		va_end(args);
 		return len;
 	} else {

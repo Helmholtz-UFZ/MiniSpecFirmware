@@ -53,10 +53,12 @@ int main_usr(void) {
 
 #if HAVE_SD
 	/* Inform the File that an reset occurred */
-	sd_mount();
-	sd_find_right_filename(fname_curr_postfix, &fname_curr_postfix, fname_buf, fname_buf_sz);
-	sd_write_file(fname_buf, "\nThe sensor was reset/powered-down.\n");
-	sd_umount();
+	uint8_t res;
+	UNUSED(res);
+	res = sd_mount();
+	res = sd_find_right_filename(fname_curr_postfix, &fname_curr_postfix, fname_buf, fname_buf_sz);
+	res = sd_write_file(fname_buf, "\nThe sensor was reset/powered-down.\n");
+	res = sd_umount();
 #endif
 
 	/* Run the system ------------------------------------------------------------*/
@@ -84,7 +86,7 @@ int main_usr(void) {
 		if (rtc_alarmA_occured) {
 			rtc_alarmA_occured = 0;
 			periodic_alarm_handler();
-			if (stream_mode){
+			if (stream_mode) {
 				/* the handler has deinit the sensor,
 				 * undo that now if we are in stream mode */
 				sensor_init();
@@ -143,7 +145,7 @@ int main_usr(void) {
 				if (data_format == DATA_FORMAT_BIN) {
 					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sens1.itime, 4, 1000);
 				} else {
-					printf("integration time = %ld us\n", sens1.itime);
+					printf("integration time = %lu us\n", sens1.itime);
 				}
 				break;
 
@@ -175,7 +177,7 @@ int main_usr(void) {
 				break;
 
 			case USR_CMD_DEBUG:
-//			testtest();
+				//			testtest();
 				tx_dbgflg = tx_dbgflg ? 0 : 1;
 				if (tx_dbgflg) {
 					printf("debug on\n");
@@ -190,8 +192,9 @@ int main_usr(void) {
 				HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 
 				if (data_format == DATA_FORMAT_ASCII) {
-					printf("20%i-%02i-%02iT%02i:%02i:%02i\n", sDate.Year, sDate.Month, sDate.Date, sTime.Hours,
-							sTime.Minutes, sTime.Seconds);
+					printf("20%i-%02i-%02iT%02i:%02i:%02i\n",
+							sDate.Year, sDate.Month, sDate.Date,
+							sTime.Hours, sTime.Minutes, sTime.Seconds);
 				} else {
 					/* Transmit binary */
 					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sDate.Year, 1, 1000);
@@ -225,7 +228,8 @@ int main_usr(void) {
 
 			case USR_CMD_GET_INTERVAL:
 				if (data_format == DATA_FORMAT_ASCII) {
-					printf("%02i:%02i:%02i\n", rtc_ival.Hours, rtc_ival.Minutes, rtc_ival.Seconds);
+					printf("%02i:%02i:%02i\n", rtc_ival.Hours, rtc_ival.Minutes,
+							rtc_ival.Seconds);
 				} else {
 					/* Transmit binary */
 					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rtc_ival.Hours, 1, 1000);
@@ -311,7 +315,16 @@ static void send_data(uint8_t sens_status, uint8_t format) {
 		break;
 	}
 
-	if (format == DATA_FORMAT_ASCII) {
+	if (format == DATA_FORMAT_BIN) {
+		/*Send the errorcode nevertheless an error occurred or not.*/
+		HAL_UART_Transmit(&hrxtx, (uint8_t *) &errcode, 2, 200);
+		if (errcode == ERRC_NO_ERROR) {
+			/* send data */
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL),
+			MSPARAM_PIXEL * 2,
+			MSPARAM_PIXEL * 2 * 100);
+		}
+	} else { /* DATA_FORMAT_ASCII */
 		if (errcode != ERRC_NO_ERROR) {
 			printf(errstr);
 		} else {
@@ -339,15 +352,6 @@ static void send_data(uint8_t sens_status, uint8_t format) {
 			}
 			printf("\n"DELIMITER_STR"\n\n");
 		}
-	} else { /* DATA_FORMAT_BIN */
-
-		/*Send the errorcode nevertheless an error occurred or not.*/
-		HAL_UART_Transmit(&hrxtx, (uint8_t *) &errcode, 2, 200);
-		if (!sens_status) {
-			/* send data */
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL), MSPARAM_PIXEL * 2,
-			MSPARAM_PIXEL * 2 * 100);
-		}
 	}
 }
 
@@ -356,7 +360,7 @@ static void send_data(uint8_t sens_status, uint8_t format) {
  */
 static uint32_t map_status2errcode(uint8_t status) {
 	switch (status) {
-	case 0:
+	case SENS_MEASURE_DONE:
 		return ERRC_NO_ERROR;
 	case SENS_ERR_TIMEOUT:
 		return ERRC_TIMEOUT;
@@ -558,10 +562,12 @@ static void periodic_alarm_handler(void) {
 	FIL *f = &SDFile;
 	/* Store the measurement on SD */
 	res = sd_mount();
-	debug("mount: %i\n", res);
+	debug("mount: %u\n", res);
+	debug("mount: %u\n", res);
 	res = sd_find_right_filename(fname_curr_postfix, &fname_curr_postfix, fname_buf, fname_buf_sz);
+	debug("find: %u\n", res);
 	res = sd_open_file_neworappend(f, fname_buf);
-	debug("open: %i\n", res);
+	debug("open: %u\n", res);
 
 	if (res == FR_DISK_ERR) {
 		/* Try to reinitialize driver. This can happen
@@ -570,7 +576,7 @@ static void periodic_alarm_handler(void) {
 		MX_FATFS_Init();
 		/* try again..*/
 		res = sd_open_file_neworappend(f, fname_buf);
-		debug("relink+open: %i\n", res);
+		debug("relink+open: %u\n", res);
 		if (res != FR_OK) {
 			/* Some serios SD problems */
 			return;
@@ -588,7 +594,8 @@ static void periodic_alarm_handler(void) {
 		}
 	}
 	f_printf(f, "]\n");
-	f_close(f);
+	res = f_close(f);
+	debug("close: %u\n", res);
 	res = sd_umount();
 #endif
 
@@ -611,15 +618,15 @@ static void testtest(void) {
 //	res = sd_format();
 //	printf("format: %i\n", res);
 	res = sd_mount();
-	debug("mount: %i\n", res);
+	debug("mount: %u\n", res);
 	res = sd_write_file("F1.TXT", "some in line1\r\nline2\r\n");
 	if (res == FR_DISK_ERR) {
 		/* Try to reinitialize driver.*/
 		FATFS_UnLinkDriver(SDPath);
 		MX_FATFS_Init();
 	}
-	debug("first: %i\n", res);
+	debug("first: %u\n", res);
 	res = sd_write_file("F1.TXT", "more here");
-	debug("sec: %i\n", res);
+	debug("sec: %u\n", res);
 	res = sd_umount();
 }
