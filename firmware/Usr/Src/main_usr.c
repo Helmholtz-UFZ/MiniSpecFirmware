@@ -190,7 +190,7 @@ int main_usr(void) {
 				HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 
 				if (data_format == DATA_FORMAT_ASCII) {
-					printf("20%i-%02i-%02iT%02i:%02i:%02i\n",
+					printf("20%02i-%02i-%02iT%02i:%02i:%02i\n",
 							sDate.Year, sDate.Month, sDate.Date,
 							sTime.Hours, sTime.Minutes, sTime.Seconds);
 				} else {
