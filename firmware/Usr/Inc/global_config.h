@@ -107,7 +107,17 @@
 /* If 0 all code that excess the SD card is disabled. */
 #define HAVE_SD	 0
 
-#define SD_FILENAME		"MINISPEC.TXT"
+
+/* Base File Name and Extension of the measurement file.
+ * The base name is extended by a underscore and a number
+ * and its extension. The numbering starts with zero.
+ * When the file size is grater than SD_MAX_FILESIZE the
+ * number is incremented. */
+#define SD_FILE_BASENAME		"MSPEC"
+#define SD_FILE_EXTENSION		"CSV"
+
+/*Maximum file size in MB*/
+#define SD_MAX_FILESIZE			100
 
 /* If defined no HW detection (Pin high/low) is done
  * by BSP_PlatformIsDetected() in fatfs_platform.c

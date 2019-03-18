@@ -50,7 +50,7 @@ int main_usr(void) {
 #if HAVE_SD
 	/* Inform the File that an reset occurred */
 	sd_mount();
-	sd_write_file(SD_FILENAME, "\nThe sensor was reset/powered-down.\n");
+	sd_write_file(SD_BASE_FILENAME, "\nThe sensor was reset/powered-down.\n");
 	sd_umount();
 #endif
 
@@ -530,7 +530,7 @@ static void parse_extcmd(uint8_t *buffer, uint16_t size) {
 static void periodic_alarm_handler(void) {
 	RTC_AlarmTypeDef a;
 	uint16_t errc = 0;
-	char *fname = SD_FILENAME;
+	char *fname = SD_BASE_FILENAME;
 	char ts_buff[32];
 	debug("Periodic alarm \n");
 

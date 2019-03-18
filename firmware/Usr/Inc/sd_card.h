@@ -11,7 +11,8 @@
 #include "global_config.h"
 #include "fatfs.h"
 
-#define ERR_NODATA 100
+#define ERR_NODATA 			20
+#define BUF_TOOSMALL 		21
 
 uint8_t sd_format(void);
 uint8_t sd_mount(void);
