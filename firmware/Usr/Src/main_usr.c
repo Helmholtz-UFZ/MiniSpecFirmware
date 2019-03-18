@@ -51,7 +51,7 @@ int main_usr(void) {
 	tim2_Init();
 	tim5_Init();
 
-#if HAVE_SD
+#if HAS_SD
 	/* Inform the File that an reset occurred */
 	uint8_t res;
 	UNUSED(res);
@@ -556,7 +556,7 @@ static void periodic_alarm_handler(void) {
 	errc = map_status2errcode(last_sensor_status);
 	sensor_deinit();
 
-#if HAVE_SD
+#if HAS_SD
 	int8_t res = 0;
 	uint8_t err = 0;
 	FIL *f = &SDFile;
@@ -603,7 +603,7 @@ static void periodic_alarm_handler(void) {
 	 * Use printf() instead of debug() to prevent 'dbg:' string before every value.
 	 * If debug is disabled we don't do anything.*/
 	if (tx_dbgflg) {
-		printf("Would write to File: %s, data:\n", fname_buf);
+		printf("If SD: write to File: %s, data:\n", fname_buf);
 		printf("%s, %u, %lu, [", ts_buff, errc, sens1.itime);
 		uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
 		for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {

@@ -102,7 +102,7 @@
 #define DBG_SEND_ALL		1
 
 /* If 0 all code that excess the SD card is disabled. */
-#define HAVE_SD	 			1
+#define HAS_SD	 			1
 
 /* Base File Name and Extension of the measurement file.
  * The base name is extended by a underscore and a number
