@@ -42,7 +42,4 @@
 #define BIT14     	((uint16_t)0x4000)
 #define BIT15     	((uint16_t)0x8000)
 
-#define ON		1
-#define OFF		0
-
 #endif /* HELPER_DEFINES_H_ */

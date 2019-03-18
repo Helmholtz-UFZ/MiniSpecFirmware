@@ -326,7 +326,7 @@ static void send_data(uint8_t sens_status, uint8_t format) {
 		if (errcode != ERRC_NO_ERROR) {
 			printf(errstr);
 		} else {
-#if DBG_SEND_ALL==ON
+#if DBG_SEND_ALL
 			rptr = sens1.data->base;
 #else
 			rptr = (sens1.data->wptr - MSPARAM_PIXEL);
