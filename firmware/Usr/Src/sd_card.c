@@ -105,7 +105,6 @@ static FRESULT sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char 
 
 	if (len < 0 || len >= size) {
 		res = BUF_TOOSMALL;
-		memset(namebuf, 0, size);
 	}
 	return res;
 }
@@ -137,8 +136,13 @@ FRESULT sd_find_right_filename(uint16_t offset, uint16_t *postfix, char *namebuf
 			}
 		}
 	}
+	if(res == FR_NO_FILE){
+		res = FR_OK;
+	}
 	if (len < 0 || len >= size) {
 		res = BUF_TOOSMALL;
+	}
+	if(res > 0){
 		memset(namebuf, 0, size);
 	}
 	return res;
