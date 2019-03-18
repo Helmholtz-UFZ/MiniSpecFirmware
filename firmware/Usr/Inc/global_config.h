@@ -99,7 +99,7 @@
 /* send all data/samples/pixel that we recorded, particularly the data
  * that is lying in the data buffer before the valid data. If off we
  * only send the valid samples (for DATA_FORMAT_ASCII only)*/
-#define DBG_SEND_ALL		1
+#define DBG_SEND_ALL		0
 
 /* If 0 all code that excess the SD card is disabled. */
 #define HAS_SD	 			1

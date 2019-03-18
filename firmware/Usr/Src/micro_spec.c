@@ -60,10 +60,11 @@
 #include "tim_usr.h"
 #include <string.h>
 
-static uint16_t mem_block1[SENSOR_DATA_BUFFER_MAX_WORDS + 1];
+//static uint16_t mem_block1[SENSOR_DATA_BUFFER_MAX_WORDS + 1];
+static canary_memblock_t secure_memblock1;
 
 static sensor_buffer_t sens_buf = { SENSOR_DATA_BUFFER_SIZE,
-		SENSOR_DATA_BUFFER_MAX_WORDS, mem_block1, mem_block1 };
+SENSOR_DATA_BUFFER_MAX_WORDS, secure_memblock1.memblock, secure_memblock1.memblock };
 
 /* Handle for the micro sprectrometer */
 sensor_t sens1 = { SENS_UNINITIALIZED, &sens_buf, DEFAULT_INTEGRATION_TIME };
@@ -77,8 +78,8 @@ static void wait_for_measure_done(void);
  */
 void sensor_init(void) {
 	sens1.data = &sens_buf;
-	sens1.data->base = mem_block1;
-	sens1.data->wptr = mem_block1;
+	sens1.data->base = secure_memblock1.memblock;
+	sens1.data->wptr = secure_memblock1.memblock;
 
 	// enable TIM channels
 
@@ -155,6 +156,10 @@ uint8_t sensor_measure(void) {
 	// reset data buffer
 	memset(sens1.data->base, 0, sens1.data->size);
 	sens1.data->wptr = sens1.data->base;
+
+	// set the canaries
+	memset(secure_memblock1.precanary, 0xffff, CANARYSIZE * sizeof(uint16_t));
+	memset(secure_memblock1.postcanary, 0xffff, CANARYSIZE * sizeof(uint16_t));
 
 	// prevent SysTick to stretch time critical sections
 	HAL_SuspendTick();

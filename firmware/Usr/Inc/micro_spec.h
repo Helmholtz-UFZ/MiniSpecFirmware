@@ -28,6 +28,13 @@ typedef struct
 	volatile uint16_t volatile *wptr; /*	!< write pointer for the data, points to the next empty location  */
 } sensor_buffer_t;
 
+#define CANARYSIZE	32
+typedef struct
+{
+	uint16_t precanary[CANARYSIZE];
+	uint16_t memblock[SENSOR_DATA_BUFFER_MAX_WORDS +1];
+	uint16_t postcanary[CANARYSIZE];
+} canary_memblock_t;
 
 typedef enum
 {
