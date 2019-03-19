@@ -42,6 +42,9 @@ int main_usr(void) {
 	uint8_t err = 0;
 	uint32_t tmp;
 	char *str;
+#if DBG_CODE
+	tx_dbgflg = 1;
+#endif
 
 	/* We enable the interrupts later */
 	HAL_NVIC_DisableIRQ( RXTX_IRQn);
@@ -52,6 +55,10 @@ int main_usr(void) {
 	tim1_Init();
 	tim2_Init();
 	tim5_Init();
+
+	if (data_format == DATA_FORMAT_ASCII) {
+		printf("\nstart\n");
+	}
 
 #if HAS_SD
 	/* Inform the File that an reset occurred */
@@ -76,9 +83,6 @@ int main_usr(void) {
 	NVIC_EnableIRQ( RXTX_IRQn);
 	HAL_UART_Receive_DMA(&hrxtx, rxtx_rxbuffer.base, rxtx_rxbuffer.size);
 
-	if (data_format == DATA_FORMAT_ASCII) {
-		printf("\nstart\n");
-	}
 	while (1) {
 		err = 0;
 
@@ -577,7 +581,7 @@ static void periodic_alarm_handler(void) {
 			res = sd_open_file_neworappend(f, fname_buf);
 			if (!res) {
 				/* Write metadata (timestamp, errorcode, intergartion time) */
-				f_printf(f, "%S, %U, %LU, [", ts_buff, sensor_errc, sens1.itime);
+				f_printf(f, "%S, %U, %LU, [,", ts_buff, sensor_errc, sens1.itime);
 				/* Write data */
 				if (!sensor_errc) {
 					/* Lopp through measurement results and store to file */
@@ -598,7 +602,7 @@ static void periodic_alarm_handler(void) {
 	 * If debug is disabled we don't do anything.*/
 	if (tx_dbgflg) {
 		printf("If SD: wrote to File: %s, data:\n", fname_buf);
-		printf("%s, %u, %lu, [", ts_buff, sensor_errc, sens1.itime);
+		printf("%s, %u, %lu, [,", ts_buff, sensor_errc, sens1.itime);
 		uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
 		for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
 			printf("%u,", *(p++));
@@ -611,13 +615,9 @@ static void periodic_alarm_handler(void) {
  * or functionality under development.
  * Especially if the code is hard to reach
  * in the normal program flow. E.g. If the
- * code is executed by timer.
- *
- * It also turn on the the debug print. So
- * it set tx_dbgflg = 1 as a side effect.*/
+ * code is executed by timer. */
 static void dbg_test(void) {
 #if DBG_CODE
-	tx_dbgflg=1;
 	periodic_alarm_handler();
 #endif
 	return;

@@ -11,24 +11,41 @@
 #include "usart_usr.h"
 
 uint8_t workBuffer[_MAX_SS];
-static uint8_t sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size);
+static uint8_t sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf,
+		uint16_t size);
 
 /* File system object for SD card logical drive */
 //FATFS SDFatFs;
 FRESULT sd_mount(void) {
 	FRESULT res = f_mount(&SDFatFS, SDPath, 0);
-	debug("mount: %u\n", res);
+	debug("MOUNT: %u\n", res);
 	return res;
 }
 
 FRESULT sd_umount(void) {
 	FRESULT res = f_mount(NULL, SDPath, 0);
-	debug("mount: %u\n", res);
+	debug("UMOUNT: %u\n", res);
 	return res;
 }
 
 FRESULT sd_format(void) {
 	return f_mkfs(SDPath, FM_ANY, 0, workBuffer, sizeof(workBuffer));
+}
+
+FRESULT sd_stat(const TCHAR* path, FILINFO* fno) {
+	FRESULT res;
+	uint8_t i = 0;
+	do {
+		res = f_stat(path, fno);
+		debug("stat: %u\n", res);
+		if (res == FR_DISK_ERR) {
+			FATFS_UnLinkDriver(SDPath);
+			MX_FATFS_Init();
+		} else {
+			break;
+		}
+	} while (++i < SD_MAX_REINIT_DRIVER);
+	return res;
 }
 
 FRESULT sd_open(FIL* fp, const TCHAR* path, BYTE mode) {
@@ -49,7 +66,7 @@ FRESULT sd_open(FIL* fp, const TCHAR* path, BYTE mode) {
 
 FRESULT sd_close(FIL* fp) {
 	FRESULT res = f_close(fp);
-	debug("close: %u\n", res);
+	debug("CLOSE: %u\n", res);
 	return res;
 }
 
@@ -64,7 +81,8 @@ FRESULT sd_close(FIL* fp) {
  *
  * Return FRESULT(0-19) or BUF_TOOSMALL(21)
  */
-static uint8_t sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size) {
+static uint8_t sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf,
+		uint16_t size) {
 	FILINFO info;
 	uint8_t res;
 	int16_t len = -1;
@@ -74,7 +92,7 @@ static uint8_t sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char 
 
 	do {
 		len = snprintf(namebuf, size, "%s_%u.%s", SD_FILE_BASENAME, N, SD_FILE_EXTENSION);
-		res = f_stat(namebuf, &info);
+		res = sd_stat(namebuf, &info);
 		if (res == FR_OK) {
 			/* found file, so we check the next one */
 			lastN = N++;
@@ -115,12 +133,13 @@ uint8_t sd_find_right_filename(uint16_t offset, uint16_t *postfix, char *namebuf
 	res = sd_find_highest_postfix(offset, postfix, namebuf, size);
 	if (res == FR_OK) {
 		/* File exist, check file size */
-		res = f_stat(namebuf, &info);
+		res = sd_stat(namebuf, &info);
 		if (res == FR_OK) {
 			if (info.fsize > SD_MAX_FILESIZE) {
 				/* Return a fresh new filename */
 				(*postfix)++;
-				len = snprintf(namebuf, size, "%s_%u.%s", SD_FILE_BASENAME, *postfix, SD_FILE_EXTENSION);
+				len = snprintf(namebuf, size, "%s_%u.%s", SD_FILE_BASENAME, *postfix,
+				SD_FILE_EXTENSION);
 			}
 		}
 	}
@@ -133,7 +152,7 @@ uint8_t sd_find_right_filename(uint16_t offset, uint16_t *postfix, char *namebuf
 	if (res > 0) {
 		memset(namebuf, 0, size);
 	}
-	debug("find: %u\n", res);
+	debug("FIND: %u\n", res);
 	return res;
 }
 
@@ -153,6 +172,7 @@ FRESULT sd_open_file_neworappend(FIL* f, char *fname) {
 	if (res == FR_EXIST) {
 		res = sd_open(f, fname, FA_WRITE | FA_OPEN_APPEND);
 	}
+	debug("OPEN: %u\n", res);
 	return res;
 }
 
