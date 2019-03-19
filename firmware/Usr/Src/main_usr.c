@@ -64,6 +64,7 @@ int main_usr(void) {
 	/* Inform the File that an reset occurred */
 	uint8_t res;
 	res = sd_mount();
+	HAL_Delay(1000);
 	if (!res) {
 		res = sd_find_right_filename(fname_curr_postfix, &fname_curr_postfix, fname_buf, FNAME_BUF_SZ);
 		if (!res) {
