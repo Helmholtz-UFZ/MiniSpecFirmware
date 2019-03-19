@@ -104,6 +104,11 @@
 /* If 0 all code that excess the SD card is disabled. */
 #define HAS_SD	 			1
 
+/* If an error occur in the SD driver sometimes it helps
+ * to re-initialize the HAL and FAT driver. This threshold
+ * defines how often we try this, before we go home and cry. */
+#define SD_MAX_REINIT_DRIVER	10
+
 /* Base File Name and Extension of the measurement file.
  * The base name is extended by a underscore and a number
  * and its extension. The numbering starts with zero.

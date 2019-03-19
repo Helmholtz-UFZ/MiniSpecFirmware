@@ -11,15 +11,17 @@
 #include "global_config.h"
 #include "fatfs.h"
 
+/* Extend FRESULT */
 #define ERR_NODATA 			20
 #define BUF_TOOSMALL 		21
 
-uint8_t sd_format(void);
-uint8_t sd_mount(void);
-uint8_t sd_umount(void);
-uint8_t sd_write_file(char *fname, char *wtxt);
-uint8_t sd_open_file_neworappend(FIL* f, char *fname);
-FRESULT sd_find_right_filename(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size);
+FRESULT sd_format(void);
+FRESULT sd_mount(void);
+FRESULT sd_umount(void);
+FRESULT sd_open(FIL* fp, const TCHAR* path, BYTE mode);
+FRESULT sd_close(FIL* fp);
+FRESULT sd_open_file_neworappend(FIL* f, char *fname);
+uint8_t sd_find_right_filename(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size);
 
 
 #endif /* INC_SD_CARD_H_ */

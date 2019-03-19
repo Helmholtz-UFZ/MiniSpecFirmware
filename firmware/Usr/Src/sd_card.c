@@ -8,61 +8,49 @@
 #include "sd_card.h"
 #include "string.h"
 #include "stdio.h"
+#include "usart_usr.h"
 
 uint8_t workBuffer[_MAX_SS];
-static FRESULT sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size);
+static uint8_t sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size);
 
 /* File system object for SD card logical drive */
 //FATFS SDFatFs;
-uint8_t sd_mount(void) {
-	return f_mount(&SDFatFS, SDPath, 0);
+FRESULT sd_mount(void) {
+	FRESULT res = f_mount(&SDFatFS, SDPath, 0);
+	debug("mount: %u\n", res);
+	return res;
 }
 
-uint8_t sd_umount(void) {
-	return f_mount(NULL, SDPath, 0);
+FRESULT sd_umount(void) {
+	FRESULT res = f_mount(NULL, SDPath, 0);
+	debug("mount: %u\n", res);
+	return res;
 }
 
-uint8_t sd_format(void) {
+FRESULT sd_format(void) {
 	return f_mkfs(SDPath, FM_ANY, 0, workBuffer, sizeof(workBuffer));
 }
 
-/* Append strings to file if it exist or create it.*/
-uint8_t sd_write_file(char *fname, char *wtxt) {
-	FIL *f = &SDFile;
-	int8_t res = 0;
-	int16_t byteswritten = -1;
-	memset(f, 0, sizeof(FIL));
-
-	// try create a File
-	res = f_open(f, fname, FA_WRITE | FA_CREATE_NEW);
-	switch (res) {
-
-	case FR_OK:
-		// new file continue
-		break;
-
-	case FR_EXIST:
-		// if exist open in append
-		res = f_open(f, fname, FA_WRITE | FA_OPEN_APPEND);
-		if (res != FR_OK) {
-			return res;
+FRESULT sd_open(FIL* fp, const TCHAR* path, BYTE mode) {
+	FRESULT res;
+	uint8_t i = 0;
+	do {
+		res = f_open(fp, path, mode);
+		debug("open: %u\n", res);
+		if (res == FR_DISK_ERR) {
+			FATFS_UnLinkDriver(SDPath);
+			MX_FATFS_Init();
+		} else {
+			break;
 		}
-		break;
-	default:
-		return res;
-	}
+	} while (++i < SD_MAX_REINIT_DRIVER);
+	return res;
+}
 
-	res = f_write(f, wtxt, (unsigned int) strlen(wtxt), (void *) &byteswritten);
-	if (res != FR_OK) {
-		return res;
-	}
-	if (byteswritten <= 0) {
-		return ERR_NODATA;
-	}
-
-	f_close(f);
-
-	return 0;
+FRESULT sd_close(FIL* fp) {
+	FRESULT res = f_close(fp);
+	debug("close: %u\n", res);
+	return res;
 }
 
 /**
@@ -76,9 +64,9 @@ uint8_t sd_write_file(char *fname, char *wtxt) {
  *
  * Return FRESULT(0-19) or BUF_TOOSMALL(21)
  */
-static FRESULT sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size) {
+static uint8_t sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size) {
 	FILINFO info;
-	FRESULT res;
+	uint8_t res;
 	int16_t len = -1;
 	uint16_t N = offset;
 	uint16_t lastN = N;
@@ -118,9 +106,9 @@ static FRESULT sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char 
  *
  * Return FRESULT(0-19) or BUF_TOOSMALL(21)
  **/
-FRESULT sd_find_right_filename(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size) {
+uint8_t sd_find_right_filename(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size) {
 	FILINFO info;
-	FRESULT res;
+	uint8_t res;
 	int16_t len = 0;
 	memset(&info, 0, sizeof(FILINFO));
 
@@ -136,15 +124,16 @@ FRESULT sd_find_right_filename(uint16_t offset, uint16_t *postfix, char *namebuf
 			}
 		}
 	}
-	if(res == FR_NO_FILE){
+	if (res == FR_NO_FILE) {
 		res = FR_OK;
 	}
 	if (len < 0 || len >= size) {
 		res = BUF_TOOSMALL;
 	}
-	if(res > 0){
+	if (res > 0) {
 		memset(namebuf, 0, size);
 	}
+	debug("find: %u\n", res);
 	return res;
 }
 
@@ -158,11 +147,12 @@ FRESULT sd_find_right_filename(uint16_t offset, uint16_t *postfix, char *namebuf
  * or unexpected errors will occur. If file object is created
  * on file/header level it is init by default.
  */
-uint8_t sd_open_file_neworappend(FIL* f, char *fname) {
-	int8_t res = 0;
-	res = f_open(f, fname, FA_WRITE | FA_CREATE_NEW);
+FRESULT sd_open_file_neworappend(FIL* f, char *fname) {
+	FRESULT res = 0;
+	res = sd_open(f, fname, FA_WRITE | FA_CREATE_NEW);
 	if (res == FR_EXIST) {
-		res = f_open(f, fname, FA_WRITE | FA_OPEN_APPEND);
+		res = sd_open(f, fname, FA_WRITE | FA_OPEN_APPEND);
 	}
 	return res;
 }
+
