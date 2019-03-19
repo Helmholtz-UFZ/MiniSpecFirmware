@@ -20,9 +20,8 @@
 static void send_data(uint8_t sens_status, uint8_t format);
 static void parse_extcmd(uint8_t *buffer, uint16_t size);
 static void periodic_alarm_handler(void);
-static uint32_t map_status2errcode(uint8_t status);
 static usr_cmd_typedef extcmd;
-static uint8_t last_sensor_status = 0;
+static uint8_t sensor_errc = 0;
 
 static uint8_t data_format = DATA_FORMAT_ASCII;
 static bool stream_mode = 0;
@@ -103,9 +102,8 @@ int main_usr(void) {
 		}
 
 		if (stream_mode) {
-			err = sensor_measure();
-			last_sensor_status = sens1.status;
-			send_data(last_sensor_status, data_format);
+			sensor_errc = sensor_measure();
+			send_data(sensor_errc, data_format);
 			if (err) {
 				stream_mode = 0;
 				sensor_deinit();
@@ -125,16 +123,15 @@ int main_usr(void) {
 				if (data_format == DATA_FORMAT_ASCII)
 					printf("ok\n");
 				sensor_init();
-				sensor_measure();
-				last_sensor_status = sens1.status;
-				send_data(last_sensor_status, data_format);
+				sensor_errc = sensor_measure();
+				send_data(sensor_errc, data_format);
 				sensor_deinit();
 				/* A single measurement in stream mode end stream mode. */
 				stream_mode = 0;
 				break;
 
 			case USR_CMD_GET_DATA:
-				send_data(last_sensor_status, data_format);
+				send_data(sensor_errc, data_format);
 				break;
 
 			case USR_CMD_WRITE_ITIME:
@@ -309,13 +306,10 @@ int main_usr(void) {
  * \param format	0 (DATA_FORMAT_BIN) send raw data, byte per byte.(eg. (dez) 1000 -> 0xE8 0x03)\n
  * \param format	1 (DATA_FORMAT_ASCII) send the data as in ASCII, as human readable text. (eg. (dez) 1000 -> '1' '0' '0' '0')
  */
-static void send_data(uint8_t sens_status, uint8_t format) {
+static void send_data(uint8_t errcode, uint8_t format) {
 	char *errstr;
-	uint32_t errcode = ERRC_NO_ERROR;
 	uint16_t *rptr;
 	uint16_t i = 0;
-
-	errcode = map_status2errcode(sens_status);
 
 	switch (errcode) {
 	case ERRC_NO_ERROR:
@@ -342,14 +336,14 @@ static void send_data(uint8_t sens_status, uint8_t format) {
 	if (format == DATA_FORMAT_BIN) {
 		/*Send the errorcode nevertheless an error occurred or not.*/
 		HAL_UART_Transmit(&hrxtx, (uint8_t *) &errcode, 2, 200);
-		if (errcode == ERRC_NO_ERROR) {
+		if (!errcode) {
 			/* send data */
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL),
 			MSPARAM_PIXEL * 2,
 			MSPARAM_PIXEL * 2 * 100);
 		}
 	} else { /* DATA_FORMAT_ASCII */
-		if (errcode != ERRC_NO_ERROR) {
+		if (errcode) {
 			printf(errstr);
 		} else {
 #if DBG_SEND_ALL
@@ -376,24 +370,6 @@ static void send_data(uint8_t sens_status, uint8_t format) {
 			}
 			printf("\n"DELIMITER_STR"\n\n");
 		}
-	}
-}
-
-/**
- * Map the sensor status to the appropriate error code.
- */
-static uint32_t map_status2errcode(uint8_t status) {
-	switch (status) {
-	case SENS_MEASURE_DONE:
-		return ERRC_NO_ERROR;
-	case SENS_ERR_TIMEOUT:
-		return ERRC_TIMEOUT;
-	case SENS_ERR_NO_EOS:
-		return ERRC_NO_EOS;
-	case SENS_ERR_EOS_EARLY:
-		return ERRC_EOS_EARLY;
-	default:
-		return ERRC_UNKNOWN;
 	}
 }
 
@@ -561,7 +537,6 @@ static void parse_extcmd(uint8_t *buffer, uint16_t size) {
 
 static void periodic_alarm_handler(void) {
 	RTC_AlarmTypeDef a;
-	uint16_t errc = 0;
 	debug("Periodic alarm \n");
 
 	/* Set the alarm to new time according to the interval value.*/
@@ -573,9 +548,7 @@ static void periodic_alarm_handler(void) {
 
 	/* Make a measurement */
 	sensor_init();
-	sensor_measure();
-	last_sensor_status = sens1.status;
-	errc = map_status2errcode(last_sensor_status);
+	sensor_errc = sensor_measure();
 	sensor_deinit();
 #if HAS_SD
 	/* Store the measurement on SD */
@@ -587,9 +560,9 @@ static void periodic_alarm_handler(void) {
 			res = sd_open_file_neworappend(f, fname_buf);
 			if (!res) {
 				/* Write metadata (timestamp, errorcode, intergartion time) */
-				f_printf(f, "%S, %U, %LU, [", ts_buff, errc, sens1.itime);
+				f_printf(f, "%S, %U, %LU, [", ts_buff, sensor_errc, sens1.itime);
 				/* Write data */
-				if (!errc) {
+				if (!sensor_errc) {
 					/* Lopp through measurement results and store to file */
 					uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
 					for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
@@ -608,7 +581,7 @@ static void periodic_alarm_handler(void) {
 	 * If debug is disabled we don't do anything.*/
 	if (tx_dbgflg) {
 		printf("If SD: wrote to File: %s, data:\n", fname_buf);
-		printf("%s, %u, %lu, [", ts_buff, errc, sens1.itime);
+		printf("%s, %u, %lu, [", ts_buff, sensor_errc, sens1.itime);
 		uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
 		for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
 			printf("%u,", *(p++));

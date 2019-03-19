@@ -39,18 +39,6 @@
 #define ARGBUFFSZ	100
 
 /**
- * error code enumeration
- */
-typedef enum
-{
-	ERRC_NO_ERROR = 0,
-	ERRC_UNKNOWN,
-	ERRC_NO_EOS,
-	ERRC_EOS_EARLY,
-	ERRC_TIMEOUT
-} error_code;
-
-/**
  * enum for the defined commands
  */
 typedef enum

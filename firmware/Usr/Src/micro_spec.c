@@ -71,6 +71,7 @@ sensor_t sens1 = { SENS_UNINITIALIZED, &sens_buf, DEFAULT_INTEGRATION_TIME };
 
 static void post_process_values(void);
 static void wait_for_measure_done(void);
+static uint32_t map_status2errcode(uint8_t status);
 
 /**
  * Init all internal data structs and buffer
@@ -123,14 +124,11 @@ void sensor_init(void) {
 }
 
 void sensor_deinit(void) {
-
 	// disable CLK
 	HAL_Delay(1);
 	TIM3->CR1 &= ~TIM_CR1_CEN;
-
 	NVIC_DisableIRQ(TIM1_CC_IRQn);
 	NVIC_DisableIRQ(EXTI2_IRQn);
-
 	sens1.status = SENS_UNINITIALIZED;
 }
 
@@ -146,13 +144,12 @@ void sensor_deinit(void) {
  * measurement is done.
  *
  */
-uint8_t sensor_measure(void) {
+sensor_errorcode sensor_measure(void) {
 	uint32_t int_time_cnt;
 
 	if (sens1.status < SENS_INITIALIZED) {
 		return 1;
 	}
-
 	// reset data buffer
 	memset(sens1.data->base, 0, sens1.data->size);
 	sens1.data->wptr = sens1.data->base;
@@ -185,17 +182,13 @@ uint8_t sensor_measure(void) {
 	// lets go
 	__HAL_TIM_ENABLE(&htim2);
 	sens1.status = SENS_MEASURE_STARTED;
-
 	wait_for_measure_done();
-
 	post_process_values();
 
 	if (sens1.status == SENS_EOS_CAPTURED) {
 		sens1.status = SENS_MEASURE_DONE;
-		return 0;
-	} else {
-		return 1;
 	}
+	return map_status2errcode(sens1.status);
 }
 
 /**
@@ -210,9 +203,7 @@ static void wait_for_measure_done(void) {
 		// busy waiting
 	}
 	__HAL_TIM_DISABLE_IT(&htim5, TIM_IT_UPDATE);
-
 	HAL_ResumeTick();
-
 	// this ensures TIM5 is done
 	HAL_Delay(1);
 }
@@ -331,7 +322,24 @@ uint32_t sensor_set_itime(uint32_t itime) {
 	} else {
 		sens1.itime = itime;
 	}
-
 	return sens1.itime;
 }
 
+
+/**
+ * Map the sensor status to the appropriate error code.
+ */
+static uint32_t map_status2errcode(uint8_t status) {
+	switch (status) {
+	case SENS_MEASURE_DONE:
+		return ERRC_NO_ERROR;
+	case SENS_ERR_TIMEOUT:
+		return ERRC_TIMEOUT;
+	case SENS_ERR_NO_EOS:
+		return ERRC_NO_EOS;
+	case SENS_ERR_EOS_EARLY:
+		return ERRC_EOS_EARLY;
+	default:
+		return ERRC_UNKNOWN;
+	}
+}
