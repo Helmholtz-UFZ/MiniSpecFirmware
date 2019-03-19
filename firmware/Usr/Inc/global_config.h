@@ -101,6 +101,9 @@
  * only send the valid samples (for DATA_FORMAT_ASCII only)*/
 #define DBG_SEND_ALL		0
 
+/* Enables Debug code*/
+#define DBG_CODE			1
+
 /* If 0 all code that excess the SD card is disabled. */
 #define HAS_SD	 			1
 

@@ -20,6 +20,7 @@
 static void send_data(uint8_t sens_status, uint8_t format);
 static void parse_extcmd(uint8_t *buffer, uint16_t size);
 static void periodic_alarm_handler(void);
+static void dbg_test(void);
 static usr_cmd_typedef extcmd;
 static uint8_t sensor_errc = 0;
 
@@ -190,6 +191,11 @@ int main_usr(void) {
 				} else {
 					printf("debug off\n");
 				}
+				break;
+
+			case USR_CMD_DBGTEST:
+				/* This call do nothing if DBG_CODE is not defined */
+				dbg_test();
 				break;
 
 			case USR_CMD_GET_RTC_TIME:
@@ -453,6 +459,17 @@ static void parse_extcmd(uint8_t *buffer, uint16_t size) {
 		return;
 	}
 
+#if DBG_CODE
+	str = "test\r";
+	alias = "t\r";
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+		extcmd.cmd = USR_CMD_DBGTEST;
+		return;
+	}
+#endif
+
 	str = "#DEBUG#\r";
 	sz = strlen(str);
 	aliassz = strlen(alias);
@@ -588,4 +605,20 @@ static void periodic_alarm_handler(void) {
 		}
 		printf("]\n");
 	}
+}
+
+/* This function is used to test functions
+ * or functionality under development.
+ * Especially if the code is hard to reach
+ * in the normal program flow. E.g. If the
+ * code is executed by timer.
+ *
+ * It also turn on the the debug print. So
+ * it set tx_dbgflg = 1 as a side effect.*/
+static void dbg_test(void) {
+#if DBG_CODE
+	tx_dbgflg=1;
+	periodic_alarm_handler();
+#endif
+	return;
 }
