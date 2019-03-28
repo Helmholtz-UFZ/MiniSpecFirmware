@@ -40,7 +40,8 @@ char ts_buff[TS_BUFF_SZ];
 
 int main_usr(void) {
 	uint8_t err = 0;
-	uint32_t tmp;
+	uint32_t tmp = 0;
+	uint8_t res = 0;
 	char *str;
 #if DBG_CODE
 	tx_dbgflg = 1;
@@ -62,9 +63,7 @@ int main_usr(void) {
 
 #if HAS_SD
 	/* Inform the File that an reset occurred */
-	uint8_t res;
 	res = sd_mount();
-	HAL_Delay(1000);
 	if (!res) {
 		res = sd_find_right_filename(fname_curr_postfix, &fname_curr_postfix, fname_buf, FNAME_BUF_SZ);
 		if (!res) {
@@ -593,23 +592,23 @@ static void periodic_alarm_handler(void) {
 				}
 				f_printf(f, "]\n");
 				res = sd_close(f);
+
+				/* Print what we wrote to sd.*/
+				debug("SD: wrote to File: %s, data:\n", fname_buf);
+				if (tx_dbgflg) {
+					/* Use printf() instead of debug() to prevent 'dbg:' string before every value. */
+					printf("%s, %u, %lu, [,", ts_buff, sensor_errc, sens1.itime);
+					uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
+					for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
+						printf("%u,", *(p++));
+					}
+					printf("]\n");
+				}
 			}
 		}
 		res = sd_umount();
 	}
 #endif
-	/* Print what we wrote to sd.
-	 * Use printf() instead of debug() to prevent 'dbg:' string before every value.
-	 * If debug is disabled we don't do anything.*/
-	if (tx_dbgflg) {
-		printf("If SD: wrote to File: %s, data:\n", fname_buf);
-		printf("%s, %u, %lu, [,", ts_buff, sensor_errc, sens1.itime);
-		uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
-		for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
-			printf("%u,", *(p++));
-		}
-		printf("]\n");
-	}
 }
 
 /* This function is used to test functions

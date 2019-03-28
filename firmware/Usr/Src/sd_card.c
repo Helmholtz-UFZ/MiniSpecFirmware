@@ -9,13 +9,27 @@
 #include "string.h"
 #include "stdio.h"
 #include "usart_usr.h"
+#include "sdmmc.h"
 
 uint8_t workBuffer[_MAX_SS];
+static void sd_reinit(void);
 static uint8_t sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf,
 		uint16_t size);
 
-/* File system object for SD card logical drive */
-//FATFS SDFatFs;
+
+/** Sometimes the SD card isn't recognized correctly,
+ *  than this try to clean up and init all corresponding
+ *  modules. Namely the SD Card and the Fat File System. */
+static void sd_reinit(void){
+	// deinit
+	FATFS_UnLinkDriver(SDPath);
+	HAL_SD_DeInit(&hsd1);
+	// reinit
+	MX_SDMMC1_SD_Init();
+	MX_FATFS_Init();
+	debug("reinit sd\n");
+}
+
 FRESULT sd_mount(void) {
 	FRESULT res = f_mount(&SDFatFS, SDPath, 0);
 	debug("MOUNT: %u\n", res);
@@ -37,14 +51,13 @@ FRESULT sd_stat(const TCHAR* path, FILINFO* fno) {
 	uint8_t i = 0;
 	do {
 		res = f_stat(path, fno);
-		debug("stat: %u\n", res);
-		if (res == FR_DISK_ERR) {
-			FATFS_UnLinkDriver(SDPath);
-			MX_FATFS_Init();
+		if (res == FR_DISK_ERR || res == FR_NOT_READY) {
+			sd_reinit();
 		} else {
 			break;
 		}
 	} while (++i < SD_MAX_REINIT_DRIVER);
+	debug("STAT: %u\n", res);
 	return res;
 }
 
@@ -53,10 +66,8 @@ FRESULT sd_open(FIL* fp, const TCHAR* path, BYTE mode) {
 	uint8_t i = 0;
 	do {
 		res = f_open(fp, path, mode);
-		debug("open: %u\n", res);
-		if (res == FR_DISK_ERR) {
-			FATFS_UnLinkDriver(SDPath);
-			MX_FATFS_Init();
+		if (res == FR_DISK_ERR || res == FR_NOT_READY) {
+			sd_reinit();
 		} else {
 			break;
 		}
