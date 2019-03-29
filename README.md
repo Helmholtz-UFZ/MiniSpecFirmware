@@ -23,24 +23,11 @@ or COMn (n=0...) in the Device Manager in Windows.
 Then open a terminal and send the appropiate *User Commands* (see below).
 
 **Reconect to a running board**
-Jumper CN2
+If one want to connect to a running system and send commands both jumper on **CN2** must be removed.
 
-**Advice for Linux**:
-The device /dev/ttyACMn is seen as modem and so the modem manager, if installed,
-will send commands to initialise a modem. This will make the connection unusable.
-To prevent the modem manager to do so one can deinstall the modem manager or add
-a udev-rule. To do the latter on a ubuntu based system, 
-create the file `/etc/udev/rules.d/TODO` with the followng content **TODO**
-
-e.g 	
-	
-	SUBSYSTEMS=="usb", \
-		   ATTRS{idVendor}=="0483", \
-		   ATTRS{idProduct}=="374b", \
-		   MODE:="0666", \
-		   SYMLINK+="stlinkv2-1_%n", \
-		   ENV{ID_MM_DEVICE_IGNORE}="1"
-
+**Programm the board with AC6 aka. System Workbench for STM32**
+If one want to program the board both jumper on **CN2** must be set and the NRST of the Nucleo
+must be wired. Therfore connect Pin5 on CN4 with Pin14 on CN7.
 
 Implementet User Comands
 ------------------------
