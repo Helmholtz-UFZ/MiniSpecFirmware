@@ -345,13 +345,15 @@ void UART4_IRQHandler(void)
 		rxtx_cmd_bytes = hrxtx.RxXferSize - hrxtx.hdmarx->Instance->CNDTR;
 		rxtx_CR_recvd = true;
 
-
 		cpu_enter_run_mode();
 	}
 
   /* USER CODE END UART4_IRQn 0 */
   HAL_UART_IRQHandler(&huart4);
   /* USER CODE BEGIN UART4_IRQn 1 */
+  if(hrxtx.ErrorCode){
+		cpu_enter_run_mode();
+  }
 #define USART4_IRQHandler__OK
   /* USER CODE END UART4_IRQn 1 */
 }

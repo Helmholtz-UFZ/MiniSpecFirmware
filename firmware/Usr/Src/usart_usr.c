@@ -11,7 +11,9 @@
 #include <stdio.h>
 
 /* Flag for signal that a carriage return
- * from a usr command was received */
+ * from a usr command was received
+ * Todo: Make this a struct, with wakeup flag
+ * e.g uart_wakeup */
 volatile bool rxtx_CR_recvd;
 
 /* additional to rxtx_CR_recvd this is set to

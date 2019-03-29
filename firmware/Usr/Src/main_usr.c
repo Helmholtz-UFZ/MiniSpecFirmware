@@ -93,6 +93,13 @@ int main_usr(void) {
 			cpu_enter_sleep_mode();
 		}
 
+		if (hrxtx.ErrorCode){
+			/* See stm32l4xx_hal_uart.h for ErrorCodes.
+			 * Handle Uart Errors immediately because every further
+			 * send (e.g. printf) will overwrite the Error Code.*/
+			rxtx_restart_listening();
+		}
+
 		// redundant in non-stream mode as also disabled in its ISR
 		__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);
 

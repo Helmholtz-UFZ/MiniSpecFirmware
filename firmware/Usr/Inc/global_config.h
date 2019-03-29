@@ -132,6 +132,6 @@
 /* Minimal possible repetition of measurements by setting
  * the interval which updates timerA.
  * Take maximal integration time and processing in account.
- * In seconds. */
+ * In seconds. default=11*/
 #define MIN_IVAL		11
 #endif /* GLOBAL_CONFIG_H_ */
