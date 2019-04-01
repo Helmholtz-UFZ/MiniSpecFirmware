@@ -102,7 +102,7 @@
 #define DBG_SEND_ALL		0
 
 /* Enables Debug code*/
-#define DBG_CODE			1
+#define DBG_CODE			0
 
 /* If 0 all code that excess the SD card is disabled. */
 #define HAS_SD	 			1
@@ -134,4 +134,19 @@
  * Take maximal integration time and processing in account.
  * In seconds. default=11*/
 #define MIN_IVAL		11
+
+/*
+ * Define the Uart Instance that is used to communicate
+ * with the device. The instance is used for printf(),
+ * debug() and all UART send/receive commands.
+ * For a more specific (eg. use differnet instances for
+ * debug() and normal usr commands) configuration, see
+ * the usart_usr.h
+ *
+ * implemented choices are
+ * 1: Usart1 (use PC10/PC11 -> tx: CN7-Pin1,   rx: CN7-Pin2)
+ * 4: Uart4  (use  PB6/PB7  -> tx: CN10-Pin17, rx: CN7-Pin21)
+ */
+#define UART_INSTANCE_NR			1
+
 #endif /* GLOBAL_CONFIG_H_ */

@@ -44,6 +44,7 @@ int main_usr(void) {
 	uint8_t res = 0;
 	char *str;
 #if DBG_CODE
+	/* Overwrites default value from usr_uart.c */
 	tx_dbgflg = 1;
 #endif
 
@@ -471,8 +472,8 @@ static void parse_extcmd(uint8_t *buffer, uint16_t size) {
 	}
 
 #if DBG_CODE
-	str = "test\r";
-	alias = "t\r";
+	str = "#test\r";
+	alias = "#t\r";
 	sz = strlen(str);
 	aliassz = strlen(alias);
 	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
@@ -481,7 +482,7 @@ static void parse_extcmd(uint8_t *buffer, uint16_t size) {
 	}
 #endif
 
-	str = "#DEBUG#\r";
+	str = "#debug\r";
 	sz = strlen(str);
 	aliassz = strlen(alias);
 	if (memcmp(buffer, str, sz) == 0) {

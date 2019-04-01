@@ -16,14 +16,23 @@
 /* Defines for printf support. @sa _write() */
 #define STDOUT_FILENO   1
 #define STDERR_FILENO   2
-#define hprintf huart4
 
 /* Define which uart interface to use for receiving
  * and transmitting via HAL_UART_Transmit() and
  * HAL_UART_Receive{_DMA,_IT}()*/
-#define hrxtx huart4
-#define RXTX UART4
-#define RXTX_IRQn UART4_IRQn
+#if UART_INSTANCE_NR == 4
+# define hprintf huart4
+# define hrxtx huart4
+# define RXTX UART4
+# define RXTX_IRQn UART4_IRQn
+#elif UART_INSTANCE_NR == 1
+# define hprintf huart1
+# define hrxtx huart1
+# define RXTX USART1
+# define RXTX_IRQn USART1_IRQn
+#else
+#error "Not implemented choice of UART_INSTANCE_NR"
+#endif /*UART_INSTANCE_NR*/
 
 // This should be as least as big that we can send one whole
 // measurement data plus some meta data.
