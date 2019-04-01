@@ -32,37 +32,24 @@ must be wired. Therfore connect Pin5 on CN4 with Pin14 on CN7.
 Implementet User Comands
 ------------------------
 
-measure
-m
-
-stream
-
-end
-
-getdata
-gd
-
-#DEBUG#
-
-rtc?
-
-ival?
-
-itime?
-i?
-
-itime=N N=[54..100000]
-i=N
-
-format={0,1}
-
-rtc=DATETIME
-DATETIME="20YY-MM-DDThh:mm:ss"
-
-ival=TIME
-TIME="hh:mm:ss"
-if 0:0:0 the interval is disabled.
-as a special case 24:00:00 is allowed, to allow dayly measurements.
+Command 	| Short | Parameter	| Description 	                                       |
+--------------- | ----- | ------------- | ---------------------------------------------------- |
+measure 	| m	|		| Make a simgle measurement. Return the values or errorcode |
+stream  	|	|               | Stream measurement and data. |
+end 		| 	|               | End stream mode. |
+getdata 	| gd 	|               | Return the data or errorcode of the last measurment. |
+--------------- | ----- | ------------- | ---------------------------------------------------- |
+rtc?   		| 	|               | Get the current Real-Time of the System. |
+ival? 		| 	|               | Get the automatic measurement interval. `00:00:00` means the interval is disabled. |
+itime? 		| i? 	|               | Get the current intergration time of the sensor in micro seconds [us] |
+--------------- | ----- | ------------- | ---------------------------------------------------- |
+rtc=DATE 	|	| DATE="20YY-MM-DDThh:mm:ss" | Set the Real-Time-Clock and the Calendar to the given Date and Time. Daylightsaving is not used. |
+ival=TIME 	| 	| TIME="hh:mm:ss" | Set the automatic measurement interval. `00:00:00` disables feature. The maximum is `24:00:00`. |
+itime=N 	| i=N	| N=[54..100000]| Set the integration time of the sensor in micro seconds [us] |
+format=B	| 	| B={0,1}	| Set the output format to 0=Binary, or to 1=ASCII |
+--------------- | ----- | ------------- | ---------------------------------------------------- |
+#debug  	| 	|               | Enable debug prints. |
+#test   	| #t	|               | (If enabled in Code) Run a special test function. |
 
 
 
