@@ -144,8 +144,8 @@
  * the usart_usr.h
  *
  * implemented choices are
- * 1: Usart1 (use PC10/PC11 -> tx: CN7-Pin1,   rx: CN7-Pin2)
- * 4: Uart4  (use  PB6/PB7  -> tx: CN10-Pin17, rx: CN7-Pin21)
+ * 1: Uart1  (use  PB6/PB7  -> tx: CN10-Pin17, rx: CN7-Pin21)
+ * 4: Uart4 (use PC10/PC11 -> tx: CN7-Pin1,   rx: CN7-Pin2)
  *
  * uart1 was default in HW-Version 2.0
  * uart4 is default in new HW-Version 2.1
