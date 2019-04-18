@@ -17,12 +17,12 @@
 #include "fatfs.h"
 #include <stdio.h>
 
-static void send_data(uint8_t sens_status, uint8_t format);
+static void send_data(uint8_t format);
 static void parse_extcmd(uint8_t *buffer, uint16_t size);
 static void periodic_alarm_handler(void);
+static uint8_t measurement_to_SD(void);
 static void dbg_test(void);
 static usr_cmd_typedef extcmd;
-static uint8_t sensor_errc = 0;
 
 static uint8_t data_format = DATA_FORMAT_ASCII;
 static bool stream_mode = 0;
@@ -115,8 +115,8 @@ int main_usr(void) {
 		}
 
 		if (stream_mode) {
-			sensor_errc = sensor_measure();
-			send_data(sensor_errc, data_format);
+			sensor_measure();
+			send_data(data_format);
 			if (err) {
 				stream_mode = 0;
 				sensor_deinit();
@@ -136,15 +136,15 @@ int main_usr(void) {
 				if (data_format == DATA_FORMAT_ASCII)
 					printf("ok\n");
 				sensor_init();
-				sensor_errc = sensor_measure();
-				send_data(sensor_errc, data_format);
+				sensor_measure();
+				send_data(data_format);
 				sensor_deinit();
 				/* A single measurement in stream mode end stream mode. */
 				stream_mode = 0;
 				break;
 
 			case USR_CMD_GET_DATA:
-				send_data(sensor_errc, data_format);
+				send_data(data_format);
 				break;
 
 			case USR_CMD_WRITE_ITIME:
@@ -310,6 +310,9 @@ int main_usr(void) {
 					printf("ok\n");
 				break;
 
+			case USR_CMD_SET_MULTI_MEASURE_NR:
+				break;
+
 			default:
 				break;
 			}
@@ -324,10 +327,12 @@ int main_usr(void) {
  * \param format	0 (DATA_FORMAT_BIN) send raw data, byte per byte.(eg. (dez) 1000 -> 0xE8 0x03)\n
  * \param format	1 (DATA_FORMAT_ASCII) send the data as in ASCII, as human readable text. (eg. (dez) 1000 -> '1' '0' '0' '0')
  */
-static void send_data(uint8_t errcode, uint8_t format) {
+static void send_data(uint8_t format) {
 	char *errstr;
 	uint16_t *rptr;
 	uint16_t i = 0;
+	uint8_t errcode = sens1.errc;
+
 
 	switch (errcode) {
 	case ERRC_NO_ERROR:
@@ -564,59 +569,80 @@ static void parse_extcmd(uint8_t *buffer, uint16_t size) {
 	}
 }
 
+/** Store the measurment data to SD card.
+ * Requires a mounted SD card. */
+static uint8_t measurement_to_SD(void){
+	int8_t res = 0;
+	res = sd_find_right_filename(fname_curr_postfix, &fname_curr_postfix, fname_buf, FNAME_BUF_SZ);
+	if (!res) {
+		res = sd_open_file_neworappend(f, fname_buf);
+		if (!res) {
+			/* Write metadata (timestamp, errorcode, intergartion time) */
+			f_printf(f, "%S, %U, %LU, [,", ts_buff, sens1.errc, sens1.itime);
+			/* Write data */
+			if (!sens1.errc) {
+				/* Lopp through measurement results and store to file */
+				uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
+				for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
+					f_printf(f, "%U,", *(p++));
+				}
+			}
+			f_printf(f, "]\n");
+			res = sd_close(f);
+
+			/* Print what we wrote to sd.*/
+			debug("SD: wrote to File: %s, data:\n", fname_buf);
+			if (tx_dbgflg) {
+				/* Use printf() instead of debug() to prevent 'dbg:' string before every value. */
+				printf("%s, %u, %lu, [,", ts_buff, sens1.errc, sens1.itime);
+				uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
+				for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
+					printf("%u,", *(p++));
+				}
+				printf("]\n");
+			}
+		}
+	}
+	return res;
+}
+
 static void periodic_alarm_handler(void) {
+	/* For each integration time, measure N times and store to SD */
 	RTC_AlarmTypeDef a;
+	int8_t res = 0;
+	uint8_t N = 1;
 	debug("Periodic alarm \n");
 
 	/* Set the alarm to new time according to the interval value.*/
 	HAL_RTC_GetAlarm(&hrtc, &a, RTC_ALARM_A, RTC_FORMAT_BIN);
 	rtc_set_alarmA_by_offset(&a.AlarmTime, &rtc_ival);
 
-	/* Generate timestamp*/
-	rtc_get_now_str(ts_buff, TS_BUFF_SZ);
+	/* Set integration time todo*/
+//	sens1.itime = 0;
 
-	/* Make a measurement */
-	sensor_init();
-	sensor_errc = sensor_measure();
-	sensor_deinit();
+	/* Measure N times */
+	for (int n = 0; n < N; ++n) {
+
+		/* Generate timestamp */
+		rtc_get_now_str(ts_buff, TS_BUFF_SZ);
+
+		/* Make a measurement */
+		sensor_init();
+		sensor_measure();
+
 #if HAS_SD
-	/* Store the measurement on SD */
-	int8_t res = 0;
-	res = sd_mount();
-	if (!res) {
-		res = sd_find_right_filename(fname_curr_postfix, &fname_curr_postfix, fname_buf, FNAME_BUF_SZ);
+		/* Write measurement to SD */
+		res = sd_mount();
 		if (!res) {
-			res = sd_open_file_neworappend(f, fname_buf);
-			if (!res) {
-				/* Write metadata (timestamp, errorcode, intergartion time) */
-				f_printf(f, "%S, %U, %LU, [,", ts_buff, sensor_errc, sens1.itime);
-				/* Write data */
-				if (!sensor_errc) {
-					/* Lopp through measurement results and store to file */
-					uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
-					for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
-						f_printf(f, "%U,", *(p++));
-					}
-				}
-				f_printf(f, "]\n");
-				res = sd_close(f);
-
-				/* Print what we wrote to sd.*/
-				debug("SD: wrote to File: %s, data:\n", fname_buf);
-				if (tx_dbgflg) {
-					/* Use printf() instead of debug() to prevent 'dbg:' string before every value. */
-					printf("%s, %u, %lu, [,", ts_buff, sensor_errc, sens1.itime);
-					uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
-					for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
-						printf("%u,", *(p++));
-					}
-					printf("]\n");
-				}
-			}
+			/* Store the measurement on SD */
+			res = measurement_to_SD();
+			sd_umount();
 		}
-		res = sd_umount();
-	}
 #endif
+		if(sens1.errc){
+			sensor_deinit();
+		}
+	}
 }
 
 /* This function is used to test functions

@@ -57,7 +57,8 @@ typedef enum
 	ERRC_UNKNOWN,
 	ERRC_NO_EOS,
 	ERRC_EOS_EARLY,
-	ERRC_TIMEOUT
+	ERRC_TIMEOUT,
+	ERRC_NOT_INITIALIZED,
 } sensor_errorcode;
 
 
@@ -66,13 +67,14 @@ typedef struct
 	volatile sensor_status_enum_t status;
 	volatile sensor_buffer_t *data;
 	uint32_t itime;
+	sensor_errorcode errc;
 } sensor_t;
 
 extern sensor_t sens1;
 
 void sensor_init( void );
 void sensor_deinit( void );
-sensor_errorcode sensor_measure( void );
+void sensor_measure( void );
 uint32_t sensor_set_itime( uint32_t int_time );
 
 #endif /* MICRO_SPEC_H_ */

@@ -67,7 +67,7 @@ static sensor_buffer_t sens_buf = { SENSOR_DATA_BUFFER_SIZE,
 SENSOR_DATA_BUFFER_MAX_WORDS, secure_memblock1.memblock, secure_memblock1.memblock };
 
 /* Handle for the micro sprectrometer */
-sensor_t sens1 = { SENS_UNINITIALIZED, &sens_buf, DEFAULT_INTEGRATION_TIME };
+sensor_t sens1 = { SENS_UNINITIALIZED, &sens_buf, DEFAULT_INTEGRATION_TIME, ERRC_UNKNOWN};
 
 static void post_process_values(void);
 static void wait_for_measure_done(void);
@@ -81,6 +81,7 @@ void sensor_init(void) {
 	sens1.data = &sens_buf;
 	sens1.data->base = secure_memblock1.memblock;
 	sens1.data->wptr = secure_memblock1.memblock;
+	sens1.errc = ERRC_UNKNOWN;
 
 	// enable TIM channels
 
@@ -144,11 +145,12 @@ void sensor_deinit(void) {
  * measurement is done.
  *
  */
-sensor_errorcode sensor_measure(void) {
+void sensor_measure(void) {
 	uint32_t int_time_cnt;
 
 	if (sens1.status < SENS_INITIALIZED) {
-		return 1;
+		sens1.errc = ERRC_NOT_INITIALIZED;
+		return;
 	}
 	// reset data buffer
 	memset(sens1.data->base, 0, sens1.data->size);
@@ -188,7 +190,7 @@ sensor_errorcode sensor_measure(void) {
 	if (sens1.status == SENS_EOS_CAPTURED) {
 		sens1.status = SENS_MEASURE_DONE;
 	}
-	return map_status2errcode(sens1.status);
+	sens1.errc = map_status2errcode(sens1.status);
 }
 
 /**
