@@ -52,6 +52,12 @@ typedef struct
 
 } statemachine_config_t;
 
+#define FNAME_BUF_SZ 	128
+typedef struct
+{
+	char buf[FNAME_BUF_SZ];
+	uint16_t postfix;
+} filename_t;
 
 int main_usr( void );
 void cpu_enter_sleep_mode( void );

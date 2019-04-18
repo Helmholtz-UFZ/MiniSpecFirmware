@@ -28,9 +28,7 @@ static measure_config_t mconf;
 static statemachine_config_t state;
 static rtc_timestamp_t ts;
 
-#define FNAME_BUF_SZ 	128
-char fname_buf[FNAME_BUF_SZ];
-uint16_t fname_curr_postfix = 0;
+static filename_t fname;
 FIL *f = &SDFile;
 
 #define TS_BUFF_SZ	32
@@ -45,6 +43,7 @@ int main_usr(void) {
 	state.format = DATA_FORMAT_ASCII;
 	state.stream = false;
 
+	memset(&fname, 0, sizeof(fname));
 	memset(&tconf, 0, sizeof(tconf));
 	memset(&mconf, 0, sizeof(mconf));
 	memset(&ts, 0, sizeof(ts));
@@ -72,9 +71,9 @@ int main_usr(void) {
 	/* Inform the File that an reset occurred */
 	res = sd_mount();
 	if (!res) {
-		res = sd_find_right_filename(fname_curr_postfix, &fname_curr_postfix, fname_buf, FNAME_BUF_SZ);
+		res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf, FNAME_BUF_SZ);
 		if (!res) {
-			res = sd_open_file_neworappend(f, fname_buf);
+			res = sd_open_file_neworappend(f, fname.buf);
 			if (!res) {
 				res = f_printf(f, "\nThe sensor was reset/powered-down.\n");
 				res = sd_close(f);
@@ -254,9 +253,9 @@ int main_usr(void) {
 #if HAS_SD
 				res = sd_mount();
 				if (!res) {
-					res = sd_find_right_filename(fname_curr_postfix, &fname_curr_postfix, fname_buf, FNAME_BUF_SZ);
+					res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf, FNAME_BUF_SZ);
 					if (!res) {
-						res = sd_open_file_neworappend(f, fname_buf);
+						res = sd_open_file_neworappend(f, fname.buf);
 						if (!res) {
 							f_printf(f, "The RTC was set. Old time: %S\n", ts_buff);
 							rtc_get_now_str(ts_buff, TS_BUFF_SZ);
@@ -429,9 +428,9 @@ void cpu_enter_run_mode(void) {
  * Requires a mounted SD card. */
 static uint8_t measurement_to_SD(void){
 	int8_t res = 0;
-	res = sd_find_right_filename(fname_curr_postfix, &fname_curr_postfix, fname_buf, FNAME_BUF_SZ);
+	res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf, FNAME_BUF_SZ);
 	if (!res) {
-		res = sd_open_file_neworappend(f, fname_buf);
+		res = sd_open_file_neworappend(f, fname.buf);
 		if (!res) {
 			/* Write metadata (timestamp, errorcode, intergartion time) */
 			f_printf(f, "%S, %U, %LU, [,", ts_buff, sens1.errc, sens1.itime);
@@ -447,7 +446,7 @@ static uint8_t measurement_to_SD(void){
 			res = sd_close(f);
 
 			/* Print what we wrote to sd.*/
-			debug("SD: wrote to File: %s, data:\n", fname_buf);
+			debug("SD: wrote to File: %s, data:\n", fname.buf);
 			if (rxtx.debug) {
 				/* Use printf() instead of debug() to prevent 'dbg:' string before every value. */
 				printf("%s, %u, %lu, [,", ts_buff, sens1.errc, sens1.itime);
