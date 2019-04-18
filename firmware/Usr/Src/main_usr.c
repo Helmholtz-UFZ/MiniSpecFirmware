@@ -24,6 +24,7 @@ static uint8_t measurement_to_SD(void);
 static void dbg_test(void);
 static usr_cmd_typedef extcmd;
 static time_config_t tconf;
+static rtc_timestamp_t ts;
 
 static uint8_t data_format = DATA_FORMAT_ASCII;
 static bool stream_mode = 0;
@@ -32,9 +33,6 @@ static bool stream_mode = 0;
 char fname_buf[FNAME_BUF_SZ];
 uint16_t fname_curr_postfix = 0;
 FIL *f = &SDFile;
-
-static RTC_DateTypeDef sDate;
-static RTC_TimeTypeDef sTime;
 
 #define TS_BUFF_SZ	32
 char ts_buff[TS_BUFF_SZ];
@@ -46,6 +44,7 @@ int main_usr(void) {
 	char *str;
 
 	memset(&tconf, 0, sizeof(tconf));
+	memset(&ts, 0, sizeof(ts));
 
 #if DBG_CODE
 	/* Overwrites default value from usr_uart.c */
@@ -216,20 +215,20 @@ int main_usr(void) {
 
 			case USR_CMD_GET_RTC_TIME:
 				/* Always call GetDate after GetTime ! see HAL-documentation */
-				HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-				HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+				HAL_RTC_GetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
+				HAL_RTC_GetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
 
 				if (data_format == DATA_FORMAT_ASCII) {
-					printf("20%02i-%02i-%02iT%02i:%02i:%02i\n", sDate.Year, sDate.Month, sDate.Date, sTime.Hours,
-							sTime.Minutes, sTime.Seconds);
+					printf("20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+							ts.time.Minutes, ts.time.Seconds);
 				} else {
 					/* Transmit binary */
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sDate.Year, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sDate.Month, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sDate.Date, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sTime.Hours, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sTime.Minutes, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sTime.Seconds, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Year, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Month, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Date, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Hours, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Minutes, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Seconds, 1, 1000);
 				}
 				break;
 
@@ -239,17 +238,17 @@ int main_usr(void) {
 				} else {
 					str = extcmd.arg_buffer;
 				}
-				err = rtc_parse_datetime(str, &sTime, &sDate);
+				err = rtc_parse_datetime(str, &ts.time, &ts.date);
 				if (err) {
 					break;
 				}
 				/* store the current time */
 				rtc_get_now_str(ts_buff, TS_BUFF_SZ);
-				HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-				HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+				HAL_RTC_SetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
+				HAL_RTC_SetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
 				/* If interval was set also update it. If it is disabled (all values zero)
 				 * than the call will have no effect.*/
-				rtc_set_alarmA_by_offset(&sTime, &tconf.ival);
+				rtc_set_alarmA_by_offset(&ts.time, &tconf.ival);
 #if HAS_SD
 				res = sd_mount();
 				if (!res) {
@@ -287,28 +286,28 @@ int main_usr(void) {
 				} else {
 					str = extcmd.arg_buffer;
 				}
-				err = rtc_parse_interval(str, &sTime);
+				err = rtc_parse_interval(str, &ts.time);
 				if (err) {
 					break;
 				}
-				if (sTime.Hours == 0 && sTime.Minutes == 0 && sTime.Seconds == 0) {
+				if (ts.time.Hours == 0 && ts.time.Minutes == 0 && ts.time.Seconds == 0) {
 					/* All zero deactivates the periodically alarm, so this is a valid case.*/
 					;
-				} else if (sTime.Hours == 0 && sTime.Minutes == 0 && sTime.Seconds < MIN_IVAL) {
+				} else if (ts.time.Hours == 0 && ts.time.Minutes == 0 && ts.time.Seconds < MIN_IVAL) {
 					/* Ensure that the interval is long enough to operate safely.*/
 					break;
 				}
 				/* if all ok update the rtc ival variable which periodically updated the alarmA. */
-				tconf.ival.Hours = sTime.Hours;
-				tconf.ival.Minutes = sTime.Minutes;
-				tconf.ival.Seconds = sTime.Seconds;
+				tconf.ival.Hours = ts.time.Hours;
+				tconf.ival.Minutes = ts.time.Minutes;
+				tconf.ival.Seconds = ts.time.Seconds;
 
 				/* Get the current time (ignore date, but always call both) */
-				HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-				HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+				HAL_RTC_GetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
+				HAL_RTC_GetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
 
 				/* and finally set the alarm.*/
-				rtc_set_alarmA_by_offset(&sTime, &tconf.ival);
+				rtc_set_alarmA_by_offset(&ts.time, &tconf.ival);
 
 				if (data_format == DATA_FORMAT_ASCII)
 					printf("ok\n");
