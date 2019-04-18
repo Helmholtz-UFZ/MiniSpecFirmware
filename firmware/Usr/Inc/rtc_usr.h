@@ -10,15 +10,20 @@
 
 #include "rtc.h"
 
-extern volatile bool rtc_alarmA_occured;
-
 typedef struct
 {
 	RTC_DateTypeDef date;
 	RTC_TimeTypeDef time;
 } rtc_timestamp_t;
 
+typedef struct
+{
+	volatile bool alarmA_wakeup;
+}rtc_t;
 
+extern rtc_t rtc;
+
+void rtc_init(void);
 uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
 uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime);
 uint8_t rtc_set_alarmA_by_offset(RTC_TimeTypeDef *time, RTC_TimeTypeDef *ival);

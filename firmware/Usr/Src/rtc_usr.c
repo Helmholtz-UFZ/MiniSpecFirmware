@@ -11,8 +11,11 @@
 #include "string.h"
 #include "stdio.h"
 
-/* Holds the interval that updates alarmA.*/
-volatile bool rtc_alarmA_occured = 0;
+rtc_t rtc;
+
+void rtc_init(void){
+	rtc.alarmA_wakeup = false;
+}
 
 /**
  * Parse a string to a date and time object.
@@ -263,7 +266,7 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 {
 	UNUSED(hrtc);
 
-	rtc_alarmA_occured = 1;
+	rtc.alarmA_wakeup = true;
 
 	cpu_enter_run_mode();
 }

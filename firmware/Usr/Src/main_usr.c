@@ -58,6 +58,7 @@ int main_usr(void) {
 	HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
 	HAL_NVIC_DisableIRQ(EXTI2_IRQn);
 
+	rtc_init();
 	rxtx_init();
 	tim1_Init();
 	tim2_Init();
@@ -95,7 +96,7 @@ int main_usr(void) {
 		// IR in uart module
 		__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);
 
-		if (!rxtx.wakeup && !state.stream && !rtc_alarmA_occured) {
+		if (!rxtx.wakeup && !state.stream && !rtc.alarmA_wakeup) {
 			cpu_enter_sleep_mode();
 		}
 
@@ -109,8 +110,8 @@ int main_usr(void) {
 		// redundant in non-stream mode as also disabled in its ISR
 		__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);
 
-		if (rtc_alarmA_occured) {
-			rtc_alarmA_occured = 0;
+		if (rtc.alarmA_wakeup) {
+			rtc.alarmA_wakeup = false;
 			periodic_alarm_handler();
 			if (state.stream) {
 				/* the handler has deinit the sensor,
