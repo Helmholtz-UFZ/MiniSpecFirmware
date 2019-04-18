@@ -101,27 +101,19 @@ uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime,
 }
 
 /**
- * Parse a interval string to a time object
- * The interval string should be in like ISO 8601 Time format and should look like this:
+ * Parse a time string to a time object
+ * The time string should be in like ISO 8601 Time format and should look like this:
  * HH:mm:ss, example: 23:59:59
  *
  * Return 0 on success, non-zero otherwise
  */
-uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime) {
-
+uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime) {
 	char *p = str;
 	uint c;
 	int16_t len;
 
 	/* Parse the first time number */
 	len = sscanf(p, "%u", &c);
-	if(c == 24){
-		/* 24h is allowed as a special case.*/
-		sTime->Hours = c;
-		sTime->Minutes = 0;
-		sTime->Seconds = 0;
-		return 0;
-	}
 	if (len == 1 && IS_RTC_HOUR24(c)) {
 		sTime->Hours = c;
 
@@ -151,6 +143,30 @@ uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime) {
 		}
 	}
 	return 1;
+}
+/**
+ * Parse a interval string to a time object
+ * The interval string should be in like ISO 8601 Time format and should look like this:
+ * HH:mm:ss, example: 23:59:59
+ *
+ * Return 0 on success, non-zero otherwise
+ */
+uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime) {
+
+	char *p = str;
+	uint c;
+	int16_t len;
+
+	/* Parse the first time number */
+	len = sscanf(p, "%u", &c);
+	if(c == 24){
+		/* 24h is allowed as a special case.*/
+		sTime->Hours = c;
+		sTime->Minutes = 0;
+		sTime->Seconds = 0;
+		return 0;
+	}
+	return rtc_parse_time(str, sTime);
 }
 
 /**
@@ -234,6 +250,15 @@ uint8_t rtc_set_alarmA_by_offset(RTC_TimeTypeDef *time, RTC_TimeTypeDef *offset)
 	}
 
 	return HAL_RTC_SetAlarm_IT(&hrtc, &a, RTC_FORMAT_BIN);
+}
+
+/**
+ * Updates alarm A if the given time is closer to the currently set alarm,
+ * otherwise do nothing.
+ */
+uint8_t rtc_update_alarmA(RTC_TimeTypeDef *time){
+	/*TODO*/
+	return 1;
 }
 
 /*

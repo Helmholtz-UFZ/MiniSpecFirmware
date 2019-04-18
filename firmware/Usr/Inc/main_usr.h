@@ -42,13 +42,14 @@ typedef struct
 {
 	uint8_t iterations;
 	uint32_t itime[MCONF_MAX_ITIMES];
-	uint8_t curr_itime;
+	uint8_t itime_index;
 } measure_config_t;
 
 typedef struct
 {
 	bool format;
 	bool stream;
+	bool toSD;
 
 } statemachine_config_t;
 

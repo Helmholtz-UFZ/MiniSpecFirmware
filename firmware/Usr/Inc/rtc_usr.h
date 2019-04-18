@@ -25,8 +25,10 @@ extern rtc_t rtc;
 
 void rtc_init(void);
 uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
+uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime);
 uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime);
 uint8_t rtc_set_alarmA_by_offset(RTC_TimeTypeDef *time, RTC_TimeTypeDef *ival);
+uint8_t rtc_update_alarmA(RTC_TimeTypeDef *time);
 void rtc_get_now_str(char *buffer, uint32_t sz);
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc);
 

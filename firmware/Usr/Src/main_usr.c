@@ -23,6 +23,7 @@ static void periodic_alarm_handler(void);
 static uint8_t measurement_to_SD(void);
 static void dbg_test(void);
 static int8_t argparse_nr(uint32_t *nr);
+static int8_t argparse_str(char *str);
 static void ok(void);
 
 static time_config_t tconf;
@@ -44,6 +45,7 @@ int main_usr(void) {
 
 	state.format = DATA_FORMAT_ASCII;
 	state.stream = false;
+	state.toSD = true;
 
 	memset(&fname, 0, sizeof(fname));
 	memset(&tconf, 0, sizeof(tconf));
@@ -150,19 +152,26 @@ int main_usr(void) {
 				state.stream = 0;
 				break;
 
+			case USR_CMD_MULTI_MEASURE_START:
+				state.toSD = false;
+				periodic_alarm_handler(); //todo
+				state.toSD = true;
+				break;
+
 			case USR_CMD_GET_DATA:
 				send_data();
 				break;
 
 			case USR_CMD_WRITE_ITIME:
-				/* parse argument */
-				if (extcmd.arg_buffer[0] == 0) {
+				if(argparse_nr(&tmp)){
 					break;
-				} else {
-					sscanf(extcmd.arg_buffer, "%lu", &tmp);
 				}
-				/* check and set argument */
-				sensor_set_itime(tmp);
+				mconf.itime[mconf.itime_index] = tmp;
+				if(mconf.itime_index == 0){
+					/* 0 is the default itime, which is used for
+					 * the single measurement command. */
+					sensor_set_itime(tmp);
+				}
 				ok();
 				break;
 
@@ -170,7 +179,18 @@ int main_usr(void) {
 				if (state.format == DATA_FORMAT_BIN) {
 					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sens1.itime, 4, 1000);
 				} else {
-					printf("integration time = %lu us\n", sens1.itime);
+					printf("integration time [0] = %lu us\n", sens1.itime);
+					printf("Attention: This always request the default integration time\n");
+				}
+				break;
+
+			case USR_CMD_READ_INDEXED_ITIME:
+				tmp = mconf.itime[mconf.itime_index];
+				if (state.format == DATA_FORMAT_BIN) {
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &mconf.itime_index, 4, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &tmp, 4, 1000);
+				} else {
+					printf("integration time [%u] = %lu us\n", mconf.itime_index, tmp);
 				}
 				break;
 
@@ -310,14 +330,44 @@ int main_usr(void) {
 				ok();
 				break;
 
-			case USR_CMD_SET_ITIME_NR:
+			case USR_CMD_SET_ITIME_INDEX:
 				if(argparse_nr(&tmp)){
 					break;
 				}
 				if(tmp < MCONF_MAX_ITIMES){
-					mconf.curr_itime = tmp;
+					mconf.itime_index = tmp;
 					ok();
 				}
+				break;
+
+			case USR_CMD_SET_START_TIME:
+				if (argparse_str(str)) {
+					break;
+				}
+				err = rtc_parse_time(str, &ts.time);
+				if (err) {
+					break;
+				}
+				tconf.start.Hours = ts.time.Hours;
+				tconf.start.Minutes = ts.time.Minutes;
+				tconf.start.Seconds = ts.time.Seconds;
+
+				rtc_update_alarmA(&tconf.start);
+				break;
+
+			case USR_CMD_SET_END_TIME:
+				if (argparse_str(str)) {
+					break;
+				}
+				err = rtc_parse_time(str, &ts.time);
+				if (err) {
+					break;
+				}
+				tconf.end.Hours = ts.time.Hours;
+				tconf.end.Minutes = ts.time.Minutes;
+				tconf.end.Seconds = ts.time.Seconds;
+
+				rtc_update_alarmA(&tconf.end);
 				break;
 
 			default:
@@ -327,6 +377,7 @@ int main_usr(void) {
 	}
 	return 0;
 }
+
 
 static void ok(void) {
 	if (state.format == DATA_FORMAT_ASCII) {
@@ -349,7 +400,16 @@ static int8_t argparse_nr(uint32_t *nr) {
 	}
 	return 0;
 }
-
+/** Parse string to arg.
+ *  Return 0 on success, otherwise non-zero */
+static int8_t argparse_str(char *str) {
+	if (extcmd.arg_buffer[0] == 0) {
+		/* buffer empty */
+		return -1;
+	}
+	str = extcmd.arg_buffer;
+	return 0;
+}
 /**
  * Local helper for sending data via the uart interface.
  */
