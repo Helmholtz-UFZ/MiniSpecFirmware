@@ -22,6 +22,8 @@ static void send_data(void);
 static void periodic_alarm_handler(void);
 static uint8_t measurement_to_SD(void);
 static void dbg_test(void);
+static int8_t argparse_nr(uint32_t *nr);
+static void ok(void);
 
 static time_config_t tconf;
 static measure_config_t mconf;
@@ -139,8 +141,7 @@ int main_usr(void) {
 			switch (extcmd.cmd) {
 
 			case USR_CMD_SINGLE_MEASURE_START:
-				if (state.format == DATA_FORMAT_ASCII)
-					printf("ok\n");
+				ok();
 				sensor_init();
 				sensor_measure();
 				send_data();
@@ -162,8 +163,7 @@ int main_usr(void) {
 				}
 				/* check and set argument */
 				sensor_set_itime(tmp);
-				if (state.format == DATA_FORMAT_ASCII)
-					printf("ok\n");
+				ok();
 				break;
 
 			case USR_CMD_READ_ITIME:
@@ -175,8 +175,7 @@ int main_usr(void) {
 				break;
 
 			case USR_CMD_STREAM_START:
-				if (state.format == DATA_FORMAT_ASCII)
-					printf("ok\n");
+				ok();
 				sensor_init();
 				state.stream = 1;
 				break;
@@ -184,8 +183,7 @@ int main_usr(void) {
 			case USR_CMD_STREAM_END:
 				sensor_deinit();
 				state.stream = 0;
-				if (state.format == DATA_FORMAT_ASCII)
-					printf("ok\n");
+				ok();
 				break;
 
 			case USR_CMD_SET_FORMAT:
@@ -197,8 +195,7 @@ int main_usr(void) {
 				}
 				/* check and set argument */
 				state.format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
-				if (state.format == DATA_FORMAT_ASCII)
-					printf("ok\n");
+				ok();
 				break;
 
 			case USR_CMD_DEBUG:
@@ -267,8 +264,7 @@ int main_usr(void) {
 					sd_umount();
 				}
 #endif
-				if (state.format == DATA_FORMAT_ASCII)
-					printf("ok\n");
+				ok();
 				break;
 
 			case USR_CMD_GET_INTERVAL:
@@ -311,17 +307,45 @@ int main_usr(void) {
 				/* and finally set the alarm.*/
 				rtc_set_alarmA_by_offset(&ts.time, &tconf.ival);
 
-				if (state.format == DATA_FORMAT_ASCII)
-					printf("ok\n");
+				ok();
 				break;
 
-			case USR_CMD_SET_MULTI_MEASURE_NR:
+			case USR_CMD_SET_ITIME_NR:
+				if(argparse_nr(&tmp)){
+					break;
+				}
+				if(tmp < MCONF_MAX_ITIMES){
+					mconf.curr_itime = tmp;
+					ok();
+				}
 				break;
 
 			default:
 				break;
 			}
 		}
+	}
+	return 0;
+}
+
+static void ok(void) {
+	if (state.format == DATA_FORMAT_ASCII) {
+		printf("ok\n");
+	}
+}
+
+/** Parse natural number to arg.
+ *  Return 0 on success, otherwise non-zero */
+static int8_t argparse_nr(uint32_t *nr) {
+	int res;
+	if (extcmd.arg_buffer[0] == 0) {
+		/* buffer empty */
+		return -1;
+	}
+	res = sscanf(extcmd.arg_buffer, "%lu", nr);
+	if (res <= 0) {
+		nr = 0;
+		return res;
 	}
 	return 0;
 }
