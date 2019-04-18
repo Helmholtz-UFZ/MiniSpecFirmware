@@ -253,6 +253,32 @@ uint8_t rtc_set_alarmA_by_offset(RTC_TimeTypeDef *time, RTC_TimeTypeDef *offset)
 }
 
 /**
+ * Set AlarmA
+ *
+ * param time: time to set the alarm
+ *
+ * Note: Only Hours, Minutes and Seconds from both parameter are taken in
+ * account, other fields are ignored.
+ */
+uint8_t rtc_set_alarmA(RTC_TimeTypeDef *time) {
+	RTC_TimeTypeDef zero;
+	zero.Hours = 0;
+	zero.Minutes = 0;
+	zero.Minutes = 0;
+
+	if(time->Hours == 0 && time->Minutes == 0 && time->Seconds == 0){
+		zero.Hours = 24;
+		return rtc_set_alarmA_by_offset(time, &zero);
+	}
+
+	if(time->Hours > 23){
+		return 99;
+	}
+
+	return rtc_set_alarmA_by_offset(&zero, time);
+}
+
+/**
  * Updates alarm A if the given time is closer to the currently set alarm,
  * otherwise do nothing.
  */
@@ -281,6 +307,45 @@ void rtc_get_now_str(char *buffer, uint32_t sz) {
 
 	sprintf(buffer, "20%02i-%02i-%02iT%02i:%02i:%02i", d.Year, d.Month, d.Date, t.Hours, t.Minutes,
 			t.Seconds);
+}
+
+/** time '<=' time */
+bool rtc_time_leq(RTC_TimeTypeDef a, RTC_TimeTypeDef b){
+	return ((a.Hours > b.Hours) ? 0 :
+			(a.Hours < b.Hours) ? 1 :
+			(a.Minutes > b.Minutes) ? 0 :
+			(a.Minutes < b.Minutes) ? 1 :
+			(a.Seconds > b.Seconds) ? 0 : 1);
+}
+
+/** time '==' time */
+bool rtc_time_eq(RTC_TimeTypeDef a, RTC_TimeTypeDef b){
+	return (a.Hours == b.Hours && a.Minutes == b.Minutes && a.Seconds == b.Seconds);
+}
+
+/** time '<' time */
+bool rtc_time_lt(RTC_TimeTypeDef a, RTC_TimeTypeDef b){
+	return (rtc_time_leq(a,b) && !rtc_time_eq(a,b));
+}
+
+RTC_TimeTypeDef rtc_time_add(RTC_TimeTypeDef a, RTC_TimeTypeDef b){
+	RTC_TimeTypeDef c;
+	c.Seconds = a.Seconds + b.Seconds;
+	if(c.Seconds > 59){
+		c.Seconds -= 60;
+		c.Minutes += 1;
+	}
+	c.Minutes = a.Minutes = b.Minutes;
+	if(c.Minutes > 59){
+		c.Minutes -= 60;
+		c.Hours += 1;
+	}
+	c.Hours = a.Hours = b.Hours;
+	if(c.Hours > 24){
+		c.Hours -= 24;
+	}
+	return c;
+	// TODO carry ?
 }
 
 /**

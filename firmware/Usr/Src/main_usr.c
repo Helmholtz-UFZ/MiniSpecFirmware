@@ -376,7 +376,7 @@ int main_usr(void) {
 				tconf.end.Minutes = ts.time.Minutes;
 				tconf.end.Seconds = ts.time.Seconds;
 
-				rtc_update_alarmA(&tconf.end);
+				update_alarm();
 				ok();
 				break;
 
@@ -415,7 +415,60 @@ int main_usr(void) {
 	return 0;
 }
 
+/*
+ * if currA < start || currA > end
+ * 		setA(start)
+ *
+ * if start < new+now <= end && new+now < currA
+ * 		setA(new+now)
+ */
+void update_alarm(){
+	RTC_TimeTypeDef start, next_ival, end, currA, now, zero, newnow;
+	RTC_AlarmTypeDef al;
+	HAL_RTC_GetAlarm(&hrtc, &al, RTC_ALARM_A, RTC_FORMAT_BIN);
+	HAL_RTC_GetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
+	HAL_RTC_GetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
 
+	zero.Hours = 0;
+	zero.Minutes = 0;
+	zero.Seconds = 0;
+
+	currA = al.AlarmTime;
+	start = tconf.start;
+	end = tconf.end;
+	now = ts.time;
+	next_ival = rtc_time_add(tconf.last_ival_time, tconf.ival);
+
+	/*todo alarm deactivated ?*/
+
+	/* start==0 or end==0, ival is always set*/
+	if (rtc_time_eq(start, zero) || rtc_time_eq(end, zero)) {
+		rtc_set_alarmA(&next_ival);
+		return;
+	}
+
+	/* if currA < start || currA > end
+	 * end <= currA < start
+	 * current alarm out of range -> set to start*/
+	if(rtc_time_lt(currA, start) || rtc_time_leq(end, currA)){
+		rtc_set_alarmA(&start);
+	}
+
+	/* if start < next_ival <= end */
+	if (rtc_time_leq(start, next_ival) && rtc_time_leq(next_ival, end)) {
+		/* now < next_ival < currA: update to a sooner alarm*/
+		if (rtc_time_lt(now, next_ival) && rtc_time_lt(next_ival, currA)) {
+			rtc_set_alarmA(&next_ival);
+		}
+		/* currA < now < next_ival: update to regular next alarm,
+		 * the last alarm probably just occurred*/
+		if (rtc_time_lt(currA, now) && rtc_time_lt(now, next_ival)) {
+			rtc_set_alarmA(&next_ival);
+		}
+	}
+}
+
+/** print 'ok' */
 static void ok(void) {
 	if (state.format == DATA_FORMAT_ASCII) {
 		printf("ok\n");
@@ -437,9 +490,11 @@ static int8_t argparse_nr(uint32_t *nr) {
 	}
 	return 0;
 }
+
 /** Parse string to arg.
  *  Return 0 on success, otherwise non-zero */
 static int8_t argparse_str(char *str) {
+	UNUSED(str);
 	if (extcmd.arg_buffer[0] == 0) {
 		/* buffer empty */
 		return -1;
@@ -447,9 +502,8 @@ static int8_t argparse_str(char *str) {
 	str = extcmd.arg_buffer;
 	return 0;
 }
-/**
- * Local helper for sending data via the uart interface.
- */
+
+/** Local helper for sending data via the uart interface. */
 static void send_data(void) {
 	char *errstr;
 	uint16_t *rptr;
@@ -622,16 +676,9 @@ static void multimeasure(void) {
 }
 
 static void periodic_alarm_handler(void) {
-	/* For each integration time, measure N times and store to SD */
-	RTC_AlarmTypeDef a;
 	debug("Periodic alarm \n");
-
-	/* Set the alarm to new time according to the interval value.*/
-	HAL_RTC_GetAlarm(&hrtc, &a, RTC_ALARM_A, RTC_FORMAT_BIN);
-	rtc_set_alarmA_by_offset(&a.AlarmTime, &tconf.ival);
-
+	update_alarm();
 	multimeasure();
-
 }
 
 /* This function is used to test functions

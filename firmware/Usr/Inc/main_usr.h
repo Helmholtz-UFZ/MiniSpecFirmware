@@ -34,6 +34,7 @@ typedef struct
 	RTC_TimeTypeDef start;
 	RTC_TimeTypeDef end;
 	RTC_TimeTypeDef ival;
+	RTC_TimeTypeDef last_ival_time;
 } time_config_t;
 
 
