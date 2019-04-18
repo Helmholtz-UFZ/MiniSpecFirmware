@@ -390,6 +390,23 @@ int main_usr(void) {
 				}
 				break;
 
+			case USR_CMD_GET_CONFIG:
+				for (int i = 0; i < MCONF_MAX_ITIMES; ++i) {
+					if(mconf.itime[i] != 0){
+						printf("itime[%u] = %lu\n", i, mconf.itime[i]);
+					}
+				}
+				printf("itime[%u] is currently choosen for setting.\n", mconf.itime_index);
+				printf("\n");
+				printf("iteration per measurement: %u", mconf.iterations);
+				printf("start time: %02i:%02i:%02i\n",
+						tconf.start.Hours, tconf.start.Minutes, tconf.start.Seconds);
+				printf("end time:   %02i:%02i:%02i\n",
+						tconf.end.Hours, tconf.end.Minutes, tconf.end.Seconds);
+				printf("repetition: %02i:%02i:%02i\n",
+						tconf.ival.Hours, tconf.ival.Minutes, tconf.ival.Seconds);
+				break;
+
 			default:
 				break;
 			}
