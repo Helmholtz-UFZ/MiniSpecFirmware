@@ -7,6 +7,7 @@
 
 #include "cmd_parser.h"
 #include "main.h"
+#include "string.h"
 
 usr_cmd_typedef extcmd;
 /*

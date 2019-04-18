@@ -19,6 +19,7 @@
 #include <stdio.h>
 
 static void send_data(void);
+static void multimeasure(void);
 static void periodic_alarm_handler(void);
 static uint8_t measurement_to_SD(void);
 static void dbg_test(void);
@@ -50,6 +51,8 @@ int main_usr(void) {
 	memset(&fname, 0, sizeof(fname));
 	memset(&tconf, 0, sizeof(tconf));
 	memset(&mconf, 0, sizeof(mconf));
+	mconf.iterations = 1;
+	mconf.itime[0] = DEFAULT_INTEGRATION_TIME;
 	memset(&ts, 0, sizeof(ts));
 
 #if DBG_CODE
@@ -154,7 +157,7 @@ int main_usr(void) {
 
 			case USR_CMD_MULTI_MEASURE_START:
 				state.toSD = false;
-				periodic_alarm_handler(); //todo
+				multimeasure();
 				state.toSD = true;
 				break;
 
@@ -170,7 +173,12 @@ int main_usr(void) {
 				if(mconf.itime_index == 0){
 					/* 0 is the default itime, which is used for
 					 * the single measurement command. */
-					sensor_set_itime(tmp);
+					tmp = sensor_set_itime(tmp);
+					/* if minimal inntergartion time is underflown,
+					 * the itime is set to the minmal possible(!) value.
+					 * To keep the config consistent we need to update
+					 * the default itime in slot 0. */
+					mconf.itime[0] = tmp;
 				}
 				ok();
 				break;
@@ -353,6 +361,7 @@ int main_usr(void) {
 				tconf.start.Seconds = ts.time.Seconds;
 
 				rtc_update_alarmA(&tconf.start);
+				ok();
 				break;
 
 			case USR_CMD_SET_END_TIME:
@@ -368,6 +377,17 @@ int main_usr(void) {
 				tconf.end.Seconds = ts.time.Seconds;
 
 				rtc_update_alarmA(&tconf.end);
+				ok();
+				break;
+
+			case USR_CMD_SET_MULTI_MEASURE_ITERATIONS:
+				if(argparse_nr(&tmp)){
+					break;
+				}
+				if(0 < tmp && tmp < MCONF_MAX_ITERATIONS){
+					mconf.iterations = tmp;
+					ok();
+				}
 				break;
 
 			default:
@@ -546,43 +566,55 @@ static uint8_t measurement_to_SD(void){
 	return res;
 }
 
+static void multimeasure(void) {
+	int8_t res = 0;
+	for (int i = 0; i < MCONF_MAX_ITIMES; ++i) {
+		if (mconf.itime[i] == 0) {
+			/* itime disabled */
+			continue;
+		}
+		sensor_set_itime(mconf.itime[i]);
+
+		/* Measure N times */
+		for (int n = 0; n < mconf.iterations; ++n) {
+
+			/* Generate timestamp */
+			rtc_get_now_str(ts_buff, TS_BUFF_SZ);
+
+			/* Make a measurement */
+			sensor_init();
+			sensor_measure();
+
+#if HAS_SD
+			if (state.toSD) {
+				/* Write measurement to SD */
+				res = sd_mount();
+				if (!res) {
+					/* Store the measurement on SD */
+					res = measurement_to_SD();
+					sd_umount();
+				}
+			}
+#endif
+			if (sens1.errc) {
+				sensor_deinit();
+			}
+		}
+	}
+	sensor_deinit();
+}
+
 static void periodic_alarm_handler(void) {
 	/* For each integration time, measure N times and store to SD */
 	RTC_AlarmTypeDef a;
-	int8_t res = 0;
-	uint8_t N = 1;
 	debug("Periodic alarm \n");
 
 	/* Set the alarm to new time according to the interval value.*/
 	HAL_RTC_GetAlarm(&hrtc, &a, RTC_ALARM_A, RTC_FORMAT_BIN);
 	rtc_set_alarmA_by_offset(&a.AlarmTime, &tconf.ival);
 
-	/* Set integration time todo*/
-//	sens1.itime = 0;
+	multimeasure();
 
-	/* Measure N times */
-	for (int n = 0; n < N; ++n) {
-
-		/* Generate timestamp */
-		rtc_get_now_str(ts_buff, TS_BUFF_SZ);
-
-		/* Make a measurement */
-		sensor_init();
-		sensor_measure();
-
-#if HAS_SD
-		/* Write measurement to SD */
-		res = sd_mount();
-		if (!res) {
-			/* Store the measurement on SD */
-			res = measurement_to_SD();
-			sd_umount();
-		}
-#endif
-		if(sens1.errc){
-			sensor_deinit();
-		}
-	}
 }
 
 /* This function is used to test functions

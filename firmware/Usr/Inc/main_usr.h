@@ -38,6 +38,7 @@ typedef struct
 
 
 #define MCONF_MAX_ITIMES  32
+#define MCONF_MAX_ITERATIONS  32
 typedef struct
 {
 	uint8_t iterations;
