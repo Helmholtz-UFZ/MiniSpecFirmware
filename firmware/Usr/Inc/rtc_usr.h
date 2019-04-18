@@ -10,7 +10,6 @@
 
 #include "rtc.h"
 
-extern RTC_TimeTypeDef rtc_ival;
 extern volatile bool rtc_alarmA_occured;
 
 uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);

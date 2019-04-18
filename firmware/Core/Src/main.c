@@ -61,6 +61,7 @@
 
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
+#include "main_usr.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/

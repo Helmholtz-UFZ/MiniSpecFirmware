@@ -11,14 +11,9 @@
 #define __MAIN_USR_H__
 
 /* Includes ------------------------------------------------------------------*/
-/**
- * XXX: ATTENTION
- * This header is included by main.h.
- * Avoid including high level stuff here.
- * Otherwise conflicts arise, as the HAL
- * isn't initialized yet. **/
 #include "main.h"
 #include "global_config.h"
+#include "rtc_usr.h"
 
 /** the data format specifies the datatype of the
  * arguments and the data to/from external system.*/
@@ -74,7 +69,6 @@ typedef enum
 } usr_cmd_enum_t;
 
 
-
 typedef struct
 {
 	/* Holds the actual command - nevertheless of parsing errors.*/
@@ -85,6 +79,14 @@ typedef struct
 	char arg_buffer[ARGBUFFSZ];
 
 } usr_cmd_typedef;
+
+
+typedef struct
+{
+	RTC_TimeTypeDef start;
+	RTC_TimeTypeDef end;
+	RTC_TimeTypeDef ival;
+} time_config_t;
 
 
 int main_usr( void );

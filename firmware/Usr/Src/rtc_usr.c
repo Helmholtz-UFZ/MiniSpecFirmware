@@ -6,12 +6,12 @@
  */
 
 #include "global_config.h"
+#include "main_usr.h"
 #include "rtc_usr.h"
 #include "string.h"
 #include "stdio.h"
 
 /* Holds the interval that updates alarmA.*/
-RTC_TimeTypeDef rtc_ival;
 volatile bool rtc_alarmA_occured = 0;
 
 /**

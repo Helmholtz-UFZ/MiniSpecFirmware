@@ -23,6 +23,7 @@ static void periodic_alarm_handler(void);
 static uint8_t measurement_to_SD(void);
 static void dbg_test(void);
 static usr_cmd_typedef extcmd;
+static time_config_t tconf;
 
 static uint8_t data_format = DATA_FORMAT_ASCII;
 static bool stream_mode = 0;
@@ -43,6 +44,9 @@ int main_usr(void) {
 	uint32_t tmp = 0;
 	uint8_t res = 0;
 	char *str;
+
+	memset(&tconf, 0, sizeof(tconf));
+
 #if DBG_CODE
 	/* Overwrites default value from usr_uart.c */
 	tx_dbgflg = 1;
@@ -245,7 +249,7 @@ int main_usr(void) {
 				HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 				/* If interval was set also update it. If it is disabled (all values zero)
 				 * than the call will have no effect.*/
-				rtc_set_alarmA_by_offset(&sTime, &rtc_ival);
+				rtc_set_alarmA_by_offset(&sTime, &tconf.ival);
 #if HAS_SD
 				res = sd_mount();
 				if (!res) {
@@ -268,12 +272,12 @@ int main_usr(void) {
 
 			case USR_CMD_GET_INTERVAL:
 				if (data_format == DATA_FORMAT_ASCII) {
-					printf("%02i:%02i:%02i\n", rtc_ival.Hours, rtc_ival.Minutes, rtc_ival.Seconds);
+					printf("%02i:%02i:%02i\n", tconf.ival.Hours, tconf.ival.Minutes, tconf.ival.Seconds);
 				} else {
 					/* Transmit binary */
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rtc_ival.Hours, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rtc_ival.Minutes, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rtc_ival.Seconds, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &tconf.ival.Hours, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &tconf.ival.Minutes, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &tconf.ival.Seconds, 1, 1000);
 				}
 				break;
 
@@ -295,16 +299,16 @@ int main_usr(void) {
 					break;
 				}
 				/* if all ok update the rtc ival variable which periodically updated the alarmA. */
-				rtc_ival.Hours = sTime.Hours;
-				rtc_ival.Minutes = sTime.Minutes;
-				rtc_ival.Seconds = sTime.Seconds;
+				tconf.ival.Hours = sTime.Hours;
+				tconf.ival.Minutes = sTime.Minutes;
+				tconf.ival.Seconds = sTime.Seconds;
 
 				/* Get the current time (ignore date, but always call both) */
 				HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 				HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 
 				/* and finally set the alarm.*/
-				rtc_set_alarmA_by_offset(&sTime, &rtc_ival);
+				rtc_set_alarmA_by_offset(&sTime, &tconf.ival);
 
 				if (data_format == DATA_FORMAT_ASCII)
 					printf("ok\n");
@@ -615,7 +619,7 @@ static void periodic_alarm_handler(void) {
 
 	/* Set the alarm to new time according to the interval value.*/
 	HAL_RTC_GetAlarm(&hrtc, &a, RTC_ALARM_A, RTC_FORMAT_BIN);
-	rtc_set_alarmA_by_offset(&a.AlarmTime, &rtc_ival);
+	rtc_set_alarmA_by_offset(&a.AlarmTime, &tconf.ival);
 
 	/* Set integration time todo*/
 //	sens1.itime = 0;

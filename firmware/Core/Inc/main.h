@@ -55,8 +55,7 @@
 #include "stm32l4xx_hal.h"
 
 /* USER CODE BEGIN Includes */
-#include "helper_defines.h"
-#include "main_usr.h"
+#include "global_config.h"
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/

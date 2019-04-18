@@ -15,7 +15,6 @@
  * Otherwise conflicts arise, as the HAL
  * isn't initialized yet. **/
 #include "helper_defines.h"
-#include "main_usr.h"
 #include "stdbool.h"
 #include "stdint.h"
 
