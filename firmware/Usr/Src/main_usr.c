@@ -96,7 +96,7 @@ int main_usr(void) {
 		// IR in uart module
 		__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);
 
-		if (rxtx_CR_recvd == 0 && state.stream == 0 && rtc_alarmA_occured == 0) {
+		if (!rxtx.wakeup && !state.stream && !rtc_alarmA_occured) {
 			cpu_enter_sleep_mode();
 		}
 
@@ -129,11 +129,11 @@ int main_usr(void) {
 			}
 		}
 
-		if (rxtx_CR_recvd) {
+		if (rxtx.wakeup) {
 			parse_extcmd(rxtx_rxbuffer.base, rxtx_rxbuffer.size);
 
-			rxtx_CR_recvd = 0;
-			rxtx_cmd_bytes = 0;
+			rxtx.wakeup = false;
+			rxtx.cmd_bytes = 0;
 			rxtx_restart_listening();
 
 			switch (extcmd.cmd) {
@@ -202,9 +202,8 @@ int main_usr(void) {
 				break;
 
 			case USR_CMD_DEBUG:
-				//			testtest();
-				tx_dbgflg = tx_dbgflg ? 0 : 1;
-				if (tx_dbgflg) {
+				rxtx.debug = rxtx.debug ? false : true;
+				if (rxtx.debug) {
 					printf("debug on\n");
 				} else {
 					printf("debug off\n");
@@ -449,7 +448,7 @@ static uint8_t measurement_to_SD(void){
 
 			/* Print what we wrote to sd.*/
 			debug("SD: wrote to File: %s, data:\n", fname_buf);
-			if (tx_dbgflg) {
+			if (rxtx.debug) {
 				/* Use printf() instead of debug() to prevent 'dbg:' string before every value. */
 				printf("%s, %u, %lu, [,", ts_buff, sens1.errc, sens1.itime);
 				uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);

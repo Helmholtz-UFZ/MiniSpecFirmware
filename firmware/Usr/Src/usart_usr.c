@@ -10,19 +10,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-/* Flag for signal that a carriage return
- * from a usr command was received
- * Todo: Make this a struct, with wakeup flag
- * e.g uart_wakeup */
-volatile bool rxtx_CR_recvd;
-
-/* additional to rxtx_CR_recvd this is set to
- * the number of bytes received */
-volatile uint16_t rxtx_cmd_bytes;
-
-/* Flag for enabling /disabling the debug() function
- * during runtime with a usr command, namely 'debug'.*/
-uint8_t tx_dbgflg = 0;
+rxtx_config_t rxtx;
 
 /* Memory blocks and buffer for transmitting and receiving
  * via uart interface.*/
@@ -63,6 +51,10 @@ void rxtx_init(void) {
 	uint32_t cr1 = 0;
 	char trigger_char;
 
+	rxtx.debug = false;
+	rxtx.wakeup = false;
+	rxtx.cmd_bytes = 0;
+
 	//save cr1 status
 	cr1 = RXTX->CR1;
 
@@ -78,9 +70,6 @@ void rxtx_init(void) {
 
 	//enable char match IR-Flag
 	RXTX->CR1 |= USART_CR1_CMIE;
-
-	rxtx_CR_recvd = 0;
-	rxtx_cmd_bytes = 0;
 }
 
 /**
@@ -128,7 +117,7 @@ int uart_printf(UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const
  */
 int debug(const char *__restrict format, ...) {
 	int len;
-	if (tx_dbgflg) {
+	if (rxtx.debug) {
 		va_list args;
 		printf("dbg: ");
 		va_start(args, format);

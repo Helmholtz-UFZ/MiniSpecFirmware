@@ -41,6 +41,7 @@
 #include "usart_usr.h"
 #include "global_config.h"
 #include "micro_spec.h"
+#include "main_usr.h"
 
 /* USER CODE END 0 */
 
@@ -268,14 +269,14 @@ void USART1_IRQHandler(void)
 	{
 		__HAL_UART_CLEAR_IT( &hrxtx, USART_ISR_CMF );
 		__HAL_UART_DISABLE_IT( &hrxtx, UART_IT_CM );
-		rxtx_cmd_bytes = hrxtx.RxXferSize - hrxtx.hdmarx->Instance->CNDTR;
-		rxtx_CR_recvd = true;
+		rxtx.cmd_bytes = hrxtx.RxXferSize - hrxtx.hdmarx->Instance->CNDTR;
+		rxtx.wakeup = true;
 	}
 
   /* USER CODE END USART1_IRQn 0 */
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
-  if(rxtx_CR_recvd || hrxtx.ErrorCode){
+  if(rxtx.wakeup || hrxtx.ErrorCode){
 		cpu_enter_run_mode();
   }
 #define USART1_IRQHandler__OK
@@ -339,14 +340,14 @@ void UART4_IRQHandler(void)
 	{
 		__HAL_UART_CLEAR_IT( &hrxtx, USART_ISR_CMF );
 		__HAL_UART_DISABLE_IT( &hrxtx, UART_IT_CM );
-		rxtx_cmd_bytes = hrxtx.RxXferSize - hrxtx.hdmarx->Instance->CNDTR;
-		rxtx_CR_recvd = true;
+		rxtx.cmd_bytes = hrxtx.RxXferSize - hrxtx.hdmarx->Instance->CNDTR;
+		rxtx.wakeup = true;
 	}
 
   /* USER CODE END UART4_IRQn 0 */
   HAL_UART_IRQHandler(&huart4);
   /* USER CODE BEGIN UART4_IRQn 1 */
-  if(rxtx_CR_recvd || hrxtx.ErrorCode){
+  if(rxtx.wakeup || hrxtx.ErrorCode){
 		cpu_enter_run_mode();
   }
 #define USART4_IRQHandler__OK

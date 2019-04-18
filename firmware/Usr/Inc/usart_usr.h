@@ -47,13 +47,24 @@ typedef struct {
 	uint8_t *base; /* !< pointer to the start of the buffer. */
 } uart_buffer_t;
 
+typedef struct {
+	/* Flag for signal that a carriage return
+	 * from a usr command was received */
+	volatile bool wakeup;
+
+	/* The number of bytes received */
+	volatile uint16_t cmd_bytes;
+
+	/* Flag for enabling /disabling the debug() function
+	 * during runtime with a usr command, namely 'debug'.*/
+	bool debug;
+
+} rxtx_config_t;
+
+extern rxtx_config_t rxtx;
+
 /* used with HAL_UART_Receive() */
 extern uart_buffer_t rxtx_rxbuffer;
-
-/* extern vars, see .c for info */
-extern volatile bool rxtx_CR_recvd;
-extern volatile uint16_t rxtx_cmd_bytes;
-extern uint8_t tx_dbgflg;
 
 int _write(int file, char *ptr, int len);
 void rxtx_init(void);
