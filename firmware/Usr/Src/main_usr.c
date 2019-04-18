@@ -17,17 +17,16 @@
 #include "fatfs.h"
 #include <stdio.h>
 
-static void send_data(uint8_t format);
+static void send_data(void);
 static void parse_extcmd(uint8_t *buffer, uint16_t size);
 static void periodic_alarm_handler(void);
 static uint8_t measurement_to_SD(void);
 static void dbg_test(void);
 static usr_cmd_typedef extcmd;
 static time_config_t tconf;
+static measure_config_t mconf;
+static statemachine_config_t state;
 static rtc_timestamp_t ts;
-
-static uint8_t data_format = DATA_FORMAT_ASCII;
-static bool stream_mode = 0;
 
 #define FNAME_BUF_SZ 	128
 char fname_buf[FNAME_BUF_SZ];
@@ -43,7 +42,11 @@ int main_usr(void) {
 	uint8_t res = 0;
 	char *str;
 
+	state.format = DATA_FORMAT_ASCII;
+	state.stream = false;
+
 	memset(&tconf, 0, sizeof(tconf));
+	memset(&mconf, 0, sizeof(mconf));
 	memset(&ts, 0, sizeof(ts));
 
 #if DBG_CODE
@@ -61,7 +64,7 @@ int main_usr(void) {
 	tim2_Init();
 	tim5_Init();
 
-	if (data_format == DATA_FORMAT_ASCII) {
+	if (state.format == DATA_FORMAT_ASCII) {
 		printf("\nstart\n");
 	}
 
@@ -93,7 +96,7 @@ int main_usr(void) {
 		// IR in uart module
 		__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);
 
-		if (rxtx_CR_recvd == 0 && stream_mode == 0 && rtc_alarmA_occured == 0) {
+		if (rxtx_CR_recvd == 0 && state.stream == 0 && rtc_alarmA_occured == 0) {
 			cpu_enter_sleep_mode();
 		}
 
@@ -110,18 +113,18 @@ int main_usr(void) {
 		if (rtc_alarmA_occured) {
 			rtc_alarmA_occured = 0;
 			periodic_alarm_handler();
-			if (stream_mode) {
+			if (state.stream) {
 				/* the handler has deinit the sensor,
 				 * undo that now if we are in stream mode */
 				sensor_init();
 			}
 		}
 
-		if (stream_mode) {
+		if (state.stream) {
 			sensor_measure();
-			send_data(data_format);
+			send_data();
 			if (err) {
-				stream_mode = 0;
+				state.stream = 0;
 				sensor_deinit();
 			}
 		}
@@ -136,18 +139,18 @@ int main_usr(void) {
 			switch (extcmd.cmd) {
 
 			case USR_CMD_SINGLE_MEASURE_START:
-				if (data_format == DATA_FORMAT_ASCII)
+				if (state.format == DATA_FORMAT_ASCII)
 					printf("ok\n");
 				sensor_init();
 				sensor_measure();
-				send_data(data_format);
+				send_data();
 				sensor_deinit();
-				/* A single measurement in stream mode end stream mode. */
-				stream_mode = 0;
+				/* A single measurement during stream mode, end the stream mode. */
+				state.stream = 0;
 				break;
 
 			case USR_CMD_GET_DATA:
-				send_data(data_format);
+				send_data();
 				break;
 
 			case USR_CMD_WRITE_ITIME:
@@ -159,12 +162,12 @@ int main_usr(void) {
 				}
 				/* check and set argument */
 				sensor_set_itime(tmp);
-				if (data_format == DATA_FORMAT_ASCII)
+				if (state.format == DATA_FORMAT_ASCII)
 					printf("ok\n");
 				break;
 
 			case USR_CMD_READ_ITIME:
-				if (data_format == DATA_FORMAT_BIN) {
+				if (state.format == DATA_FORMAT_BIN) {
 					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sens1.itime, 4, 1000);
 				} else {
 					printf("integration time = %lu us\n", sens1.itime);
@@ -172,16 +175,16 @@ int main_usr(void) {
 				break;
 
 			case USR_CMD_STREAM_START:
-				if (data_format == DATA_FORMAT_ASCII)
+				if (state.format == DATA_FORMAT_ASCII)
 					printf("ok\n");
 				sensor_init();
-				stream_mode = 1;
+				state.stream = 1;
 				break;
 
 			case USR_CMD_STREAM_END:
 				sensor_deinit();
-				stream_mode = 0;
-				if (data_format == DATA_FORMAT_ASCII)
+				state.stream = 0;
+				if (state.format == DATA_FORMAT_ASCII)
 					printf("ok\n");
 				break;
 
@@ -193,8 +196,8 @@ int main_usr(void) {
 					sscanf(extcmd.arg_buffer, "%lu", &tmp);
 				}
 				/* check and set argument */
-				data_format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
-				if (data_format == DATA_FORMAT_ASCII)
+				state.format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
+				if (state.format == DATA_FORMAT_ASCII)
 					printf("ok\n");
 				break;
 
@@ -218,7 +221,7 @@ int main_usr(void) {
 				HAL_RTC_GetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
 				HAL_RTC_GetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
 
-				if (data_format == DATA_FORMAT_ASCII) {
+				if (state.format == DATA_FORMAT_ASCII) {
 					printf("20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 							ts.time.Minutes, ts.time.Seconds);
 				} else {
@@ -265,12 +268,12 @@ int main_usr(void) {
 					sd_umount();
 				}
 #endif
-				if (data_format == DATA_FORMAT_ASCII)
+				if (state.format == DATA_FORMAT_ASCII)
 					printf("ok\n");
 				break;
 
 			case USR_CMD_GET_INTERVAL:
-				if (data_format == DATA_FORMAT_ASCII) {
+				if (state.format == DATA_FORMAT_ASCII) {
 					printf("%02i:%02i:%02i\n", tconf.ival.Hours, tconf.ival.Minutes, tconf.ival.Seconds);
 				} else {
 					/* Transmit binary */
@@ -309,7 +312,7 @@ int main_usr(void) {
 				/* and finally set the alarm.*/
 				rtc_set_alarmA_by_offset(&ts.time, &tconf.ival);
 
-				if (data_format == DATA_FORMAT_ASCII)
+				if (state.format == DATA_FORMAT_ASCII)
 					printf("ok\n");
 				break;
 
@@ -326,11 +329,8 @@ int main_usr(void) {
 
 /**
  * Local helper for sending data via the uart interface.
- *
- * \param format	0 (DATA_FORMAT_BIN) send raw data, byte per byte.(eg. (dez) 1000 -> 0xE8 0x03)\n
- * \param format	1 (DATA_FORMAT_ASCII) send the data as in ASCII, as human readable text. (eg. (dez) 1000 -> '1' '0' '0' '0')
  */
-static void send_data(uint8_t format) {
+static void send_data(void) {
 	char *errstr;
 	uint16_t *rptr;
 	uint16_t i = 0;
@@ -359,7 +359,7 @@ static void send_data(uint8_t format) {
 		break;
 	}
 
-	if (format == DATA_FORMAT_BIN) {
+	if (state.format == DATA_FORMAT_BIN) {
 		/*Send the errorcode nevertheless an error occurred or not.*/
 		HAL_UART_Transmit(&hrxtx, (uint8_t *) &errcode, 2, 200);
 		if (!errcode) {

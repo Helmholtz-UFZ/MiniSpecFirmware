@@ -89,6 +89,22 @@ typedef struct
 } time_config_t;
 
 
+#define MCONF_MAX_ITIMES  32
+typedef struct
+{
+	uint8_t iterations;
+	uint32_t itime[MCONF_MAX_ITIMES];
+	uint8_t curr_itime;
+} measure_config_t;
+
+typedef struct
+{
+	bool format;
+	bool stream;
+
+} statemachine_config_t;
+
+
 int main_usr( void );
 void cpu_enter_sleep_mode( void );
 void cpu_enter_run_mode( void );
