@@ -24,10 +24,10 @@ typedef struct
 extern rtc_t rtc;
 
 void rtc_init(void);
-bool rtc_time_leq(RTC_TimeTypeDef a, RTC_TimeTypeDef b);
-bool rtc_time_eq(RTC_TimeTypeDef a, RTC_TimeTypeDef b);
-bool rtc_time_lt(RTC_TimeTypeDef a, RTC_TimeTypeDef b);
-RTC_TimeTypeDef rtc_time_add(RTC_TimeTypeDef a, RTC_TimeTypeDef b);
+bool rtc_time_leq(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b);
+bool rtc_time_eq(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b);
+bool rtc_time_lt(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b);
+RTC_TimeTypeDef rtc_time_add(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b);
 uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
 uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime);
 uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime);

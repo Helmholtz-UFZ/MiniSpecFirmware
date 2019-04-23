@@ -350,8 +350,6 @@ int main_usr(void) {
 				tconf.start.Hours = ts.time.Hours;
 				tconf.start.Minutes = ts.time.Minutes;
 				tconf.start.Seconds = ts.time.Seconds;
-
-				rtc_update_alarmA(&tconf.start);
 				ok();
 				break;
 
@@ -386,8 +384,6 @@ int main_usr(void) {
 				tconf.ival.Hours = ts.time.Hours;
 				tconf.ival.Minutes = ts.time.Minutes;
 				tconf.ival.Seconds = ts.time.Seconds;
-
-				//todo: update alarm
 				ok();
 				break;
 
@@ -428,8 +424,7 @@ void update_alarm(){
 	RTC_TimeTypeDef start, next_ival, end, currA, now, zero, newnow;
 	RTC_AlarmTypeDef al;
 	HAL_RTC_GetAlarm(&hrtc, &al, RTC_ALARM_A, RTC_FORMAT_BIN);
-	HAL_RTC_GetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
-	HAL_RTC_GetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
+	rtc_get_now(&ts);
 
 	zero.Hours = 0;
 	zero.Minutes = 0;
@@ -439,35 +434,44 @@ void update_alarm(){
 	start = tconf.start;
 	end = tconf.end;
 	now = ts.time;
-	next_ival = rtc_time_add(tconf.last_ival_time, tconf.ival);
 
-	/*todo alarm deactivated ?*/
+	/* called from set_ival (rename to set_alarm)
+	 *
+	 * if ival == 000
+	 * 		pass
+	 * if ival & end & start
+	 * 	set alarm to start + ival close
+	 * */
 
-	/* start==0 or end==0, ival is always set*/
-	if (rtc_time_eq(start, zero) || rtc_time_eq(end, zero)) {
-		rtc_set_alarmA(&next_ival);
-		return;
-	}
-
-	/* if currA < start || currA > end
-	 * end <= currA < start
-	 * current alarm out of range -> set to start*/
-	if(rtc_time_lt(currA, start) || rtc_time_leq(end, currA)){
-		rtc_set_alarmA(&start);
-	}
-
-	/* if start < next_ival <= end */
-	if (rtc_time_leq(start, next_ival) && rtc_time_leq(next_ival, end)) {
-		/* now < next_ival < currA: update to a sooner alarm*/
-		if (rtc_time_lt(now, next_ival) && rtc_time_lt(next_ival, currA)) {
-			rtc_set_alarmA(&next_ival);
-		}
-		/* currA < now < next_ival: update to regular next alarm,
-		 * the last alarm probably just occurred*/
-		if (rtc_time_lt(currA, now) && rtc_time_lt(now, next_ival)) {
-			rtc_set_alarmA(&next_ival);
-		}
-	}
+//	next_ival = rtc_time_add(tconf.last_ival_time, tconf.ival);
+//
+//	/*todo alarm deactivated ?*/
+//
+//	/* start==0 or end==0, ival is always set*/
+//	if (rtc_time_eq(start, zero) || rtc_time_eq(end, zero)) {
+//		rtc_set_alarmA(&next_ival);
+//		return;
+//	}
+//
+//	/* if currA < start || currA > end
+//	 * end <= currA < start
+//	 * current alarm out of range -> set to start*/
+//	if(rtc_time_lt(currA, start) || rtc_time_leq(end, currA)){
+//		rtc_set_alarmA(&start);
+//	}
+//
+//	/* if start < next_ival <= end */
+//	if (rtc_time_leq(start, next_ival) && rtc_time_leq(next_ival, end)) {
+//		/* now < next_ival < currA: update to a sooner alarm*/
+//		if (rtc_time_lt(now, next_ival) && rtc_time_lt(next_ival, currA)) {
+//			rtc_set_alarmA(&next_ival);
+//		}
+//		/* currA < now < next_ival: update to regular next alarm,
+//		 * the last alarm probably just occurred*/
+//		if (rtc_time_lt(currA, now) && rtc_time_lt(now, next_ival)) {
+//			rtc_set_alarmA(&next_ival);
+//		}
+//	}
 }
 
 /** print 'ok' */
@@ -679,8 +683,21 @@ static void multimeasure(void) {
 
 static void periodic_alarm_handler(void) {
 	debug("Periodic alarm \n");
-	update_alarm();
+	RTC_TimeTypeDef now, alarm, new;
+	rtc_get_alermtime(&alarm);
+	rtc_get_now(&now);
+
 	multimeasure();
+
+	/*set new alarm*/
+	new = rtc_time_add(&tconf.last_ival_time, &tconf.ival);
+	/* if new <= end */
+	if(rtc_time_leq(&new, &tconf.end)){
+		rtc_set_alarmA(&now);
+	}else{
+		rtc_set_alarmA(&tconf.start);
+	}
+
 }
 
 /* This function is used to test functions

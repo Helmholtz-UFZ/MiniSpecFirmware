@@ -317,39 +317,46 @@ void rtc_get_now(rtc_timestamp_t *ts){
 	HAL_RTC_GetDate(&hrtc, &ts->date, RTC_FORMAT_BIN);
 }
 
+void rtc_get_alermtime(RTC_TimeTypeDef *time){
+	RTC_AlarmTypeDef a;
+	HAL_RTC_GetAlarm(&hrtc, &a, RTC_ALARM_A, RTC_FORMAT_BIN);
+	time->Hours = a.AlarmTime.Hours;
+	time->Minutes = a.AlarmTime.Minutes;
+	time->Seconds = a.AlarmTime.Seconds;
+}
 
 /** time '<=' time */
-bool rtc_time_leq(RTC_TimeTypeDef a, RTC_TimeTypeDef b){
-	return ((a.Hours > b.Hours) ? 0 :
-			(a.Hours < b.Hours) ? 1 :
-			(a.Minutes > b.Minutes) ? 0 :
-			(a.Minutes < b.Minutes) ? 1 :
-			(a.Seconds > b.Seconds) ? 0 : 1);
+bool rtc_time_leq(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b){
+	return ((a->Hours > b->Hours) ? 0 :
+			(a->Hours < b->Hours) ? 1 :
+			(a->Minutes > b->Minutes) ? 0 :
+			(a->Minutes < b->Minutes) ? 1 :
+			(a->Seconds > b->Seconds) ? 0 : 1);
 }
 
 /** time '==' time */
-bool rtc_time_eq(RTC_TimeTypeDef a, RTC_TimeTypeDef b){
-	return (a.Hours == b.Hours && a.Minutes == b.Minutes && a.Seconds == b.Seconds);
+bool rtc_time_eq(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b){
+	return (a->Hours == b->Hours && a->Minutes == b->Minutes && a->Seconds == b->Seconds);
 }
 
 /** time '<' time */
-bool rtc_time_lt(RTC_TimeTypeDef a, RTC_TimeTypeDef b){
+bool rtc_time_lt(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b){
 	return (rtc_time_leq(a,b) && !rtc_time_eq(a,b));
 }
 
-RTC_TimeTypeDef rtc_time_add(RTC_TimeTypeDef a, RTC_TimeTypeDef b){
+RTC_TimeTypeDef rtc_time_add(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b){
 	RTC_TimeTypeDef c;
-	c.Seconds = a.Seconds + b.Seconds;
+	c.Seconds = a->Seconds + b->Seconds;
 	if(c.Seconds > 59){
 		c.Seconds -= 60;
 		c.Minutes += 1;
 	}
-	c.Minutes = a.Minutes = b.Minutes;
+	c.Minutes = a->Minutes = b->Minutes;
 	if(c.Minutes > 59){
 		c.Minutes -= 60;
 		c.Hours += 1;
 	}
-	c.Hours = a.Hours = b.Hours;
+	c.Hours = a->Hours = b->Hours;
 	if(c.Hours > 24){
 		c.Hours -= 24;
 	}
