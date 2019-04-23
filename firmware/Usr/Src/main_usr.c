@@ -20,12 +20,17 @@
 
 static void send_data(void);
 static void multimeasure(void);
+static void set_periodic_alarm(void);
 static void periodic_alarm_handler(void);
 static uint8_t measurement_to_SD(void);
 static void dbg_test(void);
 static int8_t argparse_nr(uint32_t *nr);
 static int8_t argparse_str(char *str);
 static void ok(void);
+static bool is_time(RTC_TimeTypeDef *time);
+static void inform_SD_reset(void);
+static void inform_SD_rtc(void);
+
 
 static time_config_t tconf;
 static measure_config_t mconf;
@@ -38,17 +43,29 @@ FIL *f = &SDFile;
 #define TS_BUFF_SZ	32
 char ts_buff[TS_BUFF_SZ];
 
+void init_timetype(RTC_TimeTypeDef *time){
+	time->Hours = 99;
+	time->Minutes = 99;
+	time->Seconds = 99;
+}
+
 static void init(void){
 	state.format = DATA_FORMAT_ASCII;
 	state.stream = false;
 	state.toSD = true;
 
 	memset(&fname, 0, sizeof(fname));
-	memset(&tconf, 0, sizeof(tconf));
+	memset(&ts, 0, sizeof(ts));
+	init_timetype(&tconf.start);
+	init_timetype(&tconf.end);
+	init_timetype(&tconf.ival);
+	init_timetype(&tconf.last_ival_time);
+	tconf.startSet = false;
+	tconf.endSet = false;
+	tconf.ivalSet = false;
 	memset(&mconf, 0, sizeof(mconf));
 	mconf.iterations = 1;
 	mconf.itime[0] = DEFAULT_INTEGRATION_TIME;
-	memset(&ts, 0, sizeof(ts));
 
 #if DBG_CODE
 	/* Overwrites default value from usr_uart.c */
@@ -67,49 +84,9 @@ static void init(void){
 	tim5_Init();
 }
 
-static void inform_SD_reset(void) {
-#if HAS_SD
-	uint8_t res = 0;
-	/* Inform the File that an reset occurred */
-	res = sd_mount();
-	if (!res) {
-		res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf, FNAME_BUF_SZ);
-		if (!res) {
-			res = sd_open_file_neworappend(f, fname.buf);
-			if (!res) {
-				res = f_printf(f, "\nThe sensor was reset/powered-down.\n");
-				res = sd_close(f);
-			}
-		}
-		res = sd_umount();
-	}
-#endif
-}
-
-static void inform_SD_rtc(void) {
-#if HAS_SD
-	uint8_t res = 0;
-	res = sd_mount();
-	if (!res) {
-		res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf, FNAME_BUF_SZ);
-		if (!res) {
-			res = sd_open_file_neworappend(f, fname.buf);
-			if (!res) {
-				f_printf(f, "The RTC was set. Old time: %S\n", ts_buff);
-				rtc_get_now_str(ts_buff, TS_BUFF_SZ);
-				f_printf(f, "                 New time: %S\n", ts_buff);
-				sd_close(f);
-			}
-		}
-		sd_umount();
-	}
-#endif
-}
-
 int main_usr(void) {
 	uint8_t err = 0;
 	uint32_t tmp = 0;
-	uint8_t res = 0;
 	char *str;
 
 	init();
@@ -325,7 +302,7 @@ int main_usr(void) {
 				if (argparse_str(str)) {
 					break;
 				}
-				err = rtc_parse_datetime(str, &ts.time, &ts.date);
+				err = rtc_parsecheck_datetime(str, &ts.time, &ts.date);
 				if (err) {
 					break; // todo: error message
 				}
@@ -347,9 +324,13 @@ int main_usr(void) {
 				if (err) {
 					break;
 				}
-				tconf.start.Hours = ts.time.Hours;
-				tconf.start.Minutes = ts.time.Minutes;
-				tconf.start.Seconds = ts.time.Seconds;
+				if(is_time(&ts.time)){
+					rtc_time_copy(&tconf.start, &ts.time);
+					tconf.startSet = true;
+				} else {
+					init_timetype(&tconf.start);
+					tconf.startSet = false;
+				}
 				ok();
 				break;
 
@@ -361,9 +342,13 @@ int main_usr(void) {
 				if (err) {
 					break;
 				}
-				tconf.end.Hours = ts.time.Hours;
-				tconf.end.Minutes = ts.time.Minutes;
-				tconf.end.Seconds = ts.time.Seconds;
+				if(is_time(&ts.time)){
+					rtc_time_copy(&tconf.end, &ts.time);
+					tconf.endSet = true;
+				} else {
+					init_timetype(&tconf.end);
+					tconf.endSet = false;
+				}
 				ok();
 				break;
 
@@ -371,19 +356,23 @@ int main_usr(void) {
 				if (argparse_str(str)) {
 					break;
 				}
-				err = rtc_parse_interval(str, &ts.time);
+				err = rtc_parse_time(str, &ts.time);
 				if (err) {
 					break;
 				}
-				if (ts.time.Hours == 0 && ts.time.Minutes == 0 && ts.time.Seconds == 0) {
-					/* All zero deactivates the periodically alarm, so this is a valid case.*/
-				} else if (ts.time.Hours == 0 && ts.time.Minutes == 0 && ts.time.Seconds < MIN_IVAL) {
+				if (ts.time.Hours == 0 && ts.time.Minutes == 0 && ts.time.Seconds < MIN_IVAL) {
 					/* Ensure that the interval is long enough to operate safely.*/
 					break;
 				}
-				tconf.ival.Hours = ts.time.Hours;
-				tconf.ival.Minutes = ts.time.Minutes;
-				tconf.ival.Seconds = ts.time.Seconds;
+				if(is_time(&ts.time)){
+					rtc_time_copy(&tconf.ival, &ts.time);
+					tconf.ivalSet = true;
+					set_periodic_alarm();
+				}else {
+					init_timetype(&tconf.ival);
+					tconf.ivalSet = false;
+					HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
+				}
 				ok();
 				break;
 
@@ -411,67 +400,6 @@ int main_usr(void) {
 		}
 	}
 	return 0;
-}
-
-/*
- * if currA < start || currA > end
- * 		setA(start)
- *
- * if start < new+now <= end && new+now < currA
- * 		setA(new+now)
- */
-void update_alarm(){
-	RTC_TimeTypeDef start, next_ival, end, currA, now, zero, newnow;
-	RTC_AlarmTypeDef al;
-	HAL_RTC_GetAlarm(&hrtc, &al, RTC_ALARM_A, RTC_FORMAT_BIN);
-	rtc_get_now(&ts);
-
-	zero.Hours = 0;
-	zero.Minutes = 0;
-	zero.Seconds = 0;
-
-	currA = al.AlarmTime;
-	start = tconf.start;
-	end = tconf.end;
-	now = ts.time;
-
-	/* called from set_ival (rename to set_alarm)
-	 *
-	 * if ival == 000
-	 * 		pass
-	 * if ival & end & start
-	 * 	set alarm to start + ival close
-	 * */
-
-//	next_ival = rtc_time_add(tconf.last_ival_time, tconf.ival);
-//
-//	/*todo alarm deactivated ?*/
-//
-//	/* start==0 or end==0, ival is always set*/
-//	if (rtc_time_eq(start, zero) || rtc_time_eq(end, zero)) {
-//		rtc_set_alarmA(&next_ival);
-//		return;
-//	}
-//
-//	/* if currA < start || currA > end
-//	 * end <= currA < start
-//	 * current alarm out of range -> set to start*/
-//	if(rtc_time_lt(currA, start) || rtc_time_leq(end, currA)){
-//		rtc_set_alarmA(&start);
-//	}
-//
-//	/* if start < next_ival <= end */
-//	if (rtc_time_leq(start, next_ival) && rtc_time_leq(next_ival, end)) {
-//		/* now < next_ival < currA: update to a sooner alarm*/
-//		if (rtc_time_lt(now, next_ival) && rtc_time_lt(next_ival, currA)) {
-//			rtc_set_alarmA(&next_ival);
-//		}
-//		/* currA < now < next_ival: update to regular next alarm,
-//		 * the last alarm probably just occurred*/
-//		if (rtc_time_lt(currA, now) && rtc_time_lt(now, next_ival)) {
-//			rtc_set_alarmA(&next_ival);
-//		}
-//	}
 }
 
 /** print 'ok' */
@@ -606,6 +534,45 @@ void cpu_enter_run_mode(void) {
 	CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));
 }
 
+static void inform_SD_reset(void) {
+#if HAS_SD
+	uint8_t res = 0;
+	/* Inform the File that an reset occurred */
+	res = sd_mount();
+	if (!res) {
+		res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf, FNAME_BUF_SZ);
+		if (!res) {
+			res = sd_open_file_neworappend(f, fname.buf);
+			if (!res) {
+				res = f_printf(f, "\nThe sensor was reset/powered-down.\n");
+				res = sd_close(f);
+			}
+		}
+		res = sd_umount();
+	}
+#endif
+}
+
+static void inform_SD_rtc(void) {
+#if HAS_SD
+	uint8_t res = 0;
+	res = sd_mount();
+	if (!res) {
+		res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf, FNAME_BUF_SZ);
+		if (!res) {
+			res = sd_open_file_neworappend(f, fname.buf);
+			if (!res) {
+				f_printf(f, "The RTC was set. Old time: %S\n", ts_buff);
+				rtc_get_now_str(ts_buff, TS_BUFF_SZ);
+				f_printf(f, "                 New time: %S\n", ts_buff);
+				sd_close(f);
+			}
+		}
+		sd_umount();
+	}
+#endif
+}
+
 /** Store the measurment data to SD card.
  * Requires a mounted SD card. */
 static uint8_t measurement_to_SD(void){
@@ -681,11 +648,26 @@ static void multimeasure(void) {
 	sensor_deinit();
 }
 
+static bool is_time(RTC_TimeTypeDef *time){
+	return (time->Hours < 24) & (time->Minutes < 60) & (time->Seconds < 60);
+}
+
+static void set_periodic_alarm(void){
+	if(tconf.ivalSet){
+		if(tconf.startSet && tconf.endSet){
+			rtc_set_alarmA(&tconf.start);
+		} else {
+			rtc_get_now(&ts);
+			rtc_set_alarmA_by_offset(&ts.time, &tconf.ival);
+		}
+	}
+}
+
 static void periodic_alarm_handler(void) {
 	debug("Periodic alarm \n");
-	RTC_TimeTypeDef now, alarm, new;
-	rtc_get_alermtime(&alarm);
-	rtc_get_now(&now);
+	RTC_TimeTypeDef alarm, new;
+	rtc_get_alermAtime(&alarm);
+	rtc_get_now(&ts);
 
 	multimeasure();
 
@@ -693,7 +675,7 @@ static void periodic_alarm_handler(void) {
 	new = rtc_time_add(&tconf.last_ival_time, &tconf.ival);
 	/* if new <= end */
 	if(rtc_time_leq(&new, &tconf.end)){
-		rtc_set_alarmA(&now);
+		rtc_set_alarmA(&ts.time);
 	}else{
 		rtc_set_alarmA(&tconf.start);
 	}

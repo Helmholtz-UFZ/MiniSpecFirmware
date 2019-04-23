@@ -35,6 +35,9 @@ typedef struct
 	RTC_TimeTypeDef end;
 	RTC_TimeTypeDef ival;
 	RTC_TimeTypeDef last_ival_time;
+	bool startSet;
+	bool endSet;
+	bool ivalSet;
 } time_config_t;
 
 

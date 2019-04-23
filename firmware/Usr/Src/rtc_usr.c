@@ -25,7 +25,7 @@ void rtc_init(void){
  *
  * Return 0 on success, non-zero otherwise
  */
-uint8_t rtc_parse_datetime(char* str, RTC_TimeTypeDef *sTime,
+uint8_t rtc_parsecheck_datetime(char* str, RTC_TimeTypeDef *sTime,
 		RTC_DateTypeDef *sDate) {
 
 	char *p = str;
@@ -114,7 +114,7 @@ uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime) {
 
 	/* Parse the first time number */
 	len = sscanf(p, "%u", &c);
-	if (len == 1 && IS_RTC_HOUR24(c)) {
+	if (len == 1 && c < 100) {
 		sTime->Hours = c;
 
 		/* Parse the second time number*/
@@ -124,7 +124,7 @@ uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime) {
 			p++;
 			/* set pointer after ':' and scan number*/
 			len = sscanf(p, "%u", &c);
-			if (len == 1 && IS_RTC_MINUTES(c)) {
+			if (len == 1 && c < 100) {
 				sTime->Minutes = c;
 
 				/* Parse the third time number*/
@@ -134,7 +134,7 @@ uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime) {
 					p++;
 					/* set pointer after ':' and scan number*/
 					len = sscanf(p, "%u", &c);
-					if (len == 1 && IS_RTC_SECONDS(c)) {
+					if (len == 1 && c < 100) {
 						sTime->Seconds = c;
 						return 0;
 					}
@@ -143,30 +143,6 @@ uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime) {
 		}
 	}
 	return 1;
-}
-/**
- * Parse a interval string to a time object
- * The interval string should be in like ISO 8601 Time format and should look like this:
- * HH:mm:ss, example: 23:59:59
- *
- * Return 0 on success, non-zero otherwise
- */
-uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime) {
-
-	char *p = str;
-	uint c;
-	int16_t len;
-
-	/* Parse the first time number */
-	len = sscanf(p, "%u", &c);
-	if(c == 24){
-		/* 24h is allowed as a special case.*/
-		sTime->Hours = c;
-		sTime->Minutes = 0;
-		sTime->Seconds = 0;
-		return 0;
-	}
-	return rtc_parse_time(str, sTime);
 }
 
 /**
@@ -181,8 +157,7 @@ uint8_t rtc_parse_interval(char *str, RTC_TimeTypeDef *sTime) {
  * account, other fields are ignored.
  *
  * Note: If Hours, Minutes and Seconds of ival is set to zero, the alarm is
- * deactivated. Also if Hours is set to 24, Minutes and Seconds are ignored
- * and the alarm is set to 1day aka. 24h.
+ * set to 24h aka. every day.
  *
  */
 uint8_t rtc_set_alarmA_by_offset(RTC_TimeTypeDef *time, RTC_TimeTypeDef *offset) {
@@ -209,44 +184,29 @@ uint8_t rtc_set_alarmA_by_offset(RTC_TimeTypeDef *time, RTC_TimeTypeDef *offset)
 	a.AlarmTime.StoreOperation = RTC_STOREOPERATION_RESET;
 	a.AlarmTime.TimeFormat = RTC_HOURFORMAT_24;
 
-	if (offset->Seconds == 0 && offset->Minutes == 0 && offset->Hours == 0) {
-		/*Special case: Alarm off. Alarm is already deactivated. So we are done.*/
-		return 0;
+	sum = time->Seconds + offset->Seconds;
+	if (sum < 60) {
+		a.AlarmTime.Seconds = sum;
+		carry = 0;
+	} else {
+		a.AlarmTime.Seconds = sum - 60;
+		carry = 1;
 	}
 
-	if (offset->Hours == 24) {
-		/*Special case one day interval.*/
-		a.AlarmTime.Seconds = time->Seconds;
-		a.AlarmTime.Minutes = time->Minutes;
-		a.AlarmTime.Hours = time->Hours;
-
+	sum = time->Minutes + offset->Minutes + carry;
+	if (sum < 60) {
+		a.AlarmTime.Minutes = sum;
+		carry = 0;
 	} else {
+		a.AlarmTime.Minutes = sum - 60;
+		carry = 1;
+	}
 
-		sum = time->Seconds + offset->Seconds;
-		if (sum < 60) {
-			a.AlarmTime.Seconds = sum;
-			carry = 0;
-		} else {
-			a.AlarmTime.Seconds = sum - 60;
-			carry = 1;
-		}
-
-		sum = time->Minutes + offset->Minutes + carry;
-		if (sum < 60) {
-			a.AlarmTime.Minutes = sum;
-			carry = 0;
-		} else {
-			a.AlarmTime.Minutes = sum - 60;
-			carry = 1;
-		}
-
-		sum = time->Hours + offset->Hours + carry;
-		if (sum < 24) {
-			a.AlarmTime.Hours = sum;
-		} else {
-			a.AlarmTime.Hours = sum - 24;
-		}
-
+	sum = time->Hours + offset->Hours + carry;
+	if (sum < 24) {
+		a.AlarmTime.Hours = sum;
+	} else {
+		a.AlarmTime.Hours = sum - 24;
 	}
 
 	return HAL_RTC_SetAlarm_IT(&hrtc, &a, RTC_FORMAT_BIN);
@@ -265,26 +225,7 @@ uint8_t rtc_set_alarmA(RTC_TimeTypeDef *time) {
 	zero.Hours = 0;
 	zero.Minutes = 0;
 	zero.Minutes = 0;
-
-	if(time->Hours == 0 && time->Minutes == 0 && time->Seconds == 0){
-		zero.Hours = 24;
-		return rtc_set_alarmA_by_offset(time, &zero);
-	}
-
-	if(time->Hours > 23){
-		return 99;
-	}
-
-	return rtc_set_alarmA_by_offset(&zero, time);
-}
-
-/**
- * Updates alarm A if the given time is closer to the currently set alarm,
- * otherwise do nothing.
- */
-uint8_t rtc_update_alarmA(RTC_TimeTypeDef *time){
-	/*TODO*/
-	return 1;
+	return rtc_set_alarmA_by_offset(time, &zero);
 }
 
 /*
@@ -317,12 +258,18 @@ void rtc_get_now(rtc_timestamp_t *ts){
 	HAL_RTC_GetDate(&hrtc, &ts->date, RTC_FORMAT_BIN);
 }
 
-void rtc_get_alermtime(RTC_TimeTypeDef *time){
+void rtc_get_alermAtime(RTC_TimeTypeDef *time){
 	RTC_AlarmTypeDef a;
 	HAL_RTC_GetAlarm(&hrtc, &a, RTC_ALARM_A, RTC_FORMAT_BIN);
 	time->Hours = a.AlarmTime.Hours;
 	time->Minutes = a.AlarmTime.Minutes;
 	time->Seconds = a.AlarmTime.Seconds;
+}
+
+void rtc_time_copy(RTC_TimeTypeDef *to, RTC_TimeTypeDef *from){
+	to->Hours = from->Hours;
+	to->Minutes = from->Minutes;
+	to->Seconds = from->Seconds;
 }
 
 /** time '<=' time */
