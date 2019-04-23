@@ -309,6 +309,15 @@ void rtc_get_now_str(char *buffer, uint32_t sz) {
 			t.Seconds);
 }
 
+/**
+ * Fill the given timestamp with today and now values.
+ */
+void rtc_get_now(rtc_timestamp_t *ts){
+	HAL_RTC_GetTime(&hrtc, &ts->time, RTC_FORMAT_BIN);
+	HAL_RTC_GetDate(&hrtc, &ts->date, RTC_FORMAT_BIN);
+}
+
+
 /** time '<=' time */
 bool rtc_time_leq(RTC_TimeTypeDef a, RTC_TimeTypeDef b){
 	return ((a.Hours > b.Hours) ? 0 :
