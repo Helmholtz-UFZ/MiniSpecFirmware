@@ -114,7 +114,7 @@ uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime) {
 
 	/* Parse the first time number */
 	len = sscanf(p, "%u", &c);
-	if (len == 1 && c < 100) {
+	if (len == 1 && c < 24) {
 		sTime->Hours = c;
 
 		/* Parse the second time number*/
@@ -124,7 +124,7 @@ uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime) {
 			p++;
 			/* set pointer after ':' and scan number*/
 			len = sscanf(p, "%u", &c);
-			if (len == 1 && c < 100) {
+			if (len == 1 && c < 60) {
 				sTime->Minutes = c;
 
 				/* Parse the third time number*/
@@ -134,7 +134,7 @@ uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime) {
 					p++;
 					/* set pointer after ':' and scan number*/
 					len = sscanf(p, "%u", &c);
-					if (len == 1 && c < 100) {
+					if (len == 1 && c < 60) {
 						sTime->Seconds = c;
 						return 0;
 					}

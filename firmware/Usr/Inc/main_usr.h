@@ -29,17 +29,12 @@
 /** @sa DATA_FORMAT_BIN */
 #define DELIMITER_STR   "-----------------------------------------------------------------"
 
-typedef struct
+typedef enum
 {
-	RTC_TimeTypeDef start;
-	RTC_TimeTypeDef end;
-	RTC_TimeTypeDef ival;
-	RTC_TimeTypeDef next_alarm;
-	bool startSet;
-	bool endSet;
-	bool ivalSet;
-} time_config_t;
-
+	IVAL_OFF = 0,
+	IVAL_START_END = 1,
+	IVAL_ENDLESS = 2,
+}ival_mode_t;
 
 #define MCONF_MAX_ITIMES  32
 #define MCONF_MAX_ITERATIONS  32
@@ -48,7 +43,13 @@ typedef struct
 	uint8_t iterations;
 	uint32_t itime[MCONF_MAX_ITIMES];
 	uint8_t itime_index;
-} measure_config_t;
+	ival_mode_t mode;
+
+	RTC_TimeTypeDef start;
+	RTC_TimeTypeDef end;
+	RTC_TimeTypeDef ival;
+	RTC_TimeTypeDef next_alarm;
+} runtime_config_t;
 
 typedef struct
 {

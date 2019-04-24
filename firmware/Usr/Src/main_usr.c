@@ -32,8 +32,7 @@ static void inform_SD_reset(void);
 static void inform_SD_rtc(void);
 
 
-static time_config_t tconf;
-static measure_config_t mconf;
+static runtime_config_t rc;
 static statemachine_config_t state;
 static rtc_timestamp_t ts;
 
@@ -56,16 +55,13 @@ static void init(void){
 
 	memset(&fname, 0, sizeof(fname));
 	memset(&ts, 0, sizeof(ts));
-	init_timetype(&tconf.start);
-	init_timetype(&tconf.end);
-	init_timetype(&tconf.ival);
-	init_timetype(&tconf.next_alarm);
-	tconf.startSet = false;
-	tconf.endSet = false;
-	tconf.ivalSet = false;
-	memset(&mconf, 0, sizeof(mconf));
-	mconf.iterations = 1;
-	mconf.itime[0] = DEFAULT_INTEGRATION_TIME;
+	init_timetype(&rc.start);
+	init_timetype(&rc.end);
+	init_timetype(&rc.ival);
+	init_timetype(&rc.next_alarm);
+	memset(&rc, 0, sizeof(rc));
+	rc.iterations = 1;
+	rc.itime[0] = DEFAULT_INTEGRATION_TIME;
 
 	/* We enable the interrupts later */
 	HAL_NVIC_DisableIRQ(RXTX_IRQn);
@@ -192,12 +188,12 @@ int main_usr(void) {
 				break;
 
 			case USR_CMD_GET_INDEXED_ITIME:
-				tmp = mconf.itime[mconf.itime_index];
+				tmp = rc.itime[rc.itime_index];
 				if (state.format == DATA_FORMAT_BIN) {
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &mconf.itime_index, 4, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime_index, 4, 1000);
 					HAL_UART_Transmit(&hrxtx, (uint8_t *) &tmp, 4, 1000);
 				} else {
-					printf("integration time [%u] = %lu us\n", mconf.itime_index, tmp);
+					printf("integration time [%u] = %lu us\n", rc.itime_index, tmp);
 				}
 				break;
 
@@ -218,31 +214,31 @@ int main_usr(void) {
 
 			case USR_CMD_GET_INTERVAL:
 				if (state.format == DATA_FORMAT_ASCII) {
-					printf("%02i:%02i:%02i\n", tconf.ival.Hours, tconf.ival.Minutes, tconf.ival.Seconds);
+					printf("%02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
 				} else {
 					/* Transmit binary */
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &tconf.ival.Hours, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &tconf.ival.Minutes, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &tconf.ival.Seconds, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Hours, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Minutes, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Seconds, 1, 1000);
 				}
 				break;
 
 			case USR_CMD_GET_CONFIG:
 				for (int i = 0; i < MCONF_MAX_ITIMES; ++i) {
-					if(mconf.itime[i] != 0){
-						printf("itime[%u] = %lu\n", i, mconf.itime[i]);
+					if(rc.itime[i] != 0){
+						printf("itime[%u] = %lu\n", i, rc.itime[i]);
 					}
 				}
-				printf("itime[%u] is currently choosen for setting.\n", mconf.itime_index);
-				printf("iteration per measurement: %u\n", mconf.iterations);
+				printf("itime[%u] is currently choosen for setting.\n", rc.itime_index);
+				printf("iteration per measurement: %u\n", rc.iterations);
 				printf("start time: %02i:%02i:%02i\n",
-						tconf.start.Hours, tconf.start.Minutes, tconf.start.Seconds);
+						rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
 				printf("end time:   %02i:%02i:%02i\n",
-						tconf.end.Hours, tconf.end.Minutes, tconf.end.Seconds);
+						rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
 				printf("interval:   %02i:%02i:%02i\n",
-						tconf.ival.Hours, tconf.ival.Minutes, tconf.ival.Seconds);
+						rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
 				printf("next alarm: %02i:%02i:%02i\n",
-						tconf.next_alarm.Hours, tconf.next_alarm.Minutes, tconf.next_alarm.Seconds);
+						rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 				rtc_get_now(&ts);
 				printf("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 							ts.time.Minutes, ts.time.Seconds);
@@ -266,8 +262,8 @@ int main_usr(void) {
 				if(argparse_nr(&tmp)){
 					break;
 				}
-				mconf.itime[mconf.itime_index] = tmp;
-				if(mconf.itime_index == 0){
+				rc.itime[rc.itime_index] = tmp;
+				if(rc.itime_index == 0){
 					/* 0 is the default itime, which is used for
 					 * the single measurement command. */
 					tmp = sensor_set_itime(tmp);
@@ -275,7 +271,7 @@ int main_usr(void) {
 					 * the itime is set to the minmal possible(!) value.
 					 * To keep the config consistent we need to update
 					 * the default itime in slot 0. */
-					mconf.itime[0] = tmp;
+					rc.itime[0] = tmp;
 				}
 				ok();
 				break;
@@ -285,7 +281,7 @@ int main_usr(void) {
 					break;
 				}
 				if(tmp < MCONF_MAX_ITIMES){
-					mconf.itime_index = tmp;
+					rc.itime_index = tmp;
 					ok();
 				}
 				break;
@@ -295,7 +291,7 @@ int main_usr(void) {
 					break;
 				}
 				if(0 < tmp && tmp < MCONF_MAX_ITERATIONS){
-					mconf.iterations = tmp;
+					rc.iterations = tmp;
 					ok();
 				}
 				break;
@@ -325,11 +321,11 @@ int main_usr(void) {
 					break;
 				}
 				if(is_time(&ts.time)){
-					rtc_time_copy(&tconf.start, &ts.time);
-					tconf.startSet = true;
+					rtc_time_copy(&rc.start, &ts.time);
+					rc.startSet = true;
 				} else {
-					init_timetype(&tconf.start);
-					tconf.startSet = false;
+					init_timetype(&rc.start);
+					rc.startSet = false;
 				}
 				ok();
 				break;
@@ -343,11 +339,11 @@ int main_usr(void) {
 					break;
 				}
 				if(is_time(&ts.time)){
-					rtc_time_copy(&tconf.end, &ts.time);
-					tconf.endSet = true;
+					rtc_time_copy(&rc.end, &ts.time);
+					rc.endSet = true;
 				} else {
-					init_timetype(&tconf.end);
-					tconf.endSet = false;
+					init_timetype(&rc.end);
+					rc.endSet = false;
 				}
 				ok();
 				break;
@@ -356,26 +352,22 @@ int main_usr(void) {
 				if (argparse_str(&str)) {
 					break;
 				}
-				err = rtc_parse_time(str, &ts.time);
-				if (err) {
-					break;
-				}
 				if (ts.time.Hours == 0 && ts.time.Minutes == 0 && ts.time.Seconds < MIN_IVAL) {
 					/* Ensure that the interval is long enough to operate safely.*/
 					break;
 				}
 				if(is_time(&ts.time)){
 					/* update value. the new value is used with the next (old ival value) alarm*/
-					tconf.ival = ts.time;
-					if(!tconf.ivalSet){
+					rc.ival = ts.time;
+					if(!rc.ivalSet){
 						/* periodic alarm was off*/
 						set_periodic_alarm();
 					}
-					tconf.ivalSet = true;
+					rc.ivalSet = true;
 				}else {
-					init_timetype(&tconf.ival);
-					init_timetype(&tconf.next_alarm);
-					tconf.ivalSet = false;
+					init_timetype(&rc.ival);
+					init_timetype(&rc.next_alarm);
+					rc.ivalSet = false;
 					HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
 				}
 				ok();
@@ -390,7 +382,7 @@ int main_usr(void) {
 					break;
 				}
 				if(is_time(&ts.time)){
-					tconf.next_alarm = ts.time;
+					rc.next_alarm = ts.time;
 					rtc_set_alarmA(&ts.time);
 				}
 				ok();
@@ -420,6 +412,71 @@ int main_usr(void) {
 		}
 	}
 	return 0;
+}
+
+uint8_t parseset_ival(void){
+
+	char c;
+	char *str;
+	uint len, err;
+	RTC_TimeTypeDef iv, st, en, off;
+	off.Hours = 99; off.Minutes = 99, off.Seconds =99;
+
+	/*parse first nr - alarm on/off*/
+	len = sscanf(str, "%u", &c);
+	if(c == 0){
+		rc.start = off;
+		rc.end = off;
+		rc.ival = off;
+		rc.mode = IVAL_OFF;
+		return 0;
+	}
+	if(c != 1 && c != 2){
+		return 1;
+	}
+	str++; //ignore c
+
+	/*parse interval*/
+	str = (char*) memchr(str, ',', 5);
+	if(!str){
+		return 1;
+	}
+	str++; // ignore ','
+	if(rtc_parse_time(str, &iv)){
+		return 1;
+	}
+
+	if (iv.Hours == 0 && iv.Minutes == 0 && iv.Seconds < MIN_IVAL) {
+		return 1;
+	}
+	if(c == 2){
+		rc.ival = iv;
+		rc.mode = IVAL_ENDLESS;
+	}
+
+	/*parse start-time*/
+	str = (char*) memchr(str, ',', 5);
+	if(!str){
+		return 1;
+	}
+	str++; // ignore ','
+	if(rtc_parse_time(str, &st)){
+		return 1;
+	}
+
+	/*parse end-time*/
+	str = (char*) memchr(str, ',', 5);
+	if(!str){
+		return 1;
+	}
+	str++; // ignore ','
+	if(rtc_parse_time(str, &en)){
+		return 1;
+	}
+	rc.ival = iv;
+	rc.start = st;
+	rc.end = en;
+	rc.mode = IVAL_START_END;
 }
 
 /** print 'ok' */
@@ -633,17 +690,17 @@ static uint8_t measurement_to_SD(void){
 static void multimeasure(void) {
 	int8_t res = 0;
 	for (int i = 0; i < MCONF_MAX_ITIMES; ++i) {
-		if (mconf.itime[i] == 0) {
+		if (rc.itime[i] == 0) {
 			/* itime disabled */
 			continue;
 		}
-		sensor_set_itime(mconf.itime[i]);
-		debug("itime[%u]=%lu\n", i, mconf.itime[i]);
+		sensor_set_itime(rc.itime[i]);
+		debug("itime[%u]=%lu\n", i, rc.itime[i]);
 
 		/* Measure N times */
-		for (int n = 0; n < mconf.iterations; ++n) {
+		for (int n = 0; n < rc.iterations; ++n) {
 
-			debug("N: %u/%u\n", n+1, mconf.iterations);
+			debug("N: %u/%u\n", n+1, rc.iterations);
 			/* Generate timestamp */
 			rtc_get_now_str(ts_buff, TS_BUFF_SZ);
 
@@ -678,13 +735,13 @@ static bool is_time(RTC_TimeTypeDef *time){
 }
 
 static void set_periodic_alarm(void){
-	if(tconf.startSet && tconf.endSet){
-		rtc_set_alarmA(&tconf.start);
+	if(rc.startSet && rc.endSet){
+		rtc_set_alarmA(&rc.start);
 	} else {
 		rtc_get_now(&ts);
-		rtc_set_alarmA_by_offset(&ts.time, &tconf.ival);
+		rtc_set_alarmA_by_offset(&ts.time, &rc.ival);
 	}
-	tconf.next_alarm = rtc_get_alermAtime();
+	rc.next_alarm = rtc_get_alermAtime();
 }
 
 static void periodic_alarm_handler(void) {
@@ -694,24 +751,24 @@ static void periodic_alarm_handler(void) {
 	debug("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
 
-	if (tconf.ivalSet) {
+	if (rc.ivalSet) {
 		multimeasure();
 
 		/*set new alarm*/
-		new = rtc_time_add(&tconf.next_alarm, &tconf.ival);
-		if (tconf.endSet && tconf.startSet) {
+		new = rtc_time_add(&rc.next_alarm, &rc.ival);
+		if (rc.endSet && rc.startSet) {
 			/* if new <= end */
-			if (rtc_time_leq(&new, &tconf.end)) {
+			if (rtc_time_leq(&new, &rc.end)) {
 				rtc_set_alarmA(&new);
 			} else {
-				rtc_set_alarmA(&tconf.start);
+				rtc_set_alarmA(&rc.start);
 			}
 		} else {
 			rtc_set_alarmA(&new);
 		}
-		tconf.next_alarm = rtc_get_alermAtime();
+		rc.next_alarm = rtc_get_alermAtime();
 	}
-	debug("next: %02i:%02i:%02i\n", tconf.next_alarm.Hours, tconf.next_alarm.Minutes, tconf.next_alarm.Seconds);
+	debug("next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 }
 
 /* This function is used to test functions
@@ -729,19 +786,19 @@ static void dbg_test(void) {
 	ts.date.Date = 1;
 	HAL_RTC_SetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
 	HAL_RTC_SetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
-	tconf.end.Hours = 0;
-	tconf.end.Minutes = 3;
-	tconf.end.Seconds = 0;
-	tconf.endSet = true;
-	tconf.start.Hours = 0;
-	tconf.start.Minutes = 0;
-	tconf.start.Seconds = 40;
-	tconf.startSet = true;
-	tconf.ival.Hours = 0;
-	tconf.ival.Minutes = 0;
-	tconf.ival.Seconds = 20;
+	rc.end.Hours = 0;
+	rc.end.Minutes = 3;
+	rc.end.Seconds = 0;
+	rc.endSet = true;
+	rc.start.Hours = 0;
+	rc.start.Minutes = 0;
+	rc.start.Seconds = 40;
+	rc.startSet = true;
+	rc.ival.Hours = 0;
+	rc.ival.Minutes = 0;
+	rc.ival.Seconds = 20;
 	set_periodic_alarm();
-	tconf.ivalSet = true;
+	rc.ivalSet = true;
 #endif
 	return;
 }
