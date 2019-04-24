@@ -327,21 +327,6 @@ int main_usr(void) {
 				ok();
 				break;
 
-			case USR_CMD_FORCE_NEXT_ALARM:
-				if (argparse_str(&str)) {
-					break;
-				}
-				err = rtc_parse_time(str, &ts.time);
-				if (err) {
-					break;
-				}
-				if(is_time(&ts.time)){
-					rc.next_alarm = ts.time;
-					rtc_set_alarmA(&ts.time);
-				}
-				ok();
-				break;
-
 			/* DEBUG ============================================================ */
 
 			case USR_CMD_DEBUG:
@@ -742,7 +727,7 @@ static void set_alarm(void){
  * code is executed by timer. */
 static void dbg_test(void) {
 #if DBG_CODE
-	char *s = "1,00:00:20,00:00:38,00:03:00\r";
+	char *s = "1,00:00:20,00:00:20,00:03:00\r";
 	parse_ival(s);
 	set_alarm();
 #endif

@@ -9,6 +9,7 @@
 #define INC_CMD_PARSER_H_
 
 #include "global_config.h"
+#include "usart_usr.h"
 
 /**
  * enum for the defined commands
@@ -47,10 +48,12 @@ typedef enum
 
 } usr_cmd_enum_t;
 
-
 /** Size of the argument buffer in usr_cmd_typedef
- * must not exceed UART_DEFAULT_RX_BUFFER_SZ */
+ * must not exceed UART_RX_BUFFER_SZ */
 #define ARGBUFFSZ	100
+#if ARGBUFFSZ > UART_RX_BUFFER_SZ
+#error "Buffer to big"
+#endif
 
 typedef struct
 {
