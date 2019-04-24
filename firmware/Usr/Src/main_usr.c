@@ -20,20 +20,23 @@
 
 static void send_data(void);
 static void multimeasure(void);
-static void set_periodic_alarm(void);
+static void set_alarm(void);
 static void periodic_alarm_handler(void);
-static uint8_t measurement_to_SD(void);
 static void dbg_test(void);
+
 static int8_t argparse_nr(uint32_t *nr);
 static int8_t argparse_str(char **str);
-static void ok(void);
+static int8_t parse_ival(char *str);
+
 static bool is_time(RTC_TimeTypeDef *time);
+static void ok(void);
+
+static uint8_t measurement_to_SD(void);
 static void inform_SD_reset(void);
 static void inform_SD_rtc(void);
 
-
-static runtime_config_t rc;
 static statemachine_config_t state;
+static runtime_config_t rc;
 static rtc_timestamp_t ts;
 
 static filename_t fname;
@@ -312,64 +315,15 @@ int main_usr(void) {
 				ok();
 				break;
 
-			case USR_CMD_SET_START_TIME:
-				if (argparse_str(&str)) {
-					break;
-				}
-				err = rtc_parse_time(str, &ts.time);
-				if (err) {
-					break;
-				}
-				if(is_time(&ts.time)){
-					rtc_time_copy(&rc.start, &ts.time);
-					rc.startSet = true;
-				} else {
-					init_timetype(&rc.start);
-					rc.startSet = false;
-				}
-				ok();
-				break;
-
-			case USR_CMD_SET_END_TIME:
-				if (argparse_str(&str)) {
-					break;
-				}
-				err = rtc_parse_time(str, &ts.time);
-				if (err) {
-					break;
-				}
-				if(is_time(&ts.time)){
-					rtc_time_copy(&rc.end, &ts.time);
-					rc.endSet = true;
-				} else {
-					init_timetype(&rc.end);
-					rc.endSet = false;
-				}
-				ok();
-				break;
-
 			case USR_CMD_SET_INTERVAL:
 				if (argparse_str(&str)) {
 					break;
 				}
-				if (ts.time.Hours == 0 && ts.time.Minutes == 0 && ts.time.Seconds < MIN_IVAL) {
-					/* Ensure that the interval is long enough to operate safely.*/
+				err = parse_ival(str);
+				if (err) {
 					break;
 				}
-				if(is_time(&ts.time)){
-					/* update value. the new value is used with the next (old ival value) alarm*/
-					rc.ival = ts.time;
-					if(!rc.ivalSet){
-						/* periodic alarm was off*/
-						set_periodic_alarm();
-					}
-					rc.ivalSet = true;
-				}else {
-					init_timetype(&rc.ival);
-					init_timetype(&rc.next_alarm);
-					rc.ivalSet = false;
-					HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
-				}
+				set_alarm();
 				ok();
 				break;
 
@@ -414,16 +368,14 @@ int main_usr(void) {
 	return 0;
 }
 
-uint8_t parseset_ival(void){
+static int8_t parse_ival(char *str){
 
-	char c;
-	char *str;
-	uint len, err;
+	uint c = 99;
 	RTC_TimeTypeDef iv, st, en, off;
 	off.Hours = 99; off.Minutes = 99, off.Seconds =99;
 
 	/*parse first nr - alarm on/off*/
-	len = sscanf(str, "%u", &c);
+	sscanf(str, "%u", &c);
 	if(c == 0){
 		rc.start = off;
 		rc.end = off;
@@ -452,10 +404,11 @@ uint8_t parseset_ival(void){
 	if(c == 2){
 		rc.ival = iv;
 		rc.mode = IVAL_ENDLESS;
+		return 0;
 	}
 
 	/*parse start-time*/
-	str = (char*) memchr(str, ',', 5);
+	str = (char*) memchr(str, ',', 20);
 	if(!str){
 		return 1;
 	}
@@ -465,7 +418,7 @@ uint8_t parseset_ival(void){
 	}
 
 	/*parse end-time*/
-	str = (char*) memchr(str, ',', 5);
+	str = (char*) memchr(str, ',', 20);
 	if(!str){
 		return 1;
 	}
@@ -476,7 +429,8 @@ uint8_t parseset_ival(void){
 	rc.ival = iv;
 	rc.start = st;
 	rc.end = en;
-	rc.mode = IVAL_START_END;
+	rc.mode = IVAL_STARTEND;
+	return 0;
 }
 
 /** print 'ok' */
@@ -734,16 +688,6 @@ static bool is_time(RTC_TimeTypeDef *time){
 	return (time->Hours < 24) & (time->Minutes < 60) & (time->Seconds < 60);
 }
 
-static void set_periodic_alarm(void){
-	if(rc.startSet && rc.endSet){
-		rtc_set_alarmA(&rc.start);
-	} else {
-		rtc_get_now(&ts);
-		rtc_set_alarmA_by_offset(&ts.time, &rc.ival);
-	}
-	rc.next_alarm = rtc_get_alermAtime();
-}
-
 static void periodic_alarm_handler(void) {
 	debug("Periodic alarm \n");
 	RTC_TimeTypeDef new;
@@ -751,24 +695,44 @@ static void periodic_alarm_handler(void) {
 	debug("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
 
-	if (rc.ivalSet) {
+	if (rc.mode != IVAL_OFF){
 		multimeasure();
 
-		/*set new alarm*/
+		/* set new alarm */
 		new = rtc_time_add(&rc.next_alarm, &rc.ival);
-		if (rc.endSet && rc.startSet) {
+		if (rc.mode == IVAL_ENDLESS){
+				rtc_set_alarmA(&new);
+
+		} else { /* rc.mode == IVAL_STARTEND */
 			/* if new <= end */
 			if (rtc_time_leq(&new, &rc.end)) {
 				rtc_set_alarmA(&new);
 			} else {
 				rtc_set_alarmA(&rc.start);
 			}
-		} else {
-			rtc_set_alarmA(&new);
 		}
 		rc.next_alarm = rtc_get_alermAtime();
 	}
 	debug("next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
+}
+
+static void set_alarm(void){
+
+	if (rc.mode == IVAL_OFF) {
+		init_timetype(&rc.ival);
+		init_timetype(&rc.next_alarm);
+		HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
+		return;
+	}
+
+	if (rc.mode == IVAL_STARTEND) {
+		rtc_set_alarmA(&rc.start);
+
+	} else { /* rc.mode == IVAL_ENDLESS) */
+		rtc_get_now(&ts);
+		rtc_set_alarmA_by_offset(&ts.time, &rc.ival);
+	}
+	rc.next_alarm = rtc_get_alermAtime();
 }
 
 /* This function is used to test functions
@@ -778,27 +742,9 @@ static void periodic_alarm_handler(void) {
  * code is executed by timer. */
 static void dbg_test(void) {
 #if DBG_CODE
-	ts.time.Hours = 0;
-	ts.time.Minutes = 0;
-	ts.time.Seconds = 38;
-	ts.date.Year = 0;
-	ts.date.Month = 1;
-	ts.date.Date = 1;
-	HAL_RTC_SetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
-	HAL_RTC_SetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
-	rc.end.Hours = 0;
-	rc.end.Minutes = 3;
-	rc.end.Seconds = 0;
-	rc.endSet = true;
-	rc.start.Hours = 0;
-	rc.start.Minutes = 0;
-	rc.start.Seconds = 40;
-	rc.startSet = true;
-	rc.ival.Hours = 0;
-	rc.ival.Minutes = 0;
-	rc.ival.Seconds = 20;
-	set_periodic_alarm();
-	rc.ivalSet = true;
+	char *s = "1,00:00:20,00:00:38,00:03:00\r";
+	parse_ival(s);
+	set_alarm();
 #endif
 	return;
 }

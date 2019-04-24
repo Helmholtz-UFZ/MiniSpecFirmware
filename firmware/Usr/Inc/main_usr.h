@@ -32,7 +32,7 @@
 typedef enum
 {
 	IVAL_OFF = 0,
-	IVAL_START_END = 1,
+	IVAL_STARTEND = 1,
 	IVAL_ENDLESS = 2,
 }ival_mode_t;
 
@@ -49,6 +49,7 @@ typedef struct
 	RTC_TimeTypeDef end;
 	RTC_TimeTypeDef ival;
 	RTC_TimeTypeDef next_alarm;
+
 } runtime_config_t;
 
 typedef struct
