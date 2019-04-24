@@ -17,12 +17,16 @@ https://git.ufz.de/MET/WG6/Sensornetworks/Micro_Spectrometer/microspecsensorboar
 Differences in usage with HW-Versions-Change 2.0 to 2.1
 -------------------------------------
 
-- Default USART-Interface is now Uart4 (befor was Uart1). Use CN7 Pin1 for TX and CN7 Pin2 for RX.
+- Default USART-Interface is Uart1. Use PB7 for RX and PB6 for TX
     Use thes to connect them to CN3 rx to tx and tx to rx for Usb-Virtual-COM-Port communication.
 - NRST (SB12) is not connected by default anymore. For Programming/Debugging connect manually: 
     connect CN4 Pin5 with CN7 Pin14
 - SD Card is working now. Use a formated Fat32 SD card. CSV-Files are generated.
-
+- DIP-Switch is connected physically to pins PA2,PA3 and PB15
+- ParallelPort Data D3 is switched from PA3 to PA10
+- ParallelPort Data D2 is switched from PA2 to PA8
+- ADC-RESET signal removed
+- ADC-PD signal removed
 
 Communication with the Board
 ----------------------------
