@@ -40,6 +40,15 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 		return;
 	}
 
+	str = "multimeasure\r";
+	alias = "mm\r";
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+		extcmd.cmd = USR_CMD_MULTI_MEASURE_START;
+		return;
+	}
+
 	str = "stream\r";
 	sz = strlen(str);
 	if (memcmp(buffer, str, sz) == 0) {
@@ -96,12 +105,30 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 		return;
 	}
 
+	str = "config?\r";
+	alias = "c?\r";
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+		extcmd.cmd = USR_CMD_GET_CONFIG;
+		return;
+	}
+
 	str = "itime?\r";
 	alias = "i?\r";
 	sz = strlen(str);
 	aliassz = strlen(alias);
 	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
-		extcmd.cmd = USR_CMD_READ_ITIME;
+		extcmd.cmd = USR_CMD_GET_ITIME;
+		return;
+	}
+
+	str = "itimeindex?\r";
+	alias = "ii?\r";
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+		extcmd.cmd = USR_CMD_GET_INDEXED_ITIME;
 		return;
 	}
 
@@ -110,7 +137,35 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 	sz = strlen(str);
 	aliassz = strlen(alias);
 	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
-		extcmd.cmd = USR_CMD_WRITE_ITIME;
+		extcmd.cmd = USR_CMD_SET_ITIME;
+		/* Set pointer to char after the '=' */
+		str = (char*) memchr(buffer, '=', sz) + 1;
+		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
+		 * listening again on the rx line. */
+		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
+		return;
+	}
+
+	str = "itimeindex=";
+	alias = "ii=";
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+		extcmd.cmd = USR_CMD_SET_ITIME_INDEX;
+		/* Set pointer to char after the '=' */
+		str = (char*) memchr(buffer, '=', sz) + 1;
+		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
+		 * listening again on the rx line. */
+		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
+		return;
+	}
+
+	str = "iterations=";
+	alias = "N=";
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+		extcmd.cmd = USR_CMD_SET_MULTI_MEASURE_ITERATIONS;
 		/* Set pointer to char after the '=' */
 		str = (char*) memchr(buffer, '=', sz) + 1;
 		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
@@ -120,8 +175,10 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 	}
 
 	str = "format=";
+	alias = "f=";
 	sz = strlen(str);
-	if (memcmp(buffer, str, sz) == 0) {
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
 		extcmd.cmd = USR_CMD_SET_FORMAT;
 		/* Set pointer to char after the '=' */
 		str = (char*) memchr(buffer, '=', sz) + 1;
@@ -135,6 +192,34 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 	sz = strlen(str);
 	if (memcmp(buffer, str, sz) == 0) {
 		extcmd.cmd = USR_CMD_SET_RTC_TIME;
+		/* Set pointer to char after the '=' */
+		str = (char*) memchr(buffer, '=', sz) + 1;
+		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
+		 * listening again on the rx line. */
+		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
+		return;
+	}
+
+	str = "endtime=";
+	alias = "et=";
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+		extcmd.cmd = USR_CMD_SET_END_TIME;
+		/* Set pointer to char after the '=' */
+		str = (char*) memchr(buffer, '=', sz) + 1;
+		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
+		 * listening again on the rx line. */
+		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
+		return;
+	}
+
+	str = "starttime=";
+	alias = "st=";
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+		extcmd.cmd = USR_CMD_SET_START_TIME;
 		/* Set pointer to char after the '=' */
 		str = (char*) memchr(buffer, '=', sz) + 1;
 		/* Copy arg str to arg_buffer, so we can reset the receive buffer and

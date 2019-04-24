@@ -35,7 +35,7 @@ uint8_t rtc_set_alarmA(RTC_TimeTypeDef *time);
 uint8_t rtc_set_alarmA_by_offset(RTC_TimeTypeDef *time, RTC_TimeTypeDef *ival);
 void rtc_get_now_str(char *buffer, uint32_t sz);
 void rtc_get_now(rtc_timestamp_t *ts);
-void rtc_get_alermAtime(RTC_TimeTypeDef *time);
+RTC_TimeTypeDef rtc_get_alermAtime(void);
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc);
 
 #endif /* INC_RTC_USR_H_ */

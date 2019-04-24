@@ -258,15 +258,14 @@ void rtc_get_now(rtc_timestamp_t *ts){
 	HAL_RTC_GetDate(&hrtc, &ts->date, RTC_FORMAT_BIN);
 }
 
-void rtc_get_alermAtime(RTC_TimeTypeDef *time){
+RTC_TimeTypeDef rtc_get_alermAtime(void){
 	RTC_AlarmTypeDef a;
 	HAL_RTC_GetAlarm(&hrtc, &a, RTC_ALARM_A, RTC_FORMAT_BIN);
-	time->Hours = a.AlarmTime.Hours;
-	time->Minutes = a.AlarmTime.Minutes;
-	time->Seconds = a.AlarmTime.Seconds;
+	return a.AlarmTime;
 }
 
 void rtc_time_copy(RTC_TimeTypeDef *to, RTC_TimeTypeDef *from){
+	// todo useless, to = from would do the same
 	to->Hours = from->Hours;
 	to->Minutes = from->Minutes;
 	to->Seconds = from->Seconds;
@@ -293,17 +292,20 @@ bool rtc_time_lt(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b){
 
 RTC_TimeTypeDef rtc_time_add(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b){
 	RTC_TimeTypeDef c;
+	uint carry = 0; // this is += or ++ do not work, because of optimization (?)
+	c.Hours = 0; c.Minutes = 0; c.Seconds = 0;
 	c.Seconds = a->Seconds + b->Seconds;
 	if(c.Seconds > 59){
 		c.Seconds -= 60;
-		c.Minutes += 1;
+		carry = 1;
 	}
-	c.Minutes = a->Minutes = b->Minutes;
+	c.Minutes = a->Minutes + b->Minutes + carry;
+	carry = 0;
 	if(c.Minutes > 59){
 		c.Minutes -= 60;
-		c.Hours += 1;
+		carry = 1;
 	}
-	c.Hours = a->Hours = b->Hours;
+	c.Hours = a->Hours + b->Hours + carry;
 	if(c.Hours > 24){
 		c.Hours -= 24;
 	}

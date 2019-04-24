@@ -34,7 +34,7 @@ typedef struct
 	RTC_TimeTypeDef start;
 	RTC_TimeTypeDef end;
 	RTC_TimeTypeDef ival;
-	RTC_TimeTypeDef last_ival_time;
+	RTC_TimeTypeDef next_alarm;
 	bool startSet;
 	bool endSet;
 	bool ivalSet;
