@@ -217,7 +217,7 @@ uint8_t rtc_set_alarmA_by_offset(RTC_TimeTypeDef *time, RTC_TimeTypeDef *offset)
  *
  * param time: time to set the alarm
  *
- * Note: Only Hours, Minutes and Seconds from both parameter are taken in
+ * Note: Only Hours, Minutes and Seconds time are taken in
  * account, other fields are ignored.
  */
 uint8_t rtc_set_alarmA(RTC_TimeTypeDef *time) {
@@ -253,22 +253,17 @@ void rtc_get_now_str(char *buffer, uint32_t sz) {
 /**
  * Fill the given timestamp with today and now values.
  */
-void rtc_get_now(rtc_timestamp_t *ts){
-	HAL_RTC_GetTime(&hrtc, &ts->time, RTC_FORMAT_BIN);
-	HAL_RTC_GetDate(&hrtc, &ts->date, RTC_FORMAT_BIN);
+rtc_timestamp_t rtc_get_now(void){
+	rtc_timestamp_t ts;
+	HAL_RTC_GetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
+	HAL_RTC_GetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
+	return ts;
 }
 
 RTC_TimeTypeDef rtc_get_alermAtime(void){
 	RTC_AlarmTypeDef a;
 	HAL_RTC_GetAlarm(&hrtc, &a, RTC_ALARM_A, RTC_FORMAT_BIN);
 	return a.AlarmTime;
-}
-
-void rtc_time_copy(RTC_TimeTypeDef *to, RTC_TimeTypeDef *from){
-	// todo useless, to = from would do the same
-	to->Hours = from->Hours;
-	to->Minutes = from->Minutes;
-	to->Seconds = from->Seconds;
 }
 
 /** time '<=' time */
@@ -311,6 +306,21 @@ RTC_TimeTypeDef rtc_time_add(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b){
 	}
 	return c;
 	// TODO carry ?
+}
+
+uint32_t rtc_time2seconds(RTC_TimeTypeDef *t){
+	return (t->Hours * 60 + t->Minutes ) * 60 + t->Seconds;
+}
+
+RTC_TimeTypeDef rtc_seconds2time(uint32_t s){
+	uint32_t x = s;
+	RTC_TimeTypeDef t;
+	t.Hours = x / 3600;
+	x -= t.Hours * 3600;
+	t.Minutes = x / 60;
+	x -= t.Minutes;
+	t.Seconds = x;
+	return t;
 }
 
 /**

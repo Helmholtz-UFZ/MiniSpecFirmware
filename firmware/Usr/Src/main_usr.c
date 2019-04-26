@@ -20,15 +20,15 @@
 
 static void send_data(void);
 static void multimeasure(void);
-static void set_alarm(void);
+static void set_initial_alarm(void);
 static void periodic_alarm_handler(void);
+static RTC_TimeTypeDef get_closest_next_alarm(void);
 static void dbg_test(void);
 
 static int8_t argparse_nr(uint32_t *nr);
 static int8_t argparse_str(char **str);
 static int8_t parse_ival(char *str);
 
-static bool is_time(RTC_TimeTypeDef *time);
 static void ok(void);
 
 static uint8_t measurement_to_SD(void);
@@ -201,7 +201,7 @@ int main_usr(void) {
 				break;
 
 			case USR_CMD_GET_RTC_TIME:
-				rtc_get_now(&ts);
+				ts = rtc_get_now();
 				if (state.format == DATA_FORMAT_ASCII) {
 					printf("20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 							ts.time.Minutes, ts.time.Seconds);
@@ -242,7 +242,7 @@ int main_usr(void) {
 						rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
 				printf("next alarm: %02i:%02i:%02i\n",
 						rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
-				rtc_get_now(&ts);
+				ts = rtc_get_now();
 				printf("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 							ts.time.Minutes, ts.time.Seconds);
 				break;
@@ -323,7 +323,7 @@ int main_usr(void) {
 				if (err) {
 					break;
 				}
-				set_alarm();
+				set_initial_alarm();
 				ok();
 				break;
 
@@ -411,6 +411,12 @@ static int8_t parse_ival(char *str){
 	if(rtc_parse_time(str, &en)){
 		return 1;
 	}
+
+	/*check constrains*/
+	if (!rtc_time_lt(&st, &en)){
+		return 2;
+	}
+
 	rc.ival = iv;
 	rc.start = st;
 	rc.end = en;
@@ -669,14 +675,10 @@ static void multimeasure(void) {
 	sensor_deinit();
 }
 
-static bool is_time(RTC_TimeTypeDef *time){
-	return (time->Hours < 24) & (time->Minutes < 60) & (time->Seconds < 60);
-}
-
 static void periodic_alarm_handler(void) {
 	debug("Periodic alarm \n");
 	RTC_TimeTypeDef new;
-	rtc_get_now(&ts);
+	ts = rtc_get_now();
 	debug("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
 
@@ -701,23 +703,50 @@ static void periodic_alarm_handler(void) {
 	debug("next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 }
 
-static void set_alarm(void){
+/**
+ * Calculate and return the next alarm closest to now.
+ *
+ * Note: Call this ONLY in IVAL_STARTEND mode, otherwise
+ * stuff break !
+ */
+static RTC_TimeTypeDef get_closest_next_alarm(void) {
+	uint32_t start, end, now, ival, N, x;
+	rtc_timestamp_t t;
+	t = rtc_get_now();
+	now = rtc_time2seconds(&t.time);
+	ival = rtc_time2seconds(&rc.ival);
+	start = rtc_time2seconds(&rc.start);
+	end = rtc_time2seconds(&rc.end);
+	/*Safety window of 2 seconds. One is not enough
+	 * because we could be very close to a second transition.*/
+	now = now + 2;
+	/* N <= n < N+1, where n is the correct float-value */
+	N = (now - start) / ival;
+	x = (start + N * ival > now) ? N * ival : (N + 1) * ival;
+	x = (start + x <= end) ? start + x : end;
+	return rtc_seconds2time(x);
+}
 
+/*
+ * Set the alarm if the user was submitting a new value.
+ */
+static void set_initial_alarm(void) {
+	RTC_TimeTypeDef t;
 	if (rc.mode == IVAL_OFF) {
 		init_timetype(&rc.ival);
 		init_timetype(&rc.next_alarm);
 		HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
-		return;
-	}
 
-	if (rc.mode == IVAL_STARTEND) {
-		rtc_set_alarmA(&rc.start);
+	} else if (rc.mode == IVAL_STARTEND) {
+		t = get_closest_next_alarm();
+		rtc_set_alarmA(&t);
+		rc.next_alarm = rtc_get_alermAtime();
 
-	} else { /* rc.mode == IVAL_ENDLESS) */
-		rtc_get_now(&ts);
+	} else if (rc.mode == IVAL_STARTEND) {
+		ts = rtc_get_now();
 		rtc_set_alarmA_by_offset(&ts.time, &rc.ival);
+		rc.next_alarm = rtc_get_alermAtime();
 	}
-	rc.next_alarm = rtc_get_alermAtime();
 }
 
 /* This function is used to test functions
@@ -729,7 +758,7 @@ static void dbg_test(void) {
 #if DBG_CODE
 	char *s = "1,00:00:20,00:00:20,00:03:00\r";
 	parse_ival(s);
-	set_alarm();
+	set_initial_alarm();
 #endif
 	return;
 }
