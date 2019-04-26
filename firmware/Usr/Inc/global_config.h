@@ -119,6 +119,9 @@
 #define SD_FILE_BASENAME		"MSPEC"
 #define SD_FILE_EXTENSION		"CSV"
 
+
+#define SD_CONFIGFILE_NAME		"CONFIG.TXT"
+
 /*Maximum file size in Byte (default 1MB)*/
 #define SD_MAX_FILESIZE			(100 * 1024 * 1024)
 

@@ -36,12 +36,12 @@ typedef enum
 	IVAL_ENDLESS = 2,
 }ival_mode_t;
 
-#define MCONF_MAX_ITIMES  32
-#define MCONF_MAX_ITERATIONS  32
+#define RCCONF_MAX_ITIMES  32
+#define RCCONF_MAX_ITERATIONS  32
 typedef struct
 {
 	uint8_t iterations;
-	uint32_t itime[MCONF_MAX_ITIMES];
+	uint32_t itime[RCCONF_MAX_ITIMES];
 	uint8_t itime_index;
 	ival_mode_t mode;
 

@@ -227,7 +227,7 @@ int main_usr(void) {
 				break;
 
 			case USR_CMD_GET_CONFIG:
-				for (int i = 0; i < MCONF_MAX_ITIMES; ++i) {
+				for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
 					if(rc.itime[i] != 0){
 						printf("itime[%u] = %lu\n", i, rc.itime[i]);
 					}
@@ -283,7 +283,7 @@ int main_usr(void) {
 				if(argparse_nr(&tmp)){
 					break;
 				}
-				if(tmp < MCONF_MAX_ITIMES){
+				if(tmp < RCCONF_MAX_ITIMES){
 					rc.itime_index = tmp;
 					ok();
 				}
@@ -293,7 +293,7 @@ int main_usr(void) {
 				if(argparse_nr(&tmp)){
 					break;
 				}
-				if(0 < tmp && tmp < MCONF_MAX_ITERATIONS){
+				if(0 < tmp && tmp < RCCONF_MAX_ITERATIONS){
 					rc.iterations = tmp;
 					ok();
 				}
@@ -595,6 +595,63 @@ static void inform_SD_rtc(void) {
 #endif
 }
 
+static void config_to_SD(void) {
+#if HAS_SD
+	uint8_t res = 0;
+	res = sd_mount();
+	if (!res) {
+			res = sd_open_file_neworappend(f, SD_CONFIGFILE_NAME);
+			if (!res) {
+				f_printf(f, "%U\n", RCCONF_MAX_ITIMES);
+				for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
+					f_printf(f, "%LU\n", rc.itime[i]);
+				}
+				f_printf(f, "%U\n", rc.iterations);
+				f_printf(f, "%U\n", rc.mode);
+				f_printf(f, "%02U:%02U:%02U\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
+				f_printf(f, "%02U:%02U:%02U\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
+				f_printf(f, "%02U:%02U:%02U\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
+				sd_close(f);
+			}
+		sd_umount();
+	}
+#endif
+}
+
+static void read_config_from_SD(void){
+#if RCCONF_MAX_ITIMES > 32
+#error "Attention Buffer gets big. May implement a better way :)"
+#endif
+	/* max value of itime = 10000\n -> 6 BYTES * RCCONF_MAX_ITIMES
+	 * start end ival timestamp     -> 3 * 20 BYTES
+	 * three other number good will aprox. -> 20 BYTES*/
+	uint8_t buf[RCCONF_MAX_ITIMES*6 + 3*20 + 20];
+	uint read;
+#if HAS_SD | 1
+	uint8_t res = 0;
+	res = sd_mount();
+	if (!res) {
+			res = sd_open(f, SD_CONFIGFILE_NAME, FA_READ);
+			if (!res) {
+				f_read(f, buf, sizeof(buf), &read);
+				// TODO scanf
+
+				f_printf(f, "%U\n", RCCONF_MAX_ITIMES);
+				for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
+					f_printf(f, "%LU\n", rc.itime[i]);
+				}
+				f_printf(f, "%U\n", rc.iterations);
+				f_printf(f, "%U\n", rc.mode);
+				f_printf(f, "%02U:%02U:%02U\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
+				f_printf(f, "%02U:%02U:%02U\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
+				f_printf(f, "%02U:%02U:%02U\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
+				sd_close(f);
+			}
+		sd_umount();
+	}
+#endif
+}
+
 /** Store the measurment data to SD card.
  * Requires a mounted SD card. */
 static uint8_t measurement_to_SD(void){
@@ -634,7 +691,7 @@ static uint8_t measurement_to_SD(void){
 
 static void multimeasure(void) {
 	int8_t res = 0;
-	for (int i = 0; i < MCONF_MAX_ITIMES; ++i) {
+	for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
 		if (rc.itime[i] == 0) {
 			/* itime disabled */
 			continue;
