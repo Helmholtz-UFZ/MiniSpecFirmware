@@ -34,6 +34,8 @@ static void ok(void);
 static uint8_t measurement_to_SD(void);
 static void inform_SD_reset(void);
 static void inform_SD_rtc(void);
+static void read_config_from_SD(void);
+static void write_config_to_SD(void);
 
 static statemachine_config_t state;
 static runtime_config_t rc;
@@ -96,6 +98,9 @@ int main_usr(void) {
 	}
 
 	inform_SD_reset();
+	read_config_from_SD();
+	set_initial_alarm();
+
 	NVIC_EnableIRQ(RXTX_IRQn);
 	rxtx_restart_listening();
 
@@ -326,6 +331,7 @@ int main_usr(void) {
 					break;
 				}
 				set_initial_alarm();
+				write_config_to_SD();
 				ok();
 				break;
 
@@ -355,6 +361,17 @@ int main_usr(void) {
 	return 0;
 }
 
+/**
+ * Parse 'mode,ival,start,end' from string and
+ * set the aprropiate params in rc-struct.
+ * If parsing fails, rc-struct is untouched.
+ *
+ * Return 0 on success,
+ * Return 1 on parsing error
+ * Return 2 on constrains error
+ *
+ * Note: Start time needs to be smaller than end time
+ */
 static int8_t parse_ival(char *str){
 
 	uint c = 99;
@@ -559,7 +576,7 @@ void cpu_enter_run_mode(void) {
 }
 
 static void inform_SD_reset(void) {
-#if HAS_SD
+	if(!HAS_SD){ return; }
 	uint8_t res = 0;
 	/* Inform the File that an reset occurred */
 	res = sd_mount();
@@ -574,11 +591,10 @@ static void inform_SD_reset(void) {
 		}
 		res = sd_umount();
 	}
-#endif
 }
 
 static void inform_SD_rtc(void) {
-#if HAS_SD
+	if(!HAS_SD){ return; }
 	uint8_t res = 0;
 	res = sd_mount();
 	if (!res) {
@@ -594,69 +610,100 @@ static void inform_SD_rtc(void) {
 		}
 		sd_umount();
 	}
-#endif
 }
 
-static void config_to_SD(void) {
-#if HAS_SD
+static void write_config_to_SD(void) {
+	if(!HAS_SD){ return; }
 	uint8_t res = 0;
 	res = sd_mount();
 	if (!res) {
-			res = sd_open_file_neworappend(f, SD_CONFIGFILE_NAME);
-			if (!res) {
-				f_printf(f, "%U\n", RCCONF_MAX_ITIMES);
-				for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
-					f_printf(f, "%LU\n", rc.itime[i]);
-				}
-				f_printf(f, "%U\n", rc.iterations);
-				f_printf(f, "%U\n", rc.mode);
-				f_printf(f, "%02U:%02U:%02U\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
-				f_printf(f, "%02U:%02U:%02U\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
-				f_printf(f, "%02U:%02U:%02U\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
-				sd_close(f);
+		res = sd_open_file_neworappend(f, SD_CONFIGFILE_NAME);
+		if (!res) {
+			f_printf(f, "%U\n", RCCONF_MAX_ITIMES);
+			for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
+				f_printf(f, "%LU\n", rc.itime[i]);
 			}
+			f_printf(f, "%U\n", rc.iterations);
+
+			/* We store the ival like the user command format:
+			 * 'mode,ival,start,end'
+			 * e.g.: '1,00:00:20,04:30:00,22:15:00*/
+			f_printf(f, "%U,", rc.mode);
+			f_printf(f, "%02U:%02U:%02U,", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
+			f_printf(f, "%02U:%02U:%02U,", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
+			f_printf(f, "%02U:%02U:%02U\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
+			sd_close(f);
+		}
 		sd_umount();
 	}
-#endif
 }
 
 static void read_config_from_SD(void){
+	if(!HAS_SD){ return; }
 #if RCCONF_MAX_ITIMES > 32
-#error "Attention Buffer gets big. May implement a better way :)"
+#error "Attention buffer gets big.. Improve implementation :)"
 #endif
 	/* max value of itime = 10000\n -> 6 BYTES * RCCONF_MAX_ITIMES
 	 * start end ival timestamp     -> 3 * 20 BYTES
 	 * three other number good will aprox. -> 20 BYTES*/
 	uint8_t buf[RCCONF_MAX_ITIMES*6 + 3*20 + 20];
-	uint read;
-#if HAS_SD | 1
-	uint8_t res = 0;
+	uint8_t res;
+	uint32_t nr, rcconf_max_itimes;
+	uint bytesread;
+	char *token, *rest;
+	bool fail;
+
+	rest = (char*) buf;
+	nr = 0;
+	fail = false;
+
 	res = sd_mount();
 	if (!res) {
-			res = sd_open(f, SD_CONFIGFILE_NAME, FA_READ);
-			if (!res) {
-				f_read(f, buf, sizeof(buf), &read);
-				// TODO scanf
-
-				f_printf(f, "%U\n", RCCONF_MAX_ITIMES);
-				for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
-					f_printf(f, "%LU\n", rc.itime[i]);
+		res = sd_open(f, SD_CONFIGFILE_NAME, FA_READ);
+		if (!res) {
+			f_read(f, buf, sizeof(buf), &bytesread);
+			/* == parsing: == */
+			/* Read RCCONF_MAX_ITIMES from sd*/
+			token = strtok_r(rest, "\n", &rest);
+			fail = (token == NULL);
+			res = sscanf(token, "%lu", &nr);
+			if (!fail && res > 0 && nr > 0) {
+				rcconf_max_itimes = nr > RCCONF_MAX_ITIMES ? RCCONF_MAX_ITIMES : nr;
+				/*read itimes[i] from sd*/
+				for (uint i = 0; i < rcconf_max_itimes; ++i) {
+					token = strtok_r(rest, "\n", &rest);
+					fail = (token == NULL);
+					res = sscanf(token, "%lu", &nr);
+					if (fail || res <= 0 || nr == 0) {
+						fail = true;
+						break;
+					}
+					rc.itime[i] = nr;
 				}
-				f_printf(f, "%U\n", rc.iterations);
-				f_printf(f, "%U\n", rc.mode);
-				f_printf(f, "%02U:%02U:%02U\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
-				f_printf(f, "%02U:%02U:%02U\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
-				f_printf(f, "%02U:%02U:%02U\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
-				sd_close(f);
 			}
+			if (!fail) {
+				/* Read iterations aka. N from sd*/
+				token = strtok_r(rest, "\n", &rest);
+				fail = (token == NULL);
+				res = sscanf(token, "%lu", &nr);
+				if (!fail && res > 0 && nr > 0) {
+					rc.iterations = nr;
+					/* Read 'mode,ival,start,end' as one string from sd.
+					 * If parse_ival fails, no times are set. */
+					token = rest;
+					parse_ival(token);
+				}
+			}
+			sd_close(f);
+		}
 		sd_umount();
 	}
-#endif
 }
 
 /** Store the measurment data to SD card.
  * Requires a mounted SD card. */
 static uint8_t measurement_to_SD(void){
+	if(!HAS_SD){ return 100; }
 	int8_t res = 0;
 	res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf, FNAME_BUF_SZ);
 	if (!res) {
@@ -712,8 +759,7 @@ static void multimeasure(void) {
 			sensor_init();
 			sensor_measure();
 
-#if HAS_SD
-			if (state.toSD) {
+			if (state.toSD && HAS_SD) {
 				/* Write measurement to SD */
 				res = sd_mount();
 				if (!res) {
@@ -722,10 +768,6 @@ static void multimeasure(void) {
 					sd_umount();
 				}
 			}
-#else
-			UNUSED(res);
-			UNUSED(measurement_to_SD);
-#endif
 			if (sens1.errc) {
 				sensor_deinit();
 			}
