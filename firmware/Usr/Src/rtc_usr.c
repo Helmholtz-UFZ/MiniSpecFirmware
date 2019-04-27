@@ -34,7 +34,7 @@ uint8_t rtc_parsecheck_datetime(char* str, RTC_TimeTypeDef *sTime,
 
 	/* Scan year. */
 	len = sscanf(p, "%u", &c);
-	c = c > 2000 ? c - 2000 : c;
+	c = c >= 2000 ? c - 2000 : c;
 	if (len == 1 && IS_RTC_YEAR(c)) {
 		sDate->Year = c;
 
@@ -224,7 +224,7 @@ uint8_t rtc_set_alarmA(RTC_TimeTypeDef *time) {
 	RTC_TimeTypeDef zero;
 	zero.Hours = 0;
 	zero.Minutes = 0;
-	zero.Minutes = 0;
+	zero.Seconds = 0;
 	return rtc_set_alarmA_by_offset(time, &zero);
 }
 
@@ -318,7 +318,7 @@ RTC_TimeTypeDef rtc_seconds2time(uint32_t s){
 	t.Hours = x / 3600;
 	x -= t.Hours * 3600;
 	t.Minutes = x / 60;
-	x -= t.Minutes;
+	x -= t.Minutes * 60;
 	t.Seconds = x;
 	return t;
 }

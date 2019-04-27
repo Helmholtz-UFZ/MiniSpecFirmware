@@ -58,13 +58,14 @@ static void init(void){
 
 	memset(&fname, 0, sizeof(fname));
 	memset(&ts, 0, sizeof(ts));
+	memset(&rc, 0, sizeof(rc));
 	init_timetype(&rc.start);
 	init_timetype(&rc.end);
 	init_timetype(&rc.ival);
 	init_timetype(&rc.next_alarm);
-	memset(&rc, 0, sizeof(rc));
 	rc.iterations = 1;
 	rc.itime[0] = DEFAULT_INTEGRATION_TIME;
+	rc.mode = IVAL_OFF;
 
 	/* We enable the interrupts later */
 	HAL_NVIC_DisableIRQ(RXTX_IRQn);
@@ -234,6 +235,7 @@ int main_usr(void) {
 				}
 				printf("itime[%u] is currently choosen for setting.\n", rc.itime_index);
 				printf("iteration per measurement: %u\n", rc.iterations);
+				printf("interval mode: %u\n", rc.mode);
 				printf("start time: %02i:%02i:%02i\n",
 						rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
 				printf("end time:   %02i:%02i:%02i\n",
@@ -780,7 +782,7 @@ static RTC_TimeTypeDef get_closest_next_alarm(void) {
 	/* N <= n < N+1, where n is the correct float-value */
 	N = (now - start) / ival;
 	x = (start + N * ival > now) ? N * ival : (N + 1) * ival;
-	x = (start + x <= end) ? start + x : end;
+	x = (start + x <= end) ? start + x : start;
 	return rtc_seconds2time(x);
 }
 
