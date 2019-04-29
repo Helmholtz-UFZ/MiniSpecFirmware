@@ -222,6 +222,7 @@ int main_usr(void) {
 				break;
 
 			case USR_CMD_GET_INTERVAL:
+				// TODO start mode end ival
 				if (state.format == DATA_FORMAT_ASCII) {
 					printf("%02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
 				} else {
@@ -617,7 +618,7 @@ static void write_config_to_SD(void) {
 	uint8_t res = 0;
 	res = sd_mount();
 	if (!res) {
-		res = sd_open_file_neworappend(f, SD_CONFIGFILE_NAME);
+		res = sd_open(f, SD_CONFIGFILE_NAME, FA_WRITE | FA_CREATE_ALWAYS);
 		if (!res) {
 			f_printf(f, "%U\n", RCCONF_MAX_ITIMES);
 			for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
@@ -672,9 +673,8 @@ static void read_config_from_SD(void){
 				/*read itimes[i] from sd*/
 				for (uint i = 0; i < rcconf_max_itimes; ++i) {
 					token = strtok_r(rest, "\n", &rest);
-					fail = (token == NULL);
 					res = sscanf(token, "%lu", &nr);
-					if (fail || res <= 0 || nr == 0) {
+					if (token == NULL || res <= 0) {
 						fail = true;
 						break;
 					}
@@ -684,12 +684,11 @@ static void read_config_from_SD(void){
 			if (!fail) {
 				/* Read iterations aka. N from sd*/
 				token = strtok_r(rest, "\n", &rest);
-				fail = (token == NULL);
 				res = sscanf(token, "%lu", &nr);
-				if (!fail && res > 0 && nr > 0) {
+				if (token != NULL && res > 0 && nr > 0) {
 					rc.iterations = nr;
 					/* Read 'mode,ival,start,end' as one string from sd.
-					 * If parse_ival fails, no times are set. */
+					 * If parse_ival() fails, no times are set. */
 					token = rest;
 					parse_ival(token);
 				}
@@ -761,6 +760,7 @@ static void multimeasure(void) {
 
 			if (state.toSD && HAS_SD) {
 				/* Write measurement to SD */
+				/* TODO One time mount and open per wakeup... */
 				res = sd_mount();
 				if (!res) {
 					/* Store the measurement on SD */
@@ -843,7 +843,7 @@ static void set_initial_alarm(void) {
 		rtc_set_alarmA(&t);
 		rc.next_alarm = rtc_get_alermAtime();
 
-	} else if (rc.mode == IVAL_STARTEND) {
+	} else if (rc.mode == IVAL_ENDLESS) {
 		ts = rtc_get_now();
 		rtc_set_alarmA_by_offset(&ts.time, &rc.ival);
 		rc.next_alarm = rtc_get_alermAtime();

@@ -104,7 +104,7 @@
 #define DBG_CODE			1
 
 /* If 0 all code that excess the SD card is disabled. */
-#define HAS_SD	 			0
+#define HAS_SD	 			1
 
 /* If an error occur in the SD driver sometimes it helps
  * to re-initialize the HAL and FAT driver. This threshold
