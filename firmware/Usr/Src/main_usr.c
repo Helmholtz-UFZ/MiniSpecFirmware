@@ -669,13 +669,15 @@ static void read_config_from_SD(void){
 	/* max value of itime = 10000\n -> 6 BYTES * RCCONF_MAX_ITIMES
 	 * start end ival timestamp     -> 3 * 20 BYTES
 	 * three other number good will aprox. -> 20 BYTES*/
-	uint8_t buf[RCCONF_MAX_ITIMES*6 + 3*20 + 20];
+	uint16_t sz = RCCONF_MAX_ITIMES*6 + 3*20 + 20;
+	uint8_t buf[sz];
 	uint8_t res;
 	uint32_t nr, rcconf_max_itimes;
 	uint bytesread;
 	char *token, *rest;
 	bool fail;
 
+	memset(buf, 0, sz * sizeof(uint8_t));
 	rest = (char*) buf;
 	nr = 0;
 	fail = false;
@@ -807,7 +809,7 @@ static void periodic_alarm_handler(void) {
 	debug("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
 
-	if (rc.mode != IVAL_OFF) {
+	if (rc.mode == IVAL_OFF) {
 		return;
 	}
 
@@ -885,9 +887,20 @@ static void set_initial_alarm(void) {
  * code is executed by timer. */
 static void dbg_test(void) {
 #if DBG_CODE
-	char *s = "1,00:00:20,00:00:20,00:03:00\r";
-	parse_ival(s);
-	set_initial_alarm();
+	uint16_t sz = RCCONF_MAX_ITIMES*6 + 3*20 + 20;
+	uint8_t buf[sz];
+	uint8_t res;
+	uint bytesread;
+
+	memset(buf, 0, sz * sizeof(uint8_t));
+	res = sd_mount();
+	if (!res) {
+		res = sd_open(f, SD_CONFIGFILE_NAME, FA_READ);
+		if (!res) {
+			f_read(f, buf, sizeof(buf), &bytesread);
+			printf("Config-file on SD:\n%s", buf);
+		}
+	}
 #endif
 	return;
 }
