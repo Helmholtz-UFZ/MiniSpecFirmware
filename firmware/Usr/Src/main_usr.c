@@ -556,6 +556,7 @@ static void send_data(void) {
  * @sa cpu_awake()
  */
 void cpu_enter_sleep_mode(void) {
+	power_switch_EN(OFF);
 	// to prevent wakeup by Systick interrupt.
 	HAL_SuspendTick();
 	// go back to sleep after handling an IR
@@ -574,10 +575,25 @@ void cpu_enter_sleep_mode(void) {
 void cpu_enter_run_mode(void) {
 	// wake up after handling the actual IR
 	CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));
+	power_switch_EN(ON);
 }
 
+void power_switch_EN(bool on){
+#if !USE_POWER_SWITCH
+	return;
+#endif
+	if(on){
+		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
+	} else {
+		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
+	}
+}
+
+
 static void inform_SD_reset(void) {
-	if(!HAS_SD){ return; }
+#if !HAS_SD
+	return;
+#endif
 	uint8_t res = 0;
 	/* Inform the File that an reset occurred */
 	res = sd_mount();
@@ -595,7 +611,9 @@ static void inform_SD_reset(void) {
 }
 
 static void inform_SD_rtc(void) {
-	if(!HAS_SD){ return; }
+#if !HAS_SD
+	return;
+#endif
 	uint8_t res = 0;
 	res = sd_mount();
 	if (!res) {
@@ -614,7 +632,9 @@ static void inform_SD_rtc(void) {
 }
 
 static void write_config_to_SD(void) {
-	if(!HAS_SD){ return; }
+#if !HAS_SD
+	return;
+#endif
 	uint8_t res = 0;
 	res = sd_mount();
 	if (!res) {
@@ -640,7 +660,9 @@ static void write_config_to_SD(void) {
 }
 
 static void read_config_from_SD(void){
-	if(!HAS_SD){ return; }
+#if !HAS_SD
+	return;
+#endif
 #if RCCONF_MAX_ITIMES > 32
 #error "Attention buffer gets big.. Improve implementation :)"
 #endif
@@ -702,7 +724,9 @@ static void read_config_from_SD(void){
 /** Store the measurment data to SD card.
  * Requires a mounted SD card. */
 static uint8_t measurement_to_SD(void){
-	if(!HAS_SD){ return 100; }
+#if !HAS_SD
+	return 100;
+#endif
 	int8_t res = 0;
 	res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf, FNAME_BUF_SZ);
 	if (!res) {
@@ -783,24 +807,28 @@ static void periodic_alarm_handler(void) {
 	debug("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
 
-	if (rc.mode != IVAL_OFF){
-		multimeasure();
-
-		/* set new alarm */
-		new = rtc_time_add(&rc.next_alarm, &rc.ival);
-		if (rc.mode == IVAL_ENDLESS){
-				rtc_set_alarmA(&new);
-
-		} else { /* rc.mode == IVAL_STARTEND */
-			/* if new <= end */
-			if (rtc_time_leq(&new, &rc.end)) {
-				rtc_set_alarmA(&new);
-			} else {
-				rtc_set_alarmA(&rc.start);
-			}
-		}
-		rc.next_alarm = rtc_get_alermAtime();
+	if (rc.mode != IVAL_OFF) {
+		return;
 	}
+
+	/* set new alarm */
+	new = rtc_time_add(&rc.next_alarm, &rc.ival);
+	if (rc.mode == IVAL_ENDLESS) {
+		rtc_set_alarmA(&new);
+
+	} else { /* rc.mode == IVAL_STARTEND */
+		/* if new <= end */
+		if (rtc_time_leq(&new, &rc.end)) {
+			rtc_set_alarmA(&new);
+		} else {
+			rtc_set_alarmA(&rc.start);
+		}
+	}
+	rc.next_alarm = rtc_get_alermAtime();
+
+	/* Do the measurement */
+	multimeasure();
+
 	debug("next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 }
 

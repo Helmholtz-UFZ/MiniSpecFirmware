@@ -70,6 +70,7 @@ typedef struct
 int main_usr( void );
 void cpu_enter_sleep_mode( void );
 void cpu_enter_run_mode( void );
+void power_switch_EN(bool on);
 
 #endif /* __MAIN_USR_H__ */
 

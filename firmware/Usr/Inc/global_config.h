@@ -103,8 +103,11 @@
 /* Enables Debug code*/
 #define DBG_CODE			1
 
-/* If 0 all code that excess the SD card is disabled. */
+/* If 0 all code that access the SD card is disabled. */
 #define HAS_SD	 			1
+
+/* if 0 Powerswitch is always on */
+#define USE_POWER_SWITCH	0
 
 /* If an error occur in the SD driver sometimes it helps
  * to re-initialize the HAL and FAT driver. This threshold
