@@ -1,4 +1,17 @@
 #MicroXplorer Configuration settings - do not modify
+FATFS.BSP.number=1
+FATFS0.BSP.STBoard=false
+FATFS0.BSP.api=Unknown
+FATFS0.BSP.component=
+FATFS0.BSP.condition=
+FATFS0.BSP.i2caddr=0
+FATFS0.BSP.i2creg=
+FATFS0.BSP.instance=PC9
+FATFS0.BSP.ip=GPIO
+FATFS0.BSP.mode=Input
+FATFS0.BSP.name=Detect_SDIO
+FATFS0.BSP.semaphore=
+FATFS0.BSP.solution=PC9
 File.Version=6
 KeepUserPlacement=true
 Mcu.Family=STM32L4
@@ -281,7 +294,7 @@ PC8.Signal=SDMMC1_D0
 PC9.GPIOParameters=GPIO_Label
 PC9.GPIO_Label=RESERVED (SDMMC1_D1)
 PC9.Locked=true
-PC9.Signal=GPIO_Analog
+PC9.Signal=GPIO_Input
 PCC.Checker=true
 PCC.Line=STM32L4x6
 PCC.MCU=STM32L476R(C-E-G)Tx
