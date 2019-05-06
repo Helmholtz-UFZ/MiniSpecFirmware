@@ -49,7 +49,7 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(Button_NucleoBoard_GPIO_Port, Button_NucleoBoard_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, Button_NucleoBoard_Pin|SD_DETECT_OUT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
@@ -57,19 +57,17 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, W5500_RST_Pin|W5500_SCS_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : PtPin */
-  GPIO_InitStruct.Pin = Button_NucleoBoard_Pin;
+  /*Configure GPIO pins : PCPin PCPin */
+  GPIO_InitStruct.Pin = Button_NucleoBoard_Pin|SD_DETECT_OUT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(Button_NucleoBoard_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PCPin PCPin PCPin PCPin 
-                           PCPin PCPin PCPin PCPin 
-                           PCPin */
+                           PCPin PCPin PCPin PCPin */
   GPIO_InitStruct.Pin = D11_Pin|D9_Pin|D8_Pin|D10_Pin 
-                          |D5_Pin|D13_Pin|D14_Pin|D15_Pin 
-                          |RESERVED_Pin;
+                          |D5_Pin|D13_Pin|D14_Pin|D15_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -103,11 +101,17 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(DIP_3_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PCPin PCPin */
-  GPIO_InitStruct.Pin = RESERVEDC10_Pin|RESERVEDC11_Pin;
+  /*Configure GPIO pin : PtPin */
+  GPIO_InitStruct.Pin = SD_DETECT_IN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(SD_DETECT_IN_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PtPin */
+  GPIO_InitStruct.Pin = RESERVED_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  HAL_GPIO_Init(RESERVED_GPIO_Port, &GPIO_InitStruct);
 
 }
 

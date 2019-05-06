@@ -110,8 +110,8 @@ void Error_Handler(void);
 #define D14_GPIO_Port GPIOC
 #define D15_Pin GPIO_PIN_7
 #define D15_GPIO_Port GPIOC
-#define RESERVED_Pin GPIO_PIN_9
-#define RESERVED_GPIO_Port GPIOC
+#define SD_DETECT_IN_Pin GPIO_PIN_9
+#define SD_DETECT_IN_GPIO_Port GPIOC
 #define D2_Pin GPIO_PIN_8
 #define D2_GPIO_Port GPIOA
 #define TIM1CH2_SENSEOS_Pin GPIO_PIN_9
@@ -124,10 +124,10 @@ void Error_Handler(void);
 #define TIM1ETR_SENSTRG_GPIO_Port GPIOA
 #define W5500_INT_Pin GPIO_PIN_15
 #define W5500_INT_GPIO_Port GPIOA
-#define RESERVEDC10_Pin GPIO_PIN_10
-#define RESERVEDC10_GPIO_Port GPIOC
-#define RESERVEDC11_Pin GPIO_PIN_11
-#define RESERVEDC11_GPIO_Port GPIOC
+#define SD_DETECT_OUT_Pin GPIO_PIN_10
+#define SD_DETECT_OUT_GPIO_Port GPIOC
+#define RESERVED_Pin GPIO_PIN_11
+#define RESERVED_GPIO_Port GPIOC
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
