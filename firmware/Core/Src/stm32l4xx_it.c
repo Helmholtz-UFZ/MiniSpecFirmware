@@ -1,40 +1,56 @@
+/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file    stm32l4xx_it.c
   * @brief   Interrupt Service Routines.
   ******************************************************************************
+  * @attention
   *
-  * COPYRIGHT(c) 2019 STMicroelectronics
+  * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics.
+  * All rights reserved.</center></h2>
   *
-  * Redistribution and use in source and binary forms, with or without modification,
-  * are permitted provided that the following conditions are met:
-  *   1. Redistributions of source code must retain the above copyright notice,
-  *      this list of conditions and the following disclaimer.
-  *   2. Redistributions in binary form must reproduce the above copyright notice,
-  *      this list of conditions and the following disclaimer in the documentation
-  *      and/or other materials provided with the distribution.
-  *   3. Neither the name of STMicroelectronics nor the names of its contributors
-  *      may be used to endorse or promote products derived from this software
-  *      without specific prior written permission.
-  *
-  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * This software component is licensed by ST under Ultimate Liberty license
+  * SLA0044, the "License"; You may not use this file except in compliance with
+  * the License. You may obtain a copy of the License at:
+  *                             www.st.com/SLA0044
   *
   ******************************************************************************
   */
-/* Includes ------------------------------------------------------------------*/
-#include "stm32l4xx_hal.h"
-#include "stm32l4xx.h"
-#include "stm32l4xx_it.h"
+/* USER CODE END Header */
 
+/* Includes ------------------------------------------------------------------*/
+#include "main.h"
+#include "stm32l4xx_it.h"
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
+/* USER CODE END Includes */
+
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN TD */
+
+/* USER CODE END TD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+ 
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
+/* Private variables ---------------------------------------------------------*/
+/* USER CODE BEGIN PV */
+
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
+/* USER CODE BEGIN PFP */
+
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
 #include "usart.h"
@@ -49,51 +65,24 @@
 extern RTC_HandleTypeDef hrtc;
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim5;
-extern DMA_HandleTypeDef hdma_uart4_rx;
 extern DMA_HandleTypeDef hdma_usart1_rx;
-extern UART_HandleTypeDef huart4;
 extern UART_HandleTypeDef huart1;
+/* USER CODE BEGIN EV */
+
+/* USER CODE END EV */
 
 /******************************************************************************/
-/*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
+/*           Cortex-M4 Processor Interruption and Exception Handlers          */ 
 /******************************************************************************/
-
 /**
-* @brief This function handles System service call via SWI instruction.
-*/
-void SVC_Handler(void)
-{
-  /* USER CODE BEGIN SVCall_IRQn 0 */
-
-  /* USER CODE END SVCall_IRQn 0 */
-  /* USER CODE BEGIN SVCall_IRQn 1 */
-
-  /* USER CODE END SVCall_IRQn 1 */
-}
-
-/**
-* @brief This function handles Pendable request for system service.
-*/
-void PendSV_Handler(void)
-{
-  /* USER CODE BEGIN PendSV_IRQn 0 */
-
-  /* USER CODE END PendSV_IRQn 0 */
-  /* USER CODE BEGIN PendSV_IRQn 1 */
-
-  /* USER CODE END PendSV_IRQn 1 */
-}
-
-/**
-* @brief This function handles System tick timer.
-*/
+  * @brief This function handles System tick timer.
+  */
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
 
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
-  HAL_SYSTICK_IRQHandler();
   /* USER CODE BEGIN SysTick_IRQn 1 */
 #define SysTick_Handler__OK
   /* USER CODE END SysTick_IRQn 1 */
@@ -107,8 +96,8 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
-* @brief This function handles EXTI line2 interrupt.
-*/
+  * @brief This function handles EXTI line2 interrupt.
+  */
 void EXTI2_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI2_IRQn 0 */
@@ -158,8 +147,8 @@ void EXTI2_IRQHandler(void)
 }
 
 /**
-* @brief This function handles DMA1 channel5 global interrupt.
-*/
+  * @brief This function handles DMA1 channel5 global interrupt.
+  */
 void DMA1_Channel5_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Channel5_IRQn 0 */
@@ -172,8 +161,8 @@ void DMA1_Channel5_IRQHandler(void)
 }
 
 /**
-* @brief This function handles TIM1 capture compare interrupt.
-*/
+  * @brief This function handles TIM1 capture compare interrupt.
+  */
 void TIM1_CC_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_CC_IRQn 0 */
@@ -250,8 +239,8 @@ void TIM1_CC_IRQHandler(void)
 }
 
 /**
-* @brief This function handles USART1 global interrupt.
-*/
+  * @brief This function handles USART1 global interrupt.
+  */
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
@@ -284,8 +273,8 @@ void USART1_IRQHandler(void)
 }
 
 /**
-* @brief This function handles RTC alarm interrupt through EXTI line 18.
-*/
+  * @brief This function handles RTC alarm interrupt through EXTI line 18.
+  */
 void RTC_Alarm_IRQHandler(void)
 {
   /* USER CODE BEGIN RTC_Alarm_IRQn 0 */
@@ -298,8 +287,8 @@ void RTC_Alarm_IRQHandler(void)
 }
 
 /**
-* @brief This function handles TIM5 global interrupt.
-*/
+  * @brief This function handles TIM5 global interrupt.
+  */
 void TIM5_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM5_IRQn 0 */
@@ -318,54 +307,6 @@ void TIM5_IRQHandler(void)
 
 #define TIM5_IRQHandler__OK
   /* USER CODE END TIM5_IRQn 1 */
-}
-
-/**
-* @brief This function handles UART4 global interrupt.
-*/
-void UART4_IRQHandler(void)
-{
-  /* USER CODE BEGIN UART4_IRQn 0 */
-	/*
-	 * Here all u(s)art4 related IRs are handled by the HAL.
-	 *
-	 * We only add a case for handling of capturing a predefined sign ('\r' aka. carriage-return).
-	 * If we capture such a sign we assume the user had entered a complete command and now want us
-	 * to handle it appropriate, as we'll do :). We set some parameter here and handle it in the
-	 * main-loop.
-	 */
-
-	// catch carriage return as 'end of cmd'-flag
-	if( ((RXTX->ISR & USART_ISR_CMF) != RESET) && ((RXTX->CR1 & USART_CR1_CMIE) != RESET) )
-	{
-		__HAL_UART_CLEAR_IT( &hrxtx, USART_ISR_CMF );
-		__HAL_UART_DISABLE_IT( &hrxtx, UART_IT_CM );
-		rxtx.cmd_bytes = hrxtx.RxXferSize - hrxtx.hdmarx->Instance->CNDTR;
-		rxtx.wakeup = true;
-	}
-
-  /* USER CODE END UART4_IRQn 0 */
-//  HAL_UART_IRQHandler(&huart4);
-  /* USER CODE BEGIN UART4_IRQn 1 */
-  if(rxtx.wakeup || hrxtx.ErrorCode){
-		cpu_enter_run_mode();
-  }
-#define USART4_IRQHandler__OK
-  /* USER CODE END UART4_IRQn 1 */
-}
-
-/**
-* @brief This function handles DMA2 channel5 global interrupt.
-*/
-void DMA2_Channel5_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA2_Channel5_IRQn 0 */
-
-  /* USER CODE END DMA2_Channel5_IRQn 0 */
-//  HAL_DMA_IRQHandler(&hdma_uart4_rx);
-  /* USER CODE BEGIN DMA2_Channel5_IRQn 1 */
-
-  /* USER CODE END DMA2_Channel5_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

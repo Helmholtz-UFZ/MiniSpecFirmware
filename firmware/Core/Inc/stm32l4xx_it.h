@@ -47,12 +47,11 @@
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
-void SVC_Handler(void);
-void PendSV_Handler(void);
 void SysTick_Handler(void);
 void EXTI2_IRQHandler(void);
 void DMA1_Channel5_IRQHandler(void);
 void TIM1_CC_IRQHandler(void);
+void USART1_IRQHandler(void);
 void RTC_Alarm_IRQHandler(void);
 void TIM5_IRQHandler(void);
 /* USER CODE BEGIN EFP */
