@@ -155,6 +155,6 @@
  * uart1 was default in HW-Version 2.0
  * uart4 is default in new HW-Version 2.1
  */
-#define UART_INSTANCE_NR			4
+#define UART_INSTANCE_NR			1
 
 #endif /* GLOBAL_CONFIG_H_ */

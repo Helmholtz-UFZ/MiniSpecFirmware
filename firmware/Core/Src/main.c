@@ -229,7 +229,7 @@ void Error_Handler(void)
   /* User can add his own implementation to report the HAL error return state */
   while(1)
   {
-	  printf("Error in file %s on line %u\n", file, (uint) line);
+	  printf("Error in file %s on line %u\n", "unknown", 0);
   }
   /* USER CODE END Error_Handler_Debug */
 }
