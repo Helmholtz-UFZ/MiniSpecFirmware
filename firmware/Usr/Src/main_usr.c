@@ -556,7 +556,7 @@ static void send_data(void) {
  * @sa cpu_awake()
  */
 void cpu_enter_sleep_mode(void) {
-//	power_switch_EN(OFF);
+	power_switch_EN(OFF);
 	// to prevent wakeup by Systick interrupt.
 	HAL_SuspendTick();
 	// go back to sleep after handling an IR
@@ -575,7 +575,7 @@ void cpu_enter_sleep_mode(void) {
 void cpu_enter_run_mode(void) {
 	// wake up after handling the actual IR
 	CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));
-//	power_switch_EN(ON);
+	power_switch_EN(ON);
 }
 
 void power_switch_EN(bool on){
@@ -889,11 +889,11 @@ static bool isON = OFF;
 static void dbg_test(void) {
 #if DBG_CODE
 
-	if (isON){
-		power_switch_EN(OFF);
+	if(isON){
+		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
 		printf("powerswitch OFF\n");
 	} else {
-		power_switch_EN(ON);
+		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
 		printf("powerswitch ON\n");
 	}
 	isON = !isON;
