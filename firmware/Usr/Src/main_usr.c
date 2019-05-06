@@ -224,12 +224,22 @@ int main_usr(void) {
 			case USR_CMD_GET_INTERVAL:
 				// TODO start mode end ival
 				if (state.format == DATA_FORMAT_ASCII) {
+					printf("interval mode: %u\n", rc.mode);
+					printf("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
+					printf("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
 					printf("%02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
 				} else {
 					/* Transmit binary */
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.mode, 1, 1000);
 					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Hours, 1, 1000);
 					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Minutes, 1, 1000);
 					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Seconds, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.start.Hours, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.start.Minutes, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.start.Seconds, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.end.Hours, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.end.Minutes, 1, 1000);
+					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.end.Seconds, 1, 1000);
 				}
 				break;
 
@@ -242,14 +252,10 @@ int main_usr(void) {
 				printf("itime[%u] is currently choosen for setting.\n", rc.itime_index);
 				printf("iteration per measurement: %u\n", rc.iterations);
 				printf("interval mode: %u\n", rc.mode);
-				printf("start time: %02i:%02i:%02i\n",
-						rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
-				printf("end time:   %02i:%02i:%02i\n",
-						rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
-				printf("interval:   %02i:%02i:%02i\n",
-						rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
-				printf("next alarm: %02i:%02i:%02i\n",
-						rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
+				printf("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
+				printf("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
+				printf("interval:   %02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
+				printf("next alarm: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 				ts = rtc_get_now();
 				printf("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 							ts.time.Minutes, ts.time.Seconds);

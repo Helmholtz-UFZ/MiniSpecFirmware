@@ -128,11 +128,19 @@
 /*Maximum file size in Byte (default 1MB)*/
 #define SD_MAX_FILESIZE			(100 * 1024 * 1024)
 
-/* If defined no HW detection (Pin high/low) is done
+/* If defined: no HW detection (Pin high/low) is done
  * by BSP_PlatformIsDetected() in fatfs_platform.c
- * ATTENTION don't use DISABLE_SD_INIT here as this will
- * also disable HAL initialization of SD.*/
-#define SD_DISABLE_HW_DETECTION		1
+ *
+ * Attention: DISABLE_SD_INIT is not the correct define
+ * for this purpose as this will also disable the HAL
+ * initialization of the SD.
+ *
+ * If the Setup use the HW detection, than a plugged SD
+ * connects the SD_DETECT_IN and _OUT. OUT is tied to GND
+ * and _IN has a pullup. This means:
+ * 	SD plugged   : SD_DETECT_PIN is RESET (low)
+ * 	SD unplugged : SD_DETECT_PIN is SET (high) */
+#define SD_DISABLE_HW_DETECTION		0
 
 /* Minimal possible repetition of measurements by setting
  * the interval which updates timerA.
