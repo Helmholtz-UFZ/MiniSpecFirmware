@@ -268,7 +268,7 @@ void USART1_IRQHandler(void)
   if(rxtx.wakeup || hrxtx.ErrorCode){
 		cpu_enter_run_mode();
   }
-#define USART1_IRQHandler__OK
+#define RXTX_IRQHandler__OK
   /* USER CODE END USART1_IRQn 1 */
 }
 
@@ -318,8 +318,7 @@ void TIM5_IRQHandler(void)
  */
 #if (!defined EXTI2_IRQHandler__OK \
 	|| !defined TIM1_CC_IRQHandler__OK \
-	|| !defined USART1_IRQHandler__OK \
-	|| !defined USART4_IRQHandler__OK \
+	|| !defined RXTX_IRQHandler__OK \
 	|| !defined SysTick_Handler__OK \
 	|| !defined TIM5_IRQHandler__OK)
 #error "IRQ_Handler missing. May it was deleted by CubeMX ?"

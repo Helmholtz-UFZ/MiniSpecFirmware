@@ -73,9 +73,8 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 	}
 
 #if DBG_CODE
-	str = "#test\r";
+	str = "test\r";
 	alias = "t\r";
-	// todo t >> #t
 	sz = strlen(str);
 	aliassz = strlen(alias);
 	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
