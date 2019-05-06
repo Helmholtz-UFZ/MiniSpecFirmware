@@ -23,8 +23,8 @@ Differences in usage with HW-Versions-Change 2.0 to 2.1
     connect CN4 Pin5 with CN7 Pin14
 - SD Card is working now. Use a formated Fat32 SD card. CSV-Files are generated.
 - DIP-Switch is connected physically to pins PA2,PA3 and PB15
-- ParallelPort Data D3 is switched from PA3 to PA10
-- ParallelPort Data D2 is switched from PA2 to PA8
+- ParallelPort Data D3 is switched from PA2 to PA10
+- ParallelPort Data D2 is switched from PA3 to PA8
 - ADC-RESET signal removed
 - ADC-PD signal removed
 
