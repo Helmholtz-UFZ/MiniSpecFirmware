@@ -239,14 +239,14 @@ static void wait_for_measure_done(void) {
  *
  * before ordering:
  *             	PC[15..0]                  __      PA[15..0]
- * value   ... -- -- c7 c6 c5 c4 c3 c2 c1 |c0| -- -- -- -- -- a10 -- a8 a7 a6 a5 a4 a3 a2 a1 a0
+ * value   ... -- -- c7 c6 c5 c4 c3 c2 c1 |c0| -- -- -- -- -- a10 -- a8 a7 a6 a5 a4 -- -- a1 a0
  * BIT     ... 25 24 23 22 21 20 19 18 17 |16| 15 14 13 12 11  10 09 08 07 06 05 04 03 02 01 00
- * example c0:  1. x= value >> 16
+ * example c0:              1. x= value >> 16
  *
  * after ordering:                __
- * d           -- -- c7 c6 c5 a5 |c0| c3 c1 c2 a6 a7 c4 a4 a10 a8 a1 a0
- * BIT(D0-D15) 17 16 15 14 13 12 |11| 10 09 08 07 06 05 04 03  02 01 00
- * example c0:  2. d |= x << 11
+ * d (D0-D15)          -- -- c7 c6 c5 a5 |c0| c3 c1 c2 a6 a7 c4 a4 a10 a8 a1 a0
+ * BIT                 17 16 15 14 13 12 |11| 10 09 08 07 06 05 04 03  02 01 00
+ * example c0:               2. d |= x << 11
  */
 static void post_process_values(void) {
 	uint8_t x;
@@ -266,14 +266,6 @@ static void post_process_values(void) {
 		x = (val >> 1) & 0x01;
 		d |= (x << 1);
 
-		// a2
-		x = (val >> 2) & 0x01;
-		d |= (x << 3);
-
-		// a3
-		x = (val >> 3) & 0x01;
-		d |= (x << 2);
-
 		// a4
 		x = (val >> 4) & 0x01;
 		d |= (x << 4);
@@ -290,36 +282,44 @@ static void post_process_values(void) {
 		x = (val >> 7) & 0x01;
 		d |= (x << 6);
 
-		// C0
+		// a8
 		x = (val >> 8) & 0x01;
+		d |= (x << 2);
+
+		// a10
+		x = (val >> 10) & 0x01;
+		d |= (x << 3);
+
+		// C0
+		x = (val >> 16) & 0x01;
 		d |= (x << 11);
 
 		// C1
-		x = (val >> 9) & 0x01;
+		x = (val >> 17) & 0x01;
 		d |= (x << 9);
 
 		// C2
-		x = (val >> 10) & 0x01;
+		x = (val >> 18) & 0x01;
 		d |= (x << 8);
 
 		// C3
-		x = (val >> 11) & 0x01;
+		x = (val >> 19) & 0x01;
 		d |= (x << 10);
 
 		// C4
-		x = (val >> 12) & 0x01;
+		x = (val >> 20) & 0x01;
 		d |= (x << 5);
 
 		// C5
-		x = (val >> 13) & 0x01;
+		x = (val >> 21) & 0x01;
 		d |= (x << 13);
 
 		// C6
-		x = (val >> 14) & 0x01;
+		x = (val >> 22) & 0x01;
 		d |= (x << 14);
 
 		// C7
-		x = (val >> 15) & 0x01;
+		x = (val >> 23) & 0x01;
 		d |= (x << 15);
 
 		*rptr = d;
