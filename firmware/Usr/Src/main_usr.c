@@ -556,7 +556,7 @@ static void send_data(void) {
  * @sa cpu_awake()
  */
 void cpu_enter_sleep_mode(void) {
-	power_switch_EN(OFF);
+//	power_switch_EN(OFF);
 	// to prevent wakeup by Systick interrupt.
 	HAL_SuspendTick();
 	// go back to sleep after handling an IR
@@ -575,7 +575,7 @@ void cpu_enter_sleep_mode(void) {
 void cpu_enter_run_mode(void) {
 	// wake up after handling the actual IR
 	CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));
-	power_switch_EN(ON);
+//	power_switch_EN(ON);
 }
 
 void power_switch_EN(bool on){
@@ -880,6 +880,7 @@ static void set_initial_alarm(void) {
 	}
 }
 
+static bool isON = OFF;
 /* This function is used to test functions
  * or functionality under development.
  * Especially if the code is hard to reach
@@ -887,6 +888,17 @@ static void set_initial_alarm(void) {
  * code is executed by timer. */
 static void dbg_test(void) {
 #if DBG_CODE
+
+	if (isON){
+		power_switch_EN(OFF);
+		printf("powerswitch OFF\n");
+	} else {
+		power_switch_EN(ON);
+		printf("powerswitch ON\n");
+	}
+	isON = !isON;
+	return;
+
 	uint16_t sz = RCCONF_MAX_ITIMES*6 + 3*20 + 20;
 	uint8_t buf[sz];
 	uint8_t res;
