@@ -488,7 +488,7 @@ static int8_t argparse_str(char **str) {
 /** Local helper for sending data via the uart interface. */
 static void send_data(void) {
 	char *errstr;
-	uint16_t *rptr;
+	uint32_t *rptr;
 	uint16_t i = 0;
 	uint8_t errcode = sens1.errc;
 
@@ -521,8 +521,8 @@ static void send_data(void) {
 		if (!errcode) {
 			/* send data */
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL),
-			MSPARAM_PIXEL * 2,
-			MSPARAM_PIXEL * 2 * 100);
+			MSPARAM_PIXEL * 4,
+			MSPARAM_PIXEL * 4 * 100);
 		}
 	} else { /* DATA_FORMAT_ASCII */
 		if (errcode) {
@@ -531,7 +531,7 @@ static void send_data(void) {
 #if DBG_SEND_ALL
 			rptr = sens1.data->base;
 #else
-			rptr = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
+			rptr = (uint32_t *) (sens1.data->wptr - MSPARAM_PIXEL);
 #endif
 			while (rptr < sens1.data->wptr) {
 				if (rptr == (sens1.data->wptr - MSPARAM_PIXEL)) {
@@ -543,9 +543,9 @@ static void send_data(void) {
 
 				/* Break and enumerate line after 10 values.*/
 				if (i % 10 == 0) {
-					printf("\n%03d   %05d ", i, *rptr);
+					printf("\n%03d   %05d ", i, (int) *rptr);
 				} else {
-					printf("%05d ", *rptr);
+					printf("%05d ", (int) *rptr);
 				}
 				rptr++;
 				i++;
@@ -745,7 +745,7 @@ static uint8_t measurement_to_SD(void){
 			/* Write data */
 			if (!sens1.errc) {
 				/* Lopp through measurement results and store to file */
-				uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
+				uint32_t *p = (uint32_t *) (sens1.data->wptr - MSPARAM_PIXEL);
 				for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
 					f_printf(f, "%U,", *(p++));
 				}
@@ -758,9 +758,9 @@ static uint8_t measurement_to_SD(void){
 			if (rxtx.debug) {
 				/* Use printf() instead of debug() to prevent 'dbg:' string before every value. */
 				printf("%s, %u, %lu, [,", ts_buff, sens1.errc, sens1.itime);
-				uint16_t *p = (uint16_t *) (sens1.data->wptr - MSPARAM_PIXEL);
+				uint32_t *p = (uint32_t *) (sens1.data->wptr - MSPARAM_PIXEL);
 				for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
-					printf("%u,", *(p++));
+					printf("%u,", (uint) *(p++));
 				}
 				printf("]\n");
 			}

@@ -119,7 +119,7 @@ void EXTI2_IRQHandler(void)
 	 * TODO (future release) use DMA instead of manually save values.
 	 */
 
-	uint8_t value0, value1;
+	uint_fast16_t value0, value1;
 
 	// -------------- nomore code here !! --------------
 	if( __HAL_GPIO_EXTI_GET_IT(EXTADC_BUSY_Pin) != RESET )
@@ -131,7 +131,7 @@ void EXTI2_IRQHandler(void)
 			// read ADC parallel-port-value
 			value0 = GPIOA->IDR;
 			value1 = GPIOC->IDR;
-			*(sens1.data->wptr++) = (value1 << 8) | value0;
+			*(sens1.data->wptr++) = (value1 << 16) | value0;
 		}
 	}
 	// -------------- nomore code here !! --------------

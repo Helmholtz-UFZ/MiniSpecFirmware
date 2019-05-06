@@ -217,20 +217,41 @@ static void wait_for_measure_done(void) {
  * are not in the correct order.
  *
  * before ordering:
- *             PC[7..0]              __     PA[7..0]
- * value     = c7 c6 c5 c4 c3 c2 c1 |c0| a7 a6 a5 a4 a3 a2 a1 a0
- * BIT         15 14 13 12 11 10 09 |08| 07 06 05 04 03 02 01 00
- * example c0:  1. x= value >> 08
+ *             PC[7..0]           __
+ * PORT          ... c7 c6 c5 c4 |c3| c2 c1 c0
+ * BIT           ... 07 06 05 04 |03| 02 01 00
+ * example c0:  1. x = value >> 03
  *
- * after ordering:          __
- * d         = c7 c6 c5 a5 |c0| c3 c1 c2 a6 a7 c4 a4 a2 a3 a1 a0
- * BIT         15 14 13 12 |11| 10 09 08 07 06 05 04 03 02 01 00
+ *   PA[7..0]
+ * PORT ... a10 -- a8 a7 a6 a5 a4 a3 a2 a1 a0
+ * BIT  ...  10 09 08 07 06 05 04 03 02 01 00
+ *
+ * after ordering:             __
+ * d         = c7 c6 c5 a5 c0 |c3| c1 c2 a6 a7 c4 a4 a2 a8 a1 a0
+ * BIT(D0-D15) 15 14 13 12 11 |10| 09 08 07 06 05 04 03 02 01 00
+ * example c0:  2. d |= x << 10
+ */
+/**
+ *
+ *
+ * Local helper for insitu reorder values, as the single bits
+ * are not in the correct order.
+ *
+ * before ordering:
+ *             	PC[15..0]                  __      PA[15..0]
+ * value   ... -- -- c7 c6 c5 c4 c3 c2 c1 |c0| -- -- -- -- -- a10 -- a8 a7 a6 a5 a4 a3 a2 a1 a0
+ * BIT     ... 25 24 23 22 21 20 19 18 17 |16| 15 14 13 12 11  10 09 08 07 06 05 04 03 02 01 00
+ * example c0:  1. x= value >> 16
+ *
+ * after ordering:                __
+ * d           -- -- c7 c6 c5 a5 |c0| c3 c1 c2 a6 a7 c4 a4 a10 a8 a1 a0
+ * BIT(D0-D15) 17 16 15 14 13 12 |11| 10 09 08 07 06 05 04 03  02 01 00
  * example c0:  2. d |= x << 11
  */
 static void post_process_values(void) {
 	uint8_t x;
-	uint16_t d, val;
-	uint16_t *rptr = sens1.data->base;
+	uint32_t d, val;
+	uint32_t *rptr = sens1.data->base;
 
 	rptr = sens1.data->base;
 	while (rptr < sens1.data->wptr) {

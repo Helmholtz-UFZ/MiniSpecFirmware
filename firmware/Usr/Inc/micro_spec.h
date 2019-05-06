@@ -24,16 +24,16 @@ typedef struct
 {
 	const uint16_t size; /*		        !< buffer size in bytes  */
 	const uint16_t words; /*                !< buffer size in (16bit-)words  */
-	uint16_t* base; /*			!< pointer to the start of the buffer  */
-	volatile uint16_t volatile *wptr; /*	!< write pointer for the data, points to the next empty location  */
+	uint32_t* base; /*			!< pointer to the start of the buffer  */
+	volatile uint32_t volatile *wptr; /*	!< write pointer for the data, points to the next empty location  */
 } sensor_buffer_t;
 
 #define CANARYSIZE	32
 typedef struct
 {
-	uint16_t precanary[CANARYSIZE];
-	uint16_t memblock[SENSOR_DATA_BUFFER_MAX_WORDS +1];
-	uint16_t postcanary[CANARYSIZE];
+	uint32_t precanary[CANARYSIZE];
+	uint32_t memblock[SENSOR_DATA_BUFFER_MAX_WORDS +1];
+	uint32_t postcanary[CANARYSIZE];
 } canary_memblock_t;
 
 typedef enum
