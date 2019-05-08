@@ -66,24 +66,31 @@ the upper cuttable Part to the actual Nucleo Board must be wired. See *Differenc
 Implementet User Comands
 ------------------------
 
-Command 	| Short | Parameter	| Description 	                                       |
---------------- | ----- | ------------- | ---------------------------------------------------- |
-**measure** 	| **m**	|		| Make a simgle measurement. Return the values or errorcode |
-**stream**  	|	|               | Stream measurement and data. |
-**end** 		| 	|               | End stream mode. |
-**getdata** 	| **gd** 	|               | Return the data or errorcode of the last measurment. |
---------------- | ----- | ------------- | ---------------------------------------------------- |
-**rtc?**   		| 	|               | Get the current Real-Time of the System. |
-**ival?** 		| 	|               | Get the automatic measurement interval. `00:00:00` means the interval is disabled. |
-**itime?** 		| **i?** 	|               | Get the current intergration time of the sensor in micro seconds [us] |
---------------- | ----- | ------------- | ---------------------------------------------------- |
-**rtc=DATE** 	|	| DATE="20YY-MM-DDThh:mm:ss" | Set the Real-Time-Clock and the Calendar to the given Date and Time. Daylightsaving is not used. |
-**ival=TIME** 	| 	| TIME="hh:mm:ss" | Set the automatic measurement interval. `00:00:00` disables feature. The maximum is `24:00:00`. |
-**itime=N** 	| **i=N**	| N=[54..100000]| Set the integration time of the sensor in micro seconds [us] |
-**format=B**	| 	| B={0,1}	| Set the output format to 0=Binary, or to 1=ASCII |
---------------- | ----- | ------------- | ---------------------------------------------------- |
-**#debug**  	| 	|               | Enable debug prints. |
+Command                        | Short             | Brief description                                                     |
+--------------------           | -----             | ------------------------------------------------------------          |
+**measure**                    | **m**             | Make a simgle measurement. Return the values or errorcode             |
+**multimeasure**               | **mm**            | Make a multi measurement. For manual testing use with debug on.       | 
+**stream**                     |                   | Stream measurement and data.                                          |
+**end**                        |                   | End stream mode.                                                      |
+**getdata**                    | **gd**            | Return the data or errorcode of the very last measurment.             |
+                               |                   |                                                                       |
+**rtc?**                       |                   | Get the current Real-Time of the System.                              |
+**ival?**                      |                   | Get the current interval and mode in the format MODE,IVAL,START,END.  |
+**config?**                    | **c?**            | Print current config info. For humans only.                           |
+**itime?**                     | **i?**            | Get the current intergration time of the sensor in micro seconds [us] |
+**itimeindex?**                | **ii?**           | Get the current index for setting the intergration time               |
+                               |                   |                                                                       |
+**itime=[54..100000]**         | **i=[54..100000]**| Set the integration time of the sensor in micro seconds [us]          |
+**itimeindex=[0..31]**         | **ii=[1..31]**    | Set the index for setting the integration time                        |
+**iterations=[0..31]**         | **N=[1..31]**     | Set the repetitions of a measurement                                  |
+**format={0\|1}**              |                   | Set the output format to 0=Binary, or to 1=ASCII                      |
+**rtc=20YY-MM-DDThh:mm:ss**    |                   | Set the Real-Time-Clock and the Calendar. No Daylightsaving is used.  |
+**ival=MODE,IVAL,START,END**   |                   | Set the regular automatic measurement.                                | 
+                               |                   |                                                                       |
+**debug**                      |                   | Toggle debug prints on or off.                                        |
 
-
-
-
+where
+ * **MODE  ={0\|1\|2}**: 0:off, 1:start-end-mode, 2:endless-mode
+ * **IVAL  =hh:mm:ss**: can omitted if MODE is 0
+ * **START =hh:mm:ss**: can omitted if MODE is 0 or 1
+ * **END   =hh:mm:ss**: can omitted if MODE is 0 or 1
