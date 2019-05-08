@@ -63,7 +63,7 @@ the upper cuttable Part to the actual Nucleo Board must be wired. See *Differenc
 
 
 
-Implementet User Comands
+Implementet User Comands and Usage
 ------------------------
 
 Command                        | Short             | Brief description                                                     |
@@ -73,20 +73,17 @@ Command                        | Short             | Brief description          
 **stream**                     |                   | Stream measurement and data.                                          |
 **end**                        |                   | End stream mode.                                                      |
 **getdata**                    | **gd**            | Return the data or errorcode of the very last measurment.             |
-                               |                   |                                                                       |
 **rtc?**                       |                   | Get the current Real-Time of the System.                              |
 **ival?**                      |                   | Get the current interval and mode in the format MODE,IVAL,START,END.  |
 **config?**                    | **c?**            | Print current config info. For humans only.                           |
 **itime?**                     | **i?**            | Get the current intergration time of the sensor in micro seconds [us] |
 **itimeindex?**                | **ii?**           | Get the current index for setting the intergration time               |
-                               |                   |                                                                       |
 **itime=[54..100000]**         | **i=[54..100000]**| Set the integration time of the sensor in micro seconds [us]          |
 **itimeindex=[0..31]**         | **ii=[1..31]**    | Set the index for setting the integration time                        |
 **iterations=[0..31]**         | **N=[1..31]**     | Set the repetitions of a measurement                                  |
 **format={0\|1}**              |                   | Set the output format to 0=Binary, or to 1=ASCII                      |
 **rtc=20YY-MM-DDThh:mm:ss**    |                   | Set the Real-Time-Clock and the Calendar. No Daylightsaving is used.  |
 **ival=MODE,IVAL,START,END**   |                   | Set the regular automatic measurement.                                | 
-                               |                   |                                                                       |
 **debug**                      |                   | Toggle debug prints on or off.                                        |
 
 where
