@@ -66,6 +66,38 @@ the upper cuttable Part to the actual Nucleo Board must be wired. See *Differenc
 Implementet User Comands and Usage
 ------------------------
 
+**Single Measurement**: As a human use `format=1` make the output readable. Use `i=` to set integration time and use `m` to measure and receive the data immedeatly. Use `gd` to receive the data again. As a machine use `format=0` and make yr admin contact us.
+
+**Stream Measurement - Countiniously measure**: Set the format and the intergartion time as in *Single Measurement*. Use `stream` to start the stream and use `end` to end it.
+
+**Automatic Measure by time with SD-Card**: 
+A Alarm is set, different integration times and a iteration N. If then the alarm occur a multi-measurement is performed. 
+For each set integration time, N measurements are made and the results are stored to the SD card. 
+For generating the repeating alarm two modes are possible: *start-end* or *endless*. 
+In *start-end-mode* one can choose the start- and end time and the interval. The alarm occur at start and then every time the interval
+is reached until the end time. Between end and start nothing will happen. The end time needs to be *later* than the start time!
+In the *endless-mode* the alarm occure every time the interval is reached - very simple - start and end are ignored. 
+**This is how you do it...:**
+Set the iterations per integration time with `N=`.  Set the first integration time with `i=`. 
+Now set the index to 1 by using `ii=1`. Now you can set the next integration time with `i=` again. 
+Continue (`ii=2`,`i=`,`ii=3`,...) until the number of integration times you want to set is reached, the maximum is 32. 
+May you want to check the result with `c?`. Also you can enable debug prints with `debug` and run a test multimeasurement with `mm`. 
+The data from this test is not written to SD card.
+Now set the **timings**. 
+First set the RTC with `rtc=`.
+Now choose your mode..
+For the simpler *endless* mode, use `ival=2,IVAL` for example `ival=2,00:15:00` to set the alarm to every 15 minutes and y're done.
+For the *start-end* mode use `ival=1,IVAL,START,END`. e.g. `ival=1,00:10:00,04:30:00,18:00:00` - this set a alarm to every 10 minutes
+if the time (RTC) is between half-past four and six-O'Clock evening. 
+The times are inclusive so a measurement will happen at 4:30(!), 4:40, ... , 17:50, 18:00(!).
+To recall the settings to yr mind use `c?`.
+
+**Further Notes**: 
+* With `ival=0` one can disable the interval - no measurements will occur. 
+* Everytime `ival` is called and executed, the current multi-measure-config is written to the SD in a file called config. This includes
+all integration times, the iteration value (N), the mode, the start and end time and the interval.
+* If the board resets the config file is read. Unfortunally the RTC-time is impossible to recover.
+
 Command                        | Short             | Brief description                                                     |
 --------------------           | -----             | ------------------------------------------------------------          |
 **measure**                    | **m**             | Make a simgle measurement. Return the values or errorcode             |
