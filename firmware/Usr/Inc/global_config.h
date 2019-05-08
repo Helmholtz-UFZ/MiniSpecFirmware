@@ -107,7 +107,7 @@
 #define HAS_SD	 			0
 
 /* if 0 Powerswitch is always on */
-#define USE_POWER_SWITCH	1
+#define USE_POWER_SWITCH	0
 
 /* If an error occur in the SD driver sometimes it helps
  * to re-initialize the HAL and FAT driver. This threshold

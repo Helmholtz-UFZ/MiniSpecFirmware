@@ -886,7 +886,7 @@ static void set_initial_alarm(void) {
 	}
 }
 
-static bool isON = OFF;
+static bool isON = false;
 /* This function is used to test functions
  * or functionality under development.
  * Especially if the code is hard to reach
@@ -896,10 +896,10 @@ static void dbg_test(void) {
 #if DBG_CODE
 
 	if(isON){
-		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
 		printf("powerswitch OFF\n");
 	} else {
-		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
 		printf("powerswitch ON\n");
 	}
 	isON = !isON;
