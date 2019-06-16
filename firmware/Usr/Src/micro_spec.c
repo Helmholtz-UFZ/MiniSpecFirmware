@@ -110,6 +110,8 @@ void sensor_init(void) {
 
 	// TIM5 - safty timer
 	// en IR in module
+	NVIC_ClearPendingIRQ(TIM5_IRQn);
+	HAL_NVIC_EnableIRQ(TIM5_IRQn);
 	__HAL_TIM_CLEAR_IT(&htim5, TIM_IT_UPDATE);
 	__HAL_TIM_ENABLE_IT(&htim5, TIM_IT_UPDATE);
 

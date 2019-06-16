@@ -23,6 +23,7 @@
 #include "stm32l4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "power.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -266,7 +267,7 @@ void USART1_IRQHandler(void)
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
   if(rxtx.wakeup || hrxtx.ErrorCode){
-		cpu_enter_run_mode();
+		leave_LPM_from_ISR();
   }
 #define RXTX_IRQHandler__OK
   /* USER CODE END USART1_IRQn 1 */
