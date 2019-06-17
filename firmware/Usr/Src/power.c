@@ -18,6 +18,8 @@
 #include "usart_usr.h"
 #include "tim_usr.h"
 
+bool asleep = false;
+
 /* Borrowed from main.c */
 extern void SystemClock_Config(void);
 
@@ -27,6 +29,13 @@ static void sys_deinit(void);
 static void sys_reinit(void){
 	SystemClock_Config();
 	MX_GPIO_Init();
+	HAL_UART_Init(&hrxtx);
+	rxtx_init();
+	rxtx.debug = true;
+	NVIC_EnableIRQ(RXTX_IRQn);
+	rxtx_restart_listening();
+	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);                         //
+	HAL_Delay(100);
 }
 
 static void sys_deinit(void){
@@ -127,16 +136,19 @@ void power_switch_EN(bool on){
 }
 
 void cpu_enter_LPM(void){
+	asleep = true;
 	if( HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET){
 		cpu_sleep();
 	}else{
 		cpu_stop2();
 	}
+	HAL_Delay(100);
+	asleep = false;
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	if(GPIO_Pin == CMDS_EN_Pin){
-		if( HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET){
+		if(asleep){
 			leave_LPM_from_ISR();
 		}
 	}
