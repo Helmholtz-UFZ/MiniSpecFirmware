@@ -10,11 +10,11 @@
 
 #include "global_config.h"
 
-void sleep(void);
-void stop0(void);
-void stop1(void);
-void stop2(void);
-void standby(void);
+void cpu_sleep(void);
+void cpu_stop0(void);
+void cpu_stop1(void);
+void cpu_stop2(void);
+void cpu_standby(void);
 void power_switch_EN(bool);
 void leave_LPM_from_ISR(void);
 

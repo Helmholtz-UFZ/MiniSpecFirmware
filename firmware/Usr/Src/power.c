@@ -21,10 +21,13 @@
 #include "usart_usr.h"
 #include "tim_usr.h"
 
-
+/* Borrowed from main.c */
 extern void SystemClock_Config(void);
 
-void reinit(void){
+static void sys_reinit(void);
+static void sys_deinit(void);
+
+static void sys_reinit(void){
 	SystemClock_Config();
 	MX_GPIO_Init();
 	MX_DMA_Init();
@@ -52,7 +55,7 @@ void reinit(void){
 	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);
 }
 
-void deinit(void){
+static void sys_deinit(void){
 	__HAL_RCC_DMA1_CLK_DISABLE();
 	HAL_TIM_Base_DeInit(&htim1);
 	HAL_TIM_Base_DeInit(&htim2);
@@ -83,7 +86,7 @@ void deinit(void){
 	__HAL_RCC_GPIOD_CLK_DISABLE();
 }
 
-void sleep(void) {
+void cpu_sleep(void) {
 	debug("sleep\n");
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
@@ -91,46 +94,46 @@ void sleep(void) {
 	HAL_ResumeTick();
 }
 
-void stop0(void){
+void cpu_stop0(void){
 	debug("stop0\n");
-	deinit();
+	sys_deinit();
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
 	HAL_PWREx_EnterSTOP0Mode( PWR_STOPENTRY_WFI);
 	HAL_ResumeTick();
-	reinit();
+	sys_reinit();
 }
 
 
-void stop1(void){
+void cpu_stop1(void){
 	debug("stop1\n");
-	deinit();
+	sys_deinit();
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
 	HAL_PWREx_EnterSTOP1Mode( PWR_STOPENTRY_WFI);
 	HAL_ResumeTick();
-	reinit();
+	sys_reinit();
 }
 
-void stop2(void){
+void cpu_stop2(void){
 	debug("stop2\n");
-	deinit();
+	sys_deinit();
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
 	HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
 	HAL_ResumeTick();
-	reinit();
+	sys_reinit();
 }
 
-void standby(void){
+void cpu_standby(void){
 	debug("standby\n");
-	deinit();
+	sys_deinit();
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
 	HAL_PWREx_EnableSRAM2ContentRetention();
 	HAL_PWR_EnterSTANDBYMode();
 	HAL_ResumeTick();
-	reinit();
+	sys_reinit();
 }
 
 /**

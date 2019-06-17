@@ -114,7 +114,7 @@ int main_usr(void) {
 		__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);                         //
 		if (!rxtx.wakeup && !state.stream && !rtc.alarmA_wakeup) {        //
 			power_switch_EN(OFF);
-			sleep();
+			cpu_sleep();
 			power_switch_EN(ON);
 		}                                                                 //
 		__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);                        //
