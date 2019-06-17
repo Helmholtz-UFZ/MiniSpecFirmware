@@ -76,6 +76,7 @@ void cpu_stop0(void){
 	HAL_PWREx_EnterSTOP0Mode( PWR_STOPENTRY_WFI);
 	HAL_ResumeTick();
 	sys_reinit();
+	HAL_Delay(1);
 	debug("leave stop0 mode\n");
 }
 
@@ -88,6 +89,7 @@ void cpu_stop1(void){
 	HAL_PWREx_EnterSTOP1Mode( PWR_STOPENTRY_WFI);
 	HAL_ResumeTick();
 	sys_reinit();
+	HAL_Delay(1); // avoid spurios BOR. see ERRATA 2.3.21
 	debug("leave stop1 mode\n");
 }
 
@@ -99,6 +101,7 @@ void cpu_stop2(void){
 	HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
 	HAL_ResumeTick();
 	sys_reinit();
+	HAL_Delay(1); // avoid spurios BOR. see ERRATA 2.3.21
 	debug("leave stop2 mode\n");
 }
 

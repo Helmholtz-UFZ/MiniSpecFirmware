@@ -55,6 +55,11 @@ void init_timetype(RTC_TimeTypeDef *time){
 }
 
 static void init(void){
+
+	/* sa. Errata 2.1.3. or Arm ID number 838869 */
+	uint32_t *ACTLR = (uint32_t *)0xE000E008;
+	*ACTLR |= SCnSCB_ACTLR_DISDEFWBUF_Msk;
+
 	state.format = DATA_FORMAT_ASCII;
 	state.stream = false;
 	state.toSD = true;
