@@ -18,8 +18,6 @@
 #include "usart_usr.h"
 #include "tim_usr.h"
 
-bool asleep = false;
-
 /* Borrowed from main.c */
 extern void SystemClock_Config(void);
 
@@ -29,22 +27,27 @@ static void sys_deinit(void);
 static void sys_reinit(void){
 	SystemClock_Config();
 	MX_GPIO_Init();
-//	HAL_UART_Init(&hrxtx);
-//	rxtx_init();
-//	rxtx.debug = true;
-//	NVIC_EnableIRQ(RXTX_IRQn);
-//	rxtx_restart_listening();
-//	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);                         //
-//	HAL_Delay(100);
+
+	// uart reinit
+	MX_USART1_UART_Init();
+	rxtx_init();
+	NVIC_EnableIRQ(RXTX_IRQn);
+	rxtx_restart_listening();
+	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);
+	HAL_Delay(100);
 }
 
 static void sys_deinit(void){
-	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);
+	HAL_NVIC_DisableIRQ(RXTX_IRQn);
+	HAL_UART_Abort(&hrxtx);
+	HAL_UART_DeInit(&hrxtx);
 
+	// all pins to analog (save a lot power
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
 	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Pin = GPIO_PIN_All;
-
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -53,10 +56,9 @@ static void sys_deinit(void){
 	HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
-
 	// keep the CMDS_EN Line active
 	GPIO_InitStruct.Pin &= ~(CMDS_EN_Pin);
-//	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 
 void cpu_sleep(void) {
@@ -94,15 +96,8 @@ void cpu_stop1(void){
 }
 
 void cpu_stop2(void){
-	debug("enter stop2 mode\n");
-	sys_deinit();
-	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
 	HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
-	HAL_ResumeTick();
-	sys_reinit();
-	HAL_Delay(1); // avoid spurios BOR. see ERRATA 2.3.21
-	debug("leave stop2 mode\n");
 }
 
 void cpu_standby(void){
@@ -139,20 +134,27 @@ void power_switch_EN(bool on){
 }
 
 void cpu_enter_LPM(void){
-	asleep = true;
-	if( HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET){
-		cpu_sleep();
-	}else{
-		cpu_stop2();
+
+	while (!rxtx.wakeup && !rtc.alarmA_wakeup) {
+		if( HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET){
+			cpu_sleep();
+		}else{
+			debug("enter stop2 mode\n");
+			sys_deinit();
+			while (!rxtx.wakeup && !rtc.alarmA_wakeup && HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_RESET){
+				HAL_SuspendTick();
+				cpu_stop2();
+				HAL_ResumeTick();
+				HAL_Delay(1); // avoid spurios BOR. see ERRATA 2.3.21
+			}
+			sys_reinit();
+			debug("leave stop2 mode\n");
+		}
 	}
-	HAL_Delay(100);
-	asleep = false;
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	if(GPIO_Pin == CMDS_EN_Pin){
-		if(asleep){
-			leave_LPM_from_ISR();
-		}
+		leave_LPM_from_ISR();
 	}
 }
