@@ -71,45 +71,36 @@ void cpu_sleep(void) {
 }
 
 void cpu_stop0(void){
-	debug("enter stop0 mode\n");
-	sys_deinit();
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
 	HAL_PWREx_EnterSTOP0Mode( PWR_STOPENTRY_WFI);
 	HAL_ResumeTick();
-	sys_reinit();
 	HAL_Delay(1);
-	debug("leave stop0 mode\n");
 }
 
 
 void cpu_stop1(void){
-	debug("enter stop1 mode\n");
-	sys_deinit();
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
 	HAL_PWREx_EnterSTOP1Mode( PWR_STOPENTRY_WFI);
 	HAL_ResumeTick();
-	sys_reinit();
 	HAL_Delay(1); // avoid spurios BOR. see ERRATA 2.3.21
-	debug("leave stop1 mode\n");
 }
 
 void cpu_stop2(void){
+	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
 	HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
+	HAL_ResumeTick();
+	HAL_Delay(1); // avoid spurios BOR. see ERRATA 2.3.21
 }
 
 void cpu_standby(void){
-	debug("enter standby mode\n");
-	sys_deinit();
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
 	HAL_PWREx_EnableSRAM2ContentRetention();
 	HAL_PWR_EnterSTANDBYMode();
 	HAL_ResumeTick();
-	sys_reinit();
-	debug("leave standby mode\n");
 }
 
 /**
@@ -142,10 +133,7 @@ void cpu_enter_LPM(void){
 			debug("enter stop2 mode\n");
 			sys_deinit();
 			while (!rxtx.wakeup && !rtc.alarmA_wakeup && HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_RESET){
-				HAL_SuspendTick();
 				cpu_stop2();
-				HAL_ResumeTick();
-				HAL_Delay(1); // avoid spurios BOR. see ERRATA 2.3.21
 			}
 			sys_reinit();
 			debug("leave stop2 mode\n");
