@@ -101,10 +101,10 @@ int main_usr(void) {
 
 	// fixme: remove vvvvvvv
 
-//	rc.ival.Hours = 0;
-//	rc.ival.Minutes = 0;
-//	rc.ival.Seconds = 20;
-//	rc.mode = IVAL_ENDLESS;
+	rc.ival.Hours = 0;
+	rc.ival.Minutes = 0;
+	rc.ival.Seconds = 20;
+	rc.mode = IVAL_ENDLESS;
 
 	// fixme: remove ^^^^^^^
 
@@ -123,7 +123,7 @@ int main_usr(void) {
 		__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);                         //
 		if (!rxtx.wakeup && !state.stream && !rtc.alarmA_wakeup) {        //
 			power_switch_EN(OFF);
-			cpu_stop2();
+			cpu_enter_LPM();
 			power_switch_EN(ON);
 		}                                                                 //
 		__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);                        //

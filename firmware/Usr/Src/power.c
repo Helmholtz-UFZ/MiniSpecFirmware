@@ -4,9 +4,6 @@
  *  Created on: Jun 16, 2019
  *      Author: rg
  */
-
-
-
 #include "power.h"
 #include "main.h"
 #include "main_usr.h"
@@ -30,48 +27,16 @@ static void sys_deinit(void);
 static void sys_reinit(void){
 	SystemClock_Config();
 	MX_GPIO_Init();
-	MX_DMA_Init();
-	MX_TIM2_Init();
-	MX_TIM1_Init();
-	MX_TIM5_Init();
-	MX_TIM3_Init();
-	MX_SDMMC1_SD_Init();
-	MX_FATFS_Init();
-	MX_USART1_UART_Init();
-
-	// from MX_NVIC_Init()
-	HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
-	HAL_NVIC_SetPriority(TIM1_CC_IRQn, 0, 0);
-	HAL_NVIC_SetPriority(TIM5_IRQn, 0, 0);
-
-	// from main_usr.c, init()
-	rxtx_init();
-	tim1_Init();
-	tim2_Init();
-	tim5_Init();
-
-	// from main_usr.c, main_usr()
-	NVIC_EnableIRQ(RXTX_IRQn);
-	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);
 }
 
 static void sys_deinit(void){
-	__HAL_RCC_DMA1_CLK_DISABLE();
-	HAL_TIM_Base_DeInit(&htim1);
-	HAL_TIM_Base_DeInit(&htim2);
-	HAL_TIM_Base_DeInit(&htim3);
-	HAL_TIM_Base_DeInit(&htim5);
-	HAL_SD_DeInit(&hsd1);
-	HAL_UART_DeInit(&hrxtx);
-
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
-	GPIO_InitStruct.Pin = (uint16_t) 0xFFFE;
+
 	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
 	GPIO_InitStruct.Pin = GPIO_PIN_All;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
@@ -80,10 +45,9 @@ static void sys_deinit(void){
 	HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
 
-	__HAL_RCC_GPIOC_CLK_DISABLE();
-	__HAL_RCC_GPIOA_CLK_DISABLE();
-	__HAL_RCC_GPIOB_CLK_DISABLE();
-	__HAL_RCC_GPIOD_CLK_DISABLE();
+	// keep the CMDS_EN Line active
+	GPIO_InitStruct.Pin &= ~(CMDS_EN_Pin);
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 
 void cpu_sleep(void) {
@@ -162,3 +126,18 @@ void power_switch_EN(bool on){
 #endif
 }
 
+void cpu_enter_LPM(void){
+	if( HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET){
+		cpu_sleep();
+	}else{
+		cpu_stop2();
+	}
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+	if(GPIO_Pin == CMDS_EN_Pin){
+		if( HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET){
+			leave_LPM_from_ISR();
+		}
+	}
+}
