@@ -117,6 +117,7 @@ int main(void)
   /* add the dir 'USR/Inc' to Sources. Therefor
   Properties -> C/C++ General -> Paths and Symbols
   */
+
   main_usr();
   /* USER CODE END 2 */
 
@@ -215,6 +216,15 @@ static void MX_NVIC_Init(void)
   /* RTC_Alarm_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
+  /* EXTI15_10_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+  /* USART1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(USART1_IRQn);
+  /* DMA1_Channel5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
 }
 
 /* USER CODE BEGIN 4 */

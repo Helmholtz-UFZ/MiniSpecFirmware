@@ -110,6 +110,8 @@ void sensor_init(void) {
 
 	// TIM5 - safty timer
 	// en IR in module
+	NVIC_ClearPendingIRQ(TIM5_IRQn);
+	HAL_NVIC_EnableIRQ(TIM5_IRQn);
 	__HAL_TIM_CLEAR_IT(&htim5, TIM_IT_UPDATE);
 	__HAL_TIM_ENABLE_IT(&htim5, TIM_IT_UPDATE);
 
@@ -157,8 +159,8 @@ void sensor_measure(void) {
 	sens1.data->wptr = sens1.data->base;
 
 	// set the canaries
-	memset(secure_memblock1.precanary, 0xffff, CANARYSIZE * sizeof(uint16_t));
-	memset(secure_memblock1.postcanary, 0xffff, CANARYSIZE * sizeof(uint16_t));
+	memset(secure_memblock1.precanary, 0xDEADBEEF, CANARYSIZE * sizeof(uint32_t));
+	memset(secure_memblock1.postcanary, 0xDEADBEEF, CANARYSIZE * sizeof(uint32_t));
 
 	// prevent SysTick to stretch time critical sections
 	HAL_SuspendTick();
@@ -167,6 +169,11 @@ void sensor_measure(void) {
 	// resulting in the integration-time (see c12880ma_kacc1226e.pdf)
 	int_time_cnt = MAX(sens1.itime, MIN_INTERGATION_TIME);
 	int_time_cnt -= ITIME_CORRECTION;
+
+	// TIM5 - safty timer
+	// en IR in module
+	__HAL_TIM_CLEAR_IT(&htim5, TIM_IT_UPDATE);
+	__HAL_TIM_ENABLE_IT(&htim5, TIM_IT_UPDATE);
 
 	// prepare ST
 	__HAL_TIM_SET_AUTORELOAD(&htim2, int_time_cnt);

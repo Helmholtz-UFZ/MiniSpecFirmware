@@ -6,6 +6,7 @@
  */
 
 #include "main_usr.h"
+#include "power.h"
 #include "rtc.h"
 #include "rtc_usr.h"
 #include "global_config.h"
@@ -54,6 +55,11 @@ void init_timetype(RTC_TimeTypeDef *time){
 }
 
 static void init(void){
+
+	/* sa. Errata 2.1.3. or Arm ID number 838869 */
+	uint32_t *ACTLR = (uint32_t *)0xE000E008;
+	*ACTLR |= SCnSCB_ACTLR_DISDEFWBUF_Msk;
+
 	state.format = DATA_FORMAT_ASCII;
 	state.stream = false;
 	state.toSD = true;
@@ -69,10 +75,11 @@ static void init(void){
 	rc.itime[0] = DEFAULT_INTEGRATION_TIME;
 	rc.mode = IVAL_OFF;
 
-	/* We enable the interrupts later */
+	/* We enable the interrupts later when we need them*/
 	HAL_NVIC_DisableIRQ(RXTX_IRQn);
 	HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
 	HAL_NVIC_DisableIRQ(EXTI2_IRQn);
+	HAL_NVIC_DisableIRQ(TIM5_IRQn);
 
 	rtc_init();
 	rxtx_init();
@@ -97,6 +104,15 @@ int main_usr(void) {
 		printf("\nstart\n");
 	}
 
+	// fixme: remove vvvvvvv
+
+	rc.ival.Hours = 0;
+	rc.ival.Minutes = 0;
+	rc.ival.Seconds = 20;
+	rc.mode = IVAL_ENDLESS;
+
+	// fixme: remove ^^^^^^^
+
 	inform_SD_reset();
 	read_config_from_SD();
 	set_initial_alarm();
@@ -111,7 +127,9 @@ int main_usr(void) {
 		//=================================================================
 		__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);                         //
 		if (!rxtx.wakeup && !state.stream && !rtc.alarmA_wakeup) {        //
-			cpu_enter_sleep_mode();                                       //
+			power_switch_EN(OFF);
+			cpu_enter_LPM();
+			power_switch_EN(ON);
 		}                                                                 //
 		__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);                        //
 		//=================================================================
@@ -554,47 +572,6 @@ static void send_data(void) {
 		}
 	}
 }
-
-/**
- * @brief cpu_sleep()
- * Disabel SysTick and make CPU enter sleep-mode.
- *
- * @sa cpu_awake()
- */
-void cpu_enter_sleep_mode(void) {
-	power_switch_EN(OFF);
-	// to prevent wakeup by Systick interrupt.
-	HAL_SuspendTick();
-	// go back to sleep after handling an IR
-	// cleared by calling cpu_enter_run_mode() from ISR
-	HAL_PWR_EnableSleepOnExit();
-	//sleep + WaintForInterrupt-----------------------------------------
-	HAL_PWR_EnterSLEEPMode( PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
-	//awake again ------------------------------------------------------
-	HAL_ResumeTick();
-}
-
-/**
- * @brief cpu_awake()
- * EXECUTED BY ISR - KEEP IT SHORT
- */
-void cpu_enter_run_mode(void) {
-	// wake up after handling the actual IR
-	CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));
-	power_switch_EN(ON);
-}
-
-void power_switch_EN(bool on){
-#if !USE_POWER_SWITCH
-	return;
-#endif
-	if(on){
-		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
-	} else {
-		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
-	}
-}
-
 
 static void inform_SD_reset(void) {
 #if !HAS_SD

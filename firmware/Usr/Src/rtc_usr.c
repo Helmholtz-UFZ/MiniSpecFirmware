@@ -10,6 +10,7 @@
 #include "rtc_usr.h"
 #include "string.h"
 #include "stdio.h"
+#include "power.h"
 
 rtc_t rtc;
 
@@ -333,5 +334,5 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 
 	rtc.alarmA_wakeup = true;
 
-	cpu_enter_run_mode();
+	leave_LPM_from_ISR();
 }

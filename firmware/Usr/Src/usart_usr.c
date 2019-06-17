@@ -10,7 +10,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-rxtx_config_t rxtx;
+rxtx_config_t rxtx = {false, false, 0};
 
 /* Memory blocks and buffer for transmitting and receiving
  * via uart interface.*/
@@ -50,10 +50,6 @@ int _write(int file, char *ptr, int len) {
 void rxtx_init(void) {
 	uint32_t cr1 = 0;
 	char trigger_char;
-
-	rxtx.debug = false;
-	rxtx.wakeup = false;
-	rxtx.cmd_bytes = 0;
 
 	//save cr1 status
 	cr1 = RXTX->CR1;
