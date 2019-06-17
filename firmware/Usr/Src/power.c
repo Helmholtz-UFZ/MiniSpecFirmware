@@ -87,46 +87,50 @@ static void sys_deinit(void){
 }
 
 void cpu_sleep(void) {
-	debug("sleep\n");
+	debug("enter sleep mode\n");
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
 	HAL_PWR_EnterSLEEPMode( PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
 	HAL_ResumeTick();
+	debug("leave sleep mode\n");
 }
 
 void cpu_stop0(void){
-	debug("stop0\n");
+	debug("enter stop0 mode\n");
 	sys_deinit();
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
 	HAL_PWREx_EnterSTOP0Mode( PWR_STOPENTRY_WFI);
 	HAL_ResumeTick();
 	sys_reinit();
+	debug("leave stop0 mode\n");
 }
 
 
 void cpu_stop1(void){
-	debug("stop1\n");
+	debug("enter stop1 mode\n");
 	sys_deinit();
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
 	HAL_PWREx_EnterSTOP1Mode( PWR_STOPENTRY_WFI);
 	HAL_ResumeTick();
 	sys_reinit();
+	debug("leave stop1 mode\n");
 }
 
 void cpu_stop2(void){
-	debug("stop2\n");
+	debug("enter stop2 mode\n");
 	sys_deinit();
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
 	HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
 	HAL_ResumeTick();
 	sys_reinit();
+	debug("leave stop2 mode\n");
 }
 
 void cpu_standby(void){
-	debug("standby\n");
+	debug("enter standby mode\n");
 	sys_deinit();
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
@@ -134,6 +138,7 @@ void cpu_standby(void){
 	HAL_PWR_EnterSTANDBYMode();
 	HAL_ResumeTick();
 	sys_reinit();
+	debug("leave standby mode\n");
 }
 
 /**
