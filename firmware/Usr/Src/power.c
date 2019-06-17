@@ -29,13 +29,13 @@ static void sys_deinit(void);
 static void sys_reinit(void){
 	SystemClock_Config();
 	MX_GPIO_Init();
-	HAL_UART_Init(&hrxtx);
-	rxtx_init();
-	rxtx.debug = true;
-	NVIC_EnableIRQ(RXTX_IRQn);
-	rxtx_restart_listening();
-	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);                         //
-	HAL_Delay(100);
+//	HAL_UART_Init(&hrxtx);
+//	rxtx_init();
+//	rxtx.debug = true;
+//	NVIC_EnableIRQ(RXTX_IRQn);
+//	rxtx_restart_listening();
+//	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);                         //
+//	HAL_Delay(100);
 }
 
 static void sys_deinit(void){
@@ -56,7 +56,7 @@ static void sys_deinit(void){
 
 	// keep the CMDS_EN Line active
 	GPIO_InitStruct.Pin &= ~(CMDS_EN_Pin);
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+//	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 
 void cpu_sleep(void) {
