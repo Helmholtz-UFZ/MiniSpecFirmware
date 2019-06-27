@@ -52,7 +52,7 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, Button_NucleoBoard_Pin|SD_DETECT_OUT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, W5500_RST_Pin|W5500_SCS_Pin, GPIO_PIN_RESET);

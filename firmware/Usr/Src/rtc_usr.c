@@ -12,10 +12,10 @@
 #include "stdio.h"
 #include "power.h"
 
-rtc_t rtc;
+rtc_t rtc = {false};
 
 void rtc_init(void){
-	rtc.alarmA_wakeup = false;
+
 }
 
 /**

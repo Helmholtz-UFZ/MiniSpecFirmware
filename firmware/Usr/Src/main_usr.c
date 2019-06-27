@@ -54,11 +54,29 @@ void init_timetype(RTC_TimeTypeDef *time){
 	time->Seconds = 99;
 }
 
-static void init(void){
-
+void usr_hw_init(void){
 	/* sa. Errata 2.1.3. or Arm ID number 838869 */
 	uint32_t *ACTLR = (uint32_t *)0xE000E008;
 	*ACTLR |= SCnSCB_ACTLR_DISDEFWBUF_Msk;
+
+	/* We enable the interrupts later when we need them*/
+	HAL_NVIC_DisableIRQ(RXTX_IRQn);
+	HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
+	HAL_NVIC_DisableIRQ(EXTI2_IRQn);
+	HAL_NVIC_DisableIRQ(TIM5_IRQn);
+
+	rtc_init();
+	rxtx_init();
+	tim1_Init();
+	tim2_Init();
+	tim5_Init();
+
+	NVIC_EnableIRQ(RXTX_IRQn);
+	rxtx_restart_listening();
+
+}
+
+static void statemachine_init(void){
 
 	state.format = DATA_FORMAT_ASCII;
 	state.stream = false;
@@ -75,17 +93,6 @@ static void init(void){
 	rc.itime[0] = DEFAULT_INTEGRATION_TIME;
 	rc.mode = IVAL_OFF;
 
-	/* We enable the interrupts later when we need them*/
-	HAL_NVIC_DisableIRQ(RXTX_IRQn);
-	HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
-	HAL_NVIC_DisableIRQ(EXTI2_IRQn);
-	HAL_NVIC_DisableIRQ(TIM5_IRQn);
-
-	rtc_init();
-	rxtx_init();
-	tim1_Init();
-	tim2_Init();
-	tim5_Init();
 
 #if DBG_CODE
 	/* Overwrites default value from usr_uart.c */
@@ -98,7 +105,8 @@ int main_usr(void) {
 	uint32_t tmp = 0;
 	char *str = NULL;
 
-	init();
+	usr_hw_init();
+	statemachine_init();
 
 	if (state.format == DATA_FORMAT_ASCII) {
 		printf("\nstart\n");
@@ -106,19 +114,16 @@ int main_usr(void) {
 
 	// fixme: remove vvvvvvv
 
-	rc.ival.Hours = 0;
-	rc.ival.Minutes = 0;
-	rc.ival.Seconds = 20;
-	rc.mode = IVAL_ENDLESS;
+//	rc.ival.Hours = 0;
+//	rc.ival.Minutes = 0;
+//	rc.ival.Seconds = 20;
+//	rc.mode = IVAL_ENDLESS;
 
 	// fixme: remove ^^^^^^^
 
 	inform_SD_reset();
 	read_config_from_SD();
 	set_initial_alarm();
-
-	NVIC_EnableIRQ(RXTX_IRQn);
-	rxtx_restart_listening();
 
 	while (1) {
 		err = 0;
@@ -574,9 +579,7 @@ static void send_data(void) {
 }
 
 static void inform_SD_reset(void) {
-#if !HAS_SD
-	return;
-#endif
+#if HAS_SD
 	uint8_t res = 0;
 	/* Inform the File that an reset occurred */
 	res = sd_mount();
@@ -591,12 +594,13 @@ static void inform_SD_reset(void) {
 		}
 		res = sd_umount();
 	}
+#else
+	return;
+#endif
 }
 
 static void inform_SD_rtc(void) {
-#if !HAS_SD
-	return;
-#endif
+#if HAS_SD
 	uint8_t res = 0;
 	res = sd_mount();
 	if (!res) {
@@ -612,12 +616,13 @@ static void inform_SD_rtc(void) {
 		}
 		sd_umount();
 	}
+#else
+	return;
+#endif
 }
 
 static void write_config_to_SD(void) {
-#if !HAS_SD
-	return;
-#endif
+#if HAS_SD
 	uint8_t res = 0;
 	res = sd_mount();
 	if (!res) {
@@ -640,15 +645,16 @@ static void write_config_to_SD(void) {
 		}
 		sd_umount();
 	}
+#else
+	return;
+#endif
 }
 
 static void read_config_from_SD(void){
-#if !HAS_SD
-	return;
-#endif
-#if RCCONF_MAX_ITIMES > 32
-#error "Attention buffer gets big.. Improve implementation :)"
-#endif
+#if HAS_SD
+# if RCCONF_MAX_ITIMES > 32
+# error "Attention buffer gets big.. Improve implementation :)"
+# endif
 	/* max value of itime = 10000\n -> 6 BYTES * RCCONF_MAX_ITIMES
 	 * start end ival timestamp     -> 3 * 20 BYTES
 	 * three other number good will aprox. -> 20 BYTES*/
@@ -704,14 +710,15 @@ static void read_config_from_SD(void){
 		}
 		sd_umount();
 	}
+#else
+	return;
+#endif
 }
 
 /** Store the measurment data to SD card.
  * Requires a mounted SD card. */
 static uint8_t measurement_to_SD(void){
-#if !HAS_SD
-	return 100;
-#endif
+#if HAS_SD
 	int8_t res = 0;
 	res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf, FNAME_BUF_SZ);
 	if (!res) {
@@ -744,6 +751,9 @@ static uint8_t measurement_to_SD(void){
 		}
 	}
 	return res;
+#else
+	return 100;
+#endif
 }
 
 static void multimeasure(void) {

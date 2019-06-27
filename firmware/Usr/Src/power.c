@@ -20,44 +20,84 @@
 
 /* Borrowed from main.c */
 extern void SystemClock_Config(void);
+extern void MX_DMA_Init(void);
+extern void MX_TIM1_Init(void);
+extern void MX_TIM2_Init(void);
+extern void MX_TIM3_Init(void);
+extern void MX_TIM5_Init(void);
+extern void MX_SDMMC1_SD_Init(void);
+extern void MX_FATFS_Init(void);
+extern void MX_USART1_UART_Init(void);
 
 static void sys_reinit(void);
 static void sys_deinit(void);
 
 static void sys_reinit(void){
 	SystemClock_Config();
-	MX_GPIO_Init();
 
-	// uart reinit
+	MX_GPIO_Init();
+	MX_DMA_Init();
+	MX_TIM2_Init();
+	MX_TIM1_Init();
+	MX_TIM5_Init();
+	MX_TIM3_Init();
+	MX_SDMMC1_SD_Init();
+	MX_FATFS_Init();
 	MX_USART1_UART_Init();
-	rxtx_init();
-	NVIC_EnableIRQ(RXTX_IRQn);
-	rxtx_restart_listening();
+
+	/* Initialize interrupts see MX_NVIC_Init(); in main.c */
+	HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+	HAL_NVIC_SetPriority(TIM1_CC_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);
+	HAL_NVIC_SetPriority(TIM5_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(TIM5_IRQn);
+	HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+	HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(USART1_IRQn);
+	HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
+
+	/* reinit statemachine hw modifications */
+	usr_hw_init();
+	// reanable character match
 	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);
-	HAL_Delay(100);
+
+	HAL_Delay(1);
 }
 
 static void sys_deinit(void){
-	__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);
-	HAL_NVIC_DisableIRQ(RXTX_IRQn);
-	HAL_UART_Abort(&hrxtx);
+//	HAL_UART_Abort(&hrxtx);
 	HAL_UART_DeInit(&hrxtx);
+	HAL_TIM_Base_DeInit(&htim1);
+	HAL_TIM_Base_DeInit(&htim2);
+	HAL_TIM_Base_DeInit(&htim3);
+	HAL_TIM_Base_DeInit(&htim5);
+//	HAL_SD_Abort(&hsd1);
+	HAL_SD_DeInit(&hsd1);
+	FATFS_UnLinkDriver(SDPath);
 
 	// all pins to analog (save a lot power
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
+
 	GPIO_InitStruct.Pin = GPIO_PIN_All;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
-	// keep the CMDS_EN Line active
+
+	/* keep the CMDS_EN Line active listening and
+	 * the Powerswitch line tied to GND */
 	GPIO_InitStruct.Pin &= ~(CMDS_EN_Pin);
+	GPIO_InitStruct.Pin &= ~(POWER5V_SWITCH_ENBL_Pin);
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 

@@ -68,6 +68,7 @@ typedef struct
 } filename_t;
 
 int main_usr( void );
+void usr_hw_init(void);
 
 #endif /* __MAIN_USR_H__ */
 
