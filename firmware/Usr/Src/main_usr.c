@@ -187,6 +187,7 @@ int main_usr(void) {
 				break;
 
 			case USR_CMD_MULTI_MEASURE_START:
+				ok();
 				state.toSD = false;
 				multimeasure();
 				state.toSD = true;
@@ -383,6 +384,7 @@ int main_usr(void) {
 			case USR_CMD_DBGTEST:
 				/* This call do nothing if DBG_CODE is not defined */
 				dbg_test();
+				ok();
 				break;
 
 			case USR_CMD_SET_SENSOR:

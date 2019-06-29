@@ -54,7 +54,7 @@ typedef enum
 	"mm     - multimeasure\n"\
 	"stream - streaming data\n"\
 	"end    - end stream\n"\
-	"gd     - get (last) data\n"\
+	"gd     - get (last) data or error\n"\
 	"i?     - get intergration time\n"\
 	"ii?    - get (current) integration time index\n"\
 	"rtc?   - get current time\n"\
