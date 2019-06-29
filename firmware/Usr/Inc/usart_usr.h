@@ -71,5 +71,6 @@ void rxtx_init(void);
 void rxtx_restart_listening(void);
 int uart_printf(UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const char *__restrict format, ...)__attribute__( (__format__ (__printf__, 3, 4)) );
 int debug(const char *__restrict format, ...)__attribute__( (__format__ (__printf__, 1, 2)) );
+int reply(const char *__restrict format, ...)__attribute__( (__format__ (__printf__, 1, 2)) );
 
 #endif /*__usart_usr_H */

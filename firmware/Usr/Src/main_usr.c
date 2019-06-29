@@ -109,7 +109,7 @@ int main_usr(void) {
 	statemachine_init();
 
 	if (state.format == DATA_FORMAT_ASCII) {
-		printf("\nstart\n");
+		reply("\nstart\n");
 	}
 
 	// fixme: remove vvvvvvv
@@ -215,7 +215,7 @@ int main_usr(void) {
 				if (state.format == DATA_FORMAT_BIN) {
 					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sens1.itime, 4, 1000);
 				} else {
-					printf("integration time [0] = %lu us\n", sens1.itime);
+					reply("integration time [0] = %lu us\n", sens1.itime);
 				}
 				break;
 
@@ -225,14 +225,14 @@ int main_usr(void) {
 					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime_index, 4, 1000);
 					HAL_UART_Transmit(&hrxtx, (uint8_t *) &tmp, 4, 1000);
 				} else {
-					printf("integration time [%u] = %lu us\n", rc.itime_index, tmp);
+					reply("integration time [%u] = %lu us\n", rc.itime_index, tmp);
 				}
 				break;
 
 			case USR_CMD_GET_RTC_TIME:
 				ts = rtc_get_now();
 				if (state.format == DATA_FORMAT_ASCII) {
-					printf("20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+					reply("20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 							ts.time.Minutes, ts.time.Seconds);
 				} else {
 					HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Year, 1, 1000);
@@ -247,10 +247,10 @@ int main_usr(void) {
 			case USR_CMD_GET_INTERVAL:
 				// TODO start mode end ival
 				if (state.format == DATA_FORMAT_ASCII) {
-					printf("interval mode: %u\n", rc.mode);
-					printf("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
-					printf("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
-					printf("%02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
+					reply("interval mode: %u\n", rc.mode);
+					reply("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
+					reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
+					reply("%02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
 				} else {
 					/* Transmit binary */
 					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.mode, 1, 1000);
@@ -269,18 +269,18 @@ int main_usr(void) {
 			case USR_CMD_GET_CONFIG:
 				for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
 					if(rc.itime[i] != 0){
-						printf("itime[%u] = %lu\n", i, rc.itime[i]);
+						reply("itime[%u] = %lu\n", i, rc.itime[i]);
 					}
 				}
-				printf("itime[%u] is currently choosen for setting.\n", rc.itime_index);
-				printf("iteration per measurement: %u\n", rc.iterations);
-				printf("interval mode: %u\n", rc.mode);
-				printf("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
-				printf("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
-				printf("interval:   %02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
-				printf("next alarm: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
+				reply("itime[%u] is currently choosen for setting.\n", rc.itime_index);
+				reply("iteration per measurement: %u\n", rc.iterations);
+				reply("interval mode: %u\n", rc.mode);
+				reply("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
+				reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
+				reply("interval:   %02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
+				reply("next alarm: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 				ts = rtc_get_now();
-				printf("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+				reply("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 							ts.time.Minutes, ts.time.Seconds);
 				break;
 
@@ -367,12 +367,16 @@ int main_usr(void) {
 
 			/* DEBUG ============================================================ */
 
+			case USR_CMD_HELP:
+				reply(HELPSTR);
+				break;
+
 			case USR_CMD_DEBUG:
 				rxtx.debug = rxtx.debug ? false : true;
 				if (rxtx.debug) {
-					printf("debug on\n");
+					reply("debug on\n");
 				} else {
-					printf("debug off\n");
+					reply("debug off\n");
 				}
 				break;
 
@@ -383,7 +387,7 @@ int main_usr(void) {
 
 			case USR_CMD_SET_SENSOR:
 			case USR_CMD_UNKNOWN:
-				printf("???\n");
+				reply("???\n");
 				break;
 
 			}
@@ -477,7 +481,7 @@ static int8_t parse_ival(char *str){
 /** print 'ok' */
 static void ok(void) {
 	if (state.format == DATA_FORMAT_ASCII) {
-		printf("ok\n");
+		reply("ok\n");
 	}
 }
 
@@ -885,10 +889,10 @@ static void dbg_test(void) {
 
 	if(isON){
 		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
-		printf("powerswitch OFF\n");
+		reply("powerswitch OFF\n");
 	} else {
 		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
-		printf("powerswitch ON\n");
+		reply("powerswitch ON\n");
 	}
 	isON = !isON;
 	return;
@@ -904,7 +908,7 @@ static void dbg_test(void) {
 		res = sd_open(f, SD_CONFIGFILE_NAME, FA_READ);
 		if (!res) {
 			f_read(f, buf, sizeof(buf), &bytesread);
-			printf("Config-file on SD:\n%s", buf);
+			reply("Config-file on SD:\n%s", buf);
 		}
 	}
 #endif

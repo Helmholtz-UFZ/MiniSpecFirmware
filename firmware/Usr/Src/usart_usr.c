@@ -124,3 +124,18 @@ int debug(const char *__restrict format, ...) {
 		return 0;
 	}
 }
+
+/**
+ * Print a string to rxtx uart
+ * Act like printf() but put the string '->' upfront the message,
+ * so any format strings printf() can eat are possible.
+ */
+int reply(const char *__restrict format, ...) {
+	int len;
+	va_list args;
+	printf("-> ");
+	va_start(args, format);
+	len = vprintf(format, args);
+	va_end(args);
+	return len;
+}

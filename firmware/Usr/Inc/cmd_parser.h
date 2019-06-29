@@ -41,11 +41,32 @@ typedef enum
 	USR_CMD_SET_RTC_TIME,
 	USR_CMD_SET_INTERVAL,
 
-	//debug
+	//debug and help
+	USR_CMD_HELP,
 	USR_CMD_DEBUG,
 	USR_CMD_DBGTEST,
 
 } usr_cmd_enum_t;
+
+#define HELPSTR  "" \
+	"h      - print this help\n"\
+	"m      - measure\n"\
+	"mm     - multimeasure\n"\
+	"stream - streaming data\n"\
+	"end    - end stream\n"\
+	"gd     - get (last) data\n"\
+	"i?     - get intergration time\n"\
+	"ii?    - get (current) integration time index\n"\
+	"rtc?   - get current time\n"\
+	"ival?  - get interval\n"\
+	"c?     - get config\n"\
+	"i=     - set intergration time\n"\
+	"ii=    - set index to set inegration time for mm\n"\
+	"N=     - set iterations per measurement for mm\n"\
+	"rtc=   - set current time 20YY-MM-DDTHH:MM:SS\n"\
+	"format={0/1} - set format bin/ascii\n"\
+	"ival={0 / 1,IVAL / 2,IVAL,START,STOP} \n"\
+    "  - set interval with IVAL,STRT,STOP = HH:MM:SS\n\n"
 
 /** Size of the argument buffer in usr_cmd_typedef
  * must not exceed UART_RX_BUFFER_SZ */

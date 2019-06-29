@@ -83,6 +83,15 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 	}
 #endif
 
+	str = "help\r";
+	alias = "h\r";
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+		extcmd.cmd = USR_CMD_HELP;
+		return;
+	}
+
 	str = "#debug\r";
 	sz = strlen(str);
 	aliassz = strlen(alias);
