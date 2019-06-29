@@ -383,6 +383,7 @@ int main_usr(void) {
 
 			case USR_CMD_SET_SENSOR:
 			case USR_CMD_UNKNOWN:
+				printf("???\n");
 				break;
 
 			}

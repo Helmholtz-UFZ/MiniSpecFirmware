@@ -20,14 +20,6 @@
 
 /* Borrowed from main.c */
 extern void SystemClock_Config(void);
-extern void MX_DMA_Init(void);
-extern void MX_TIM1_Init(void);
-extern void MX_TIM2_Init(void);
-extern void MX_TIM3_Init(void);
-extern void MX_TIM5_Init(void);
-extern void MX_SDMMC1_SD_Init(void);
-extern void MX_FATFS_Init(void);
-extern void MX_USART1_UART_Init(void);
 
 static void sys_reinit(void);
 static void sys_deinit(void);
@@ -65,8 +57,6 @@ static void sys_reinit(void){
 	usr_hw_init();
 	// reanable character match
 	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);
-
-	HAL_Delay(1);
 }
 
 static void sys_deinit(void){
@@ -102,12 +92,10 @@ static void sys_deinit(void){
 }
 
 void cpu_sleep(void) {
-	debug("enter sleep mode\n");
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit();
 	HAL_PWR_EnterSLEEPMode( PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
 	HAL_ResumeTick();
-	debug("leave sleep mode\n");
 }
 
 void cpu_stop0(void){
@@ -167,16 +155,17 @@ void power_switch_EN(bool on){
 void cpu_enter_LPM(void){
 
 	while (!rxtx.wakeup && !rtc.alarmA_wakeup) {
+		HAL_Delay(200); // prevent very fast switching of CMD_EN Pin
 		if( HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET){
+			debug("enter light sleep mode\n");
 			cpu_sleep();
 		}else{
-			debug("enter stop2 mode\n");
+			debug("enter deep sleep mode\n");
 			sys_deinit();
 			while (!rxtx.wakeup && !rtc.alarmA_wakeup && HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_RESET){
 				cpu_stop2();
 			}
 			sys_reinit();
-			debug("leave stop2 mode\n");
 		}
 	}
 }
