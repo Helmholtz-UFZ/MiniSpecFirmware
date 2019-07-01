@@ -50,6 +50,8 @@ typedef enum
 
 #define HELPSTR  "" \
 	"h      - print this help\n"\
+/*	"#debug - toggle dbg messages"        hidden feature*/\
+/*	"#test  - run a test command"         hidden feature*/\
 	"m      - measure\n"\
 	"mm     - multimeasure\n"\
 	"stream - streaming data\n"\

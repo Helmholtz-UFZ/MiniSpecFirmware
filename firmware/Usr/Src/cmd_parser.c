@@ -72,16 +72,20 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 		return;
 	}
 
-#if DBG_CODE
-	str = "test\r";
-	alias = "t\r";
+	str = "#debug\r";
 	sz = strlen(str);
 	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+	if (memcmp(buffer, str, sz) == 0) {
+		extcmd.cmd = USR_CMD_DEBUG;
+		return;
+	}
+
+	str = "#test\r";
+	sz = strlen(str);
+	if (memcmp(buffer, str, sz) == 0) {
 		extcmd.cmd = USR_CMD_DBGTEST;
 		return;
 	}
-#endif
 
 	str = "help\r";
 	alias = "h\r";
@@ -89,14 +93,6 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 	aliassz = strlen(alias);
 	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
 		extcmd.cmd = USR_CMD_HELP;
-		return;
-	}
-
-	str = "#debug\r";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0) {
-		extcmd.cmd = USR_CMD_DEBUG;
 		return;
 	}
 

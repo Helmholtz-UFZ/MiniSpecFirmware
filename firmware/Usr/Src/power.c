@@ -142,9 +142,11 @@ void leave_LPM_from_ISR(void) {
 
 void power_switch_EN(bool on){
 #if USE_POWER_SWITCH
-	if(on){
+	GPIO_PinState state;
+	state = HAL_GPIO_ReadPin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin);
+	if(state == GPIO_PIN_RESET && on) {
 		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
-	} else {
+	} else if(state == GPIO_PIN_SET && !on) {
 		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
 	}
 #else

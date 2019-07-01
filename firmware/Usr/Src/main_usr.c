@@ -93,7 +93,6 @@ static void statemachine_init(void){
 	rc.itime[0] = DEFAULT_INTEGRATION_TIME;
 	rc.mode = IVAL_OFF;
 
-
 #if DBG_CODE
 	/* Overwrites default value from usr_uart.c */
 	rxtx.debug = true;
@@ -105,21 +104,13 @@ int main_usr(void) {
 	uint32_t tmp = 0;
 	char *str = NULL;
 
+	power_switch_EN(ON);
 	usr_hw_init();
 	statemachine_init();
 
 	if (state.format == DATA_FORMAT_ASCII) {
 		reply("\nstart\n");
 	}
-
-	// fixme: remove vvvvvvv
-
-//	rc.ival.Hours = 0;
-//	rc.ival.Minutes = 0;
-//	rc.ival.Seconds = 20;
-//	rc.mode = IVAL_ENDLESS;
-
-	// fixme: remove ^^^^^^^
 
 	inform_SD_reset();
 	read_config_from_SD();
@@ -889,16 +880,6 @@ static bool isON = false;
 static void dbg_test(void) {
 #if DBG_CODE
 
-	if(isON){
-		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
-		reply("powerswitch OFF\n");
-	} else {
-		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
-		reply("powerswitch ON\n");
-	}
-	isON = !isON;
-	return;
-
 	uint16_t sz = RCCONF_MAX_ITIMES*6 + 3*20 + 20;
 	uint8_t buf[sz];
 	uint8_t res;
@@ -914,5 +895,6 @@ static void dbg_test(void) {
 		}
 	}
 #endif
+	reply("not implemented\n");
 	return;
 }
