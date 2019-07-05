@@ -118,7 +118,7 @@ int main(void)
   Properties -> C/C++ General -> Paths and Symbols
   */
 
-  main_usr();
+  run();
   /* USER CODE END 2 */
 
   /* Infinite loop */

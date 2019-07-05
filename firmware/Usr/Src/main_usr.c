@@ -23,6 +23,7 @@ static void send_data(void);
 static void multimeasure(void);
 static void set_initial_alarm(void);
 static void periodic_alarm_handler(void);
+static void handle_extcmd(void);
 static RTC_TimeTypeDef get_closest_next_alarm(void);
 static void dbg_test(void);
 
@@ -48,15 +49,15 @@ FIL *f = &SDFile;
 #define TS_BUFF_SZ	32
 char ts_buff[TS_BUFF_SZ];
 
-void init_timetype(RTC_TimeTypeDef *time){
+void init_timetype(RTC_TimeTypeDef *time) {
 	time->Hours = 99;
 	time->Minutes = 99;
 	time->Seconds = 99;
 }
 
-void usr_hw_init(void){
+void usr_hw_init(void) {
 	/* sa. Errata 2.1.3. or Arm ID number 838869 */
-	uint32_t *ACTLR = (uint32_t *)0xE000E008;
+	uint32_t *ACTLR = (uint32_t *) 0xE000E008;
 	*ACTLR |= SCnSCB_ACTLR_DISDEFWBUF_Msk;
 
 	/* We enable the interrupts later when we need them*/
@@ -76,7 +77,7 @@ void usr_hw_init(void){
 
 }
 
-static void statemachine_init(void){
+static void run_init(void) {
 
 	state.format = DATA_FORMAT_ASCII;
 	state.stream = false;
@@ -99,14 +100,12 @@ static void statemachine_init(void){
 #endif
 }
 
-int main_usr(void) {
+int run(void) {
 	uint8_t err = 0;
-	uint32_t tmp = 0;
-	char *str = NULL;
 
 	power_switch_EN(ON);
 	usr_hw_init();
-	statemachine_init();
+	run_init();
 
 	if (state.format == DATA_FORMAT_ASCII) {
 		reply("\nstart\n");
@@ -119,9 +118,9 @@ int main_usr(void) {
 	while (1) {
 		err = 0;
 
-		/* Uart IR is enabled only during sleep phases */
+		/* Uart IR is enabled only during (light) sleep phases */
 		//=================================================================
-		__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);                         //
+		__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);//
 		if (!rxtx.wakeup && !state.stream && !rtc.alarmA_wakeup) {        //
 			power_switch_EN(OFF);
 			cpu_enter_LPM();
@@ -130,7 +129,7 @@ int main_usr(void) {
 		__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);                        //
 		//=================================================================
 
-		if (hrxtx.ErrorCode){
+		if (hrxtx.ErrorCode) {
 			/* See stm32l4xx_hal_uart.h for ErrorCodes.
 			 * Handle Uart Errors immediately because every further
 			 * send (e.g. printf) would overwrite the Error Code.*/
@@ -162,231 +161,246 @@ int main_usr(void) {
 			rxtx.wakeup = false;
 			rxtx.cmd_bytes = 0;
 			rxtx_restart_listening();
-
-			switch (extcmd.cmd) {
-
-			/* RUN ============================================================ */
-
-			case USR_CMD_SINGLE_MEASURE_START:
-				ok();
-				sensor_init();
-				sensor_measure();
-				send_data();
-				sensor_deinit();
-				/* A single measurement during stream mode, end the stream mode. */
-				state.stream = 0;
-				break;
-
-			case USR_CMD_MULTI_MEASURE_START:
-				ok();
-				state.toSD = false;
-				multimeasure();
-				state.toSD = true;
-				break;
-
-			case USR_CMD_STREAM_START:
-				ok();
-				sensor_init();
-				state.stream = 1;
-				break;
-
-			case USR_CMD_STREAM_END:
-				sensor_deinit();
-				state.stream = 0;
-				ok();
-				break;
-
-
-			/* GETTER ============================================================ */
-
-			case USR_CMD_GET_DATA:
-				send_data();
-				break;
-
-			case USR_CMD_GET_ITIME:
-				if (state.format == DATA_FORMAT_BIN) {
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &sens1.itime, 4, 1000);
-				} else {
-					reply("integration time [0] = %lu us\n", sens1.itime);
-				}
-				break;
-
-			case USR_CMD_GET_INDEXED_ITIME:
-				tmp = rc.itime[rc.itime_index];
-				if (state.format == DATA_FORMAT_BIN) {
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime_index, 4, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &tmp, 4, 1000);
-				} else {
-					reply("integration time [%u] = %lu us\n", rc.itime_index, tmp);
-				}
-				break;
-
-			case USR_CMD_GET_RTC_TIME:
-				ts = rtc_get_now();
-				if (state.format == DATA_FORMAT_ASCII) {
-					reply("20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
-							ts.time.Minutes, ts.time.Seconds);
-				} else {
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Year, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Month, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Date, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Hours, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Minutes, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Seconds, 1, 1000);
-				}
-				break;
-
-			case USR_CMD_GET_INTERVAL:
-				// TODO start mode end ival
-				if (state.format == DATA_FORMAT_ASCII) {
-					reply("interval mode: %u\n", rc.mode);
-					reply("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
-					reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
-					reply("%02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
-				} else {
-					/* Transmit binary */
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.mode, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Hours, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Minutes, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Seconds, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.start.Hours, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.start.Minutes, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.start.Seconds, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.end.Hours, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.end.Minutes, 1, 1000);
-					HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.end.Seconds, 1, 1000);
-				}
-				break;
-
-			case USR_CMD_GET_CONFIG:
-				for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
-					if(rc.itime[i] != 0){
-						reply("itime[%u] = %lu\n", i, rc.itime[i]);
-					}
-				}
-				reply("itime[%u] is currently choosen for setting.\n", rc.itime_index);
-				reply("iteration per measurement: %u\n", rc.iterations);
-				reply("interval mode: %u\n", rc.mode);
-				reply("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
-				reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
-				reply("interval:   %02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
-				reply("next alarm: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
-				ts = rtc_get_now();
-				reply("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
-							ts.time.Minutes, ts.time.Seconds);
-				break;
-
-			/* SETTER ============================================================ */
-
-			case USR_CMD_SET_FORMAT:
-				/* parse argument */
-				if (extcmd.arg_buffer[0] == 0) {
-					tmp = 1;
-				} else {
-					sscanf(extcmd.arg_buffer, "%lu", &tmp);
-				}
-				/* check and set argument */
-				state.format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
-				ok();
-				break;
-
-			case USR_CMD_SET_ITIME:
-				if(argparse_nr(&tmp)){
-					break;
-				}
-				rc.itime[rc.itime_index] = tmp;
-				if(rc.itime_index == 0){
-					/* 0 is the default itime, which is used for
-					 * the single measurement command. */
-					tmp = sensor_set_itime(tmp);
-					/* if minimal inntergartion time is underflown,
-					 * the itime is set to the minmal possible(!) value.
-					 * To keep the config consistent we need to update
-					 * the default itime in slot 0. */
-					rc.itime[0] = tmp;
-				}
-				ok();
-				break;
-
-			case USR_CMD_SET_ITIME_INDEX:
-				if(argparse_nr(&tmp)){
-					break;
-				}
-				if(tmp < RCCONF_MAX_ITIMES){
-					rc.itime_index = tmp;
-					ok();
-				}
-				break;
-
-			case USR_CMD_SET_MULTI_MEASURE_ITERATIONS:
-				if(argparse_nr(&tmp)){
-					break;
-				}
-				if(0 < tmp && tmp < RCCONF_MAX_ITERATIONS){
-					rc.iterations = tmp;
-					ok();
-				}
-				break;
-
-			case USR_CMD_SET_RTC_TIME:
-				if (argparse_str(&str)) {
-					break;
-				}
-				err = rtc_parsecheck_datetime(str, &ts.time, &ts.date);
-				if (err) {
-					break; // todo: error message
-				}
-				/* store the current time */
-				rtc_get_now_str(ts_buff, TS_BUFF_SZ);
-				HAL_RTC_SetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
-				HAL_RTC_SetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
-				inform_SD_rtc();
-				ok();
-				break;
-
-			case USR_CMD_SET_INTERVAL:
-				if (argparse_str(&str)) {
-					break;
-				}
-				err = parse_ival(str);
-				if (err) {
-					break;
-				}
-				set_initial_alarm();
-				write_config_to_SD();
-				ok();
-				break;
-
-			/* DEBUG ============================================================ */
-
-			case USR_CMD_HELP:
-				reply(HELPSTR);
-				break;
-
-			case USR_CMD_DEBUG:
-				rxtx.debug = rxtx.debug ? false : true;
-				if (rxtx.debug) {
-					reply("debug on\n");
-				} else {
-					reply("debug off\n");
-				}
-				break;
-
-			case USR_CMD_DBGTEST:
-				/* This call do nothing if DBG_CODE is not defined */
-				dbg_test();
-				ok();
-				break;
-
-			case USR_CMD_SET_SENSOR:
-			case USR_CMD_UNKNOWN:
-				reply("???\n");
-				break;
-
-			}
+			err = handle_extcmd();
 		}
 	}
 	return 0;
+}
+
+static void handle_extcmd(void) {
+	uint8_t err = 0;
+	uint32_t tmp = 0;
+	char *str = NULL;
+
+	switch (extcmd.cmd) {
+
+	/* RUN ============================================================ */
+
+	case USR_CMD_SINGLE_MEASURE_START:
+		ok();
+		sensor_init();
+		sensor_measure();
+		send_data();
+		sensor_deinit();
+		/* A single measurement during stream mode, end the stream mode. */
+		state.stream = 0;
+		break;
+
+	case USR_CMD_MULTI_MEASURE_START:
+		ok();
+		state.toSD = false;
+		multimeasure();
+		state.toSD = true;
+		break;
+
+	case USR_CMD_STREAM_START:
+		ok();
+		sensor_init();
+		state.stream = 1;
+		break;
+
+	case USR_CMD_STREAM_END:
+		sensor_deinit();
+		state.stream = 0;
+		ok();
+		break;
+
+		/* GETTER ============================================================ */
+
+	case USR_CMD_GET_DATA:
+		send_data();
+		break;
+
+	case USR_CMD_GET_ITIME:
+		if (state.format == DATA_FORMAT_BIN) {
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &sens1.itime, 4, 1000);
+		} else {
+			reply("integration time [0] = %lu us\n", sens1.itime);
+		}
+		break;
+
+	case USR_CMD_GET_INDEXED_ITIME:
+		tmp = rc.itime[rc.itime_index];
+		if (state.format == DATA_FORMAT_BIN) {
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime_index, 4, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &tmp, 4, 1000);
+		} else {
+			reply("integration time [%u] = %lu us\n", rc.itime_index, tmp);
+		}
+		break;
+
+	case USR_CMD_GET_RTC_TIME:
+		ts = rtc_get_now();
+		if (state.format == DATA_FORMAT_ASCII) {
+			reply("20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year,
+					ts.date.Month, ts.date.Date, ts.time.Hours, ts.time.Minutes,
+					ts.time.Seconds);
+		} else {
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Year, 1, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Month, 1, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Date, 1, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Hours, 1, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Minutes, 1, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Seconds, 1, 1000);
+		}
+		break;
+
+	case USR_CMD_GET_INTERVAL:
+		// TODO start mode end ival
+		if (state.format == DATA_FORMAT_ASCII) {
+			reply("interval mode: %u\n", rc.mode);
+			reply("start time: %02i:%02i:%02i\n", rc.start.Hours,
+					rc.start.Minutes, rc.start.Seconds);
+			reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes,
+					rc.end.Seconds);
+			reply("%02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes,
+					rc.ival.Seconds);
+		} else {
+			/* Transmit binary */
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.mode, 1, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Hours, 1, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Minutes, 1, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Seconds, 1, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.start.Hours, 1, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.start.Minutes, 1, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.start.Seconds, 1, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.end.Hours, 1, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.end.Minutes, 1, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.end.Seconds, 1, 1000);
+		}
+		break;
+
+	case USR_CMD_GET_CONFIG:
+		for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
+			if (rc.itime[i] != 0) {
+				reply("itime[%u] = %lu\n", i, rc.itime[i]);
+			}
+		}
+		reply("itime[%u] is currently choosen for setting.\n", rc.itime_index);
+		reply("iteration per measurement: %u\n", rc.iterations);
+		reply("interval mode: %u\n", rc.mode);
+		reply("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes,
+				rc.start.Seconds);
+		reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes,
+				rc.end.Seconds);
+		reply("interval:   %02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes,
+				rc.ival.Seconds);
+		reply("next alarm: %02i:%02i:%02i\n", rc.next_alarm.Hours,
+				rc.next_alarm.Minutes, rc.next_alarm.Seconds);
+		ts = rtc_get_now();
+		reply("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year,
+				ts.date.Month, ts.date.Date, ts.time.Hours, ts.time.Minutes,
+				ts.time.Seconds);
+		break;
+
+		/* SETTER ============================================================ */
+
+	case USR_CMD_SET_FORMAT:
+		/* parse argument */
+		if (extcmd.arg_buffer[0] == 0) {
+			tmp = 1;
+		} else {
+			sscanf(extcmd.arg_buffer, "%lu", &tmp);
+		}
+		/* check and set argument */
+		state.format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
+		ok();
+		break;
+
+	case USR_CMD_SET_ITIME:
+		if (argparse_nr(&tmp)) {
+			break;
+		}
+		rc.itime[rc.itime_index] = tmp;
+		if (rc.itime_index == 0) {
+			/* 0 is the default itime, which is used for
+			 * the single measurement command. */
+			tmp = sensor_set_itime(tmp);
+			/* if minimal inntergartion time is underflown,
+			 * the itime is set to the minmal possible(!) value.
+			 * To keep the config consistent we need to update
+			 * the default itime in slot 0. */
+			rc.itime[0] = tmp;
+		}
+		ok();
+		break;
+
+	case USR_CMD_SET_ITIME_INDEX:
+		if (argparse_nr(&tmp)) {
+			break;
+		}
+		if (tmp < RCCONF_MAX_ITIMES) {
+			rc.itime_index = tmp;
+			ok();
+		}
+		break;
+
+	case USR_CMD_SET_MULTI_MEASURE_ITERATIONS:
+		if (argparse_nr(&tmp)) {
+			break;
+		}
+		if (0 < tmp && tmp < RCCONF_MAX_ITERATIONS) {
+			rc.iterations = tmp;
+			ok();
+		}
+		break;
+
+	case USR_CMD_SET_RTC_TIME:
+		if (argparse_str(&str)) {
+			break;
+		}
+		err = rtc_parsecheck_datetime(str, &ts.time, &ts.date);
+		if (err) {
+			break; // todo: error message
+		}
+		/* store the current time */
+		rtc_get_now_str(ts_buff, TS_BUFF_SZ);
+		HAL_RTC_SetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
+		HAL_RTC_SetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
+		inform_SD_rtc();
+		ok();
+		break;
+
+	case USR_CMD_SET_INTERVAL:
+		if (argparse_str(&str)) {
+			break;
+		}
+		err = parse_ival(str);
+		if (err) {
+			break;
+		}
+		set_initial_alarm();
+		write_config_to_SD();
+		ok();
+		break;
+
+		/* DEBUG ============================================================ */
+
+	case USR_CMD_HELP:
+		reply(HELPSTR);
+		break;
+
+	case USR_CMD_DEBUG:
+		rxtx.debug = rxtx.debug ? false : true;
+		if (rxtx.debug) {
+			reply("debug on\n");
+		} else {
+			reply("debug off\n");
+		}
+		break;
+
+	case USR_CMD_DBGTEST:
+		/* This call do nothing if DBG_CODE is not defined */
+		dbg_test();
+		ok();
+		break;
+
+	case USR_CMD_SET_SENSOR:
+	case USR_CMD_UNKNOWN:
+		reply("???\n");
+		break;
+
+	}
 }
 
 /**
@@ -400,40 +414,41 @@ int main_usr(void) {
  *
  * Note: Start time needs to be smaller than end time
  */
-static int8_t parse_ival(char *str){
+static int8_t parse_ival(char *str) {
 
 	uint c = 99;
 	RTC_TimeTypeDef iv, st, en, off;
-	off.Hours = 99; off.Minutes = 99, off.Seconds =99;
+	off.Hours = 99;
+	off.Minutes = 99, off.Seconds = 99;
 
 	/*parse first nr - alarm on/off*/
 	sscanf(str, "%u", &c);
-	if(c == 0){
+	if (c == 0) {
 		rc.start = off;
 		rc.end = off;
 		rc.ival = off;
 		rc.mode = IVAL_OFF;
 		return 0;
 	}
-	if(c != 1 && c != 2){
+	if (c != 1 && c != 2) {
 		return 1;
 	}
 	str++; //ignore c
 
 	/*parse interval*/
 	str = (char*) memchr(str, ',', 5);
-	if(!str){
+	if (!str) {
 		return 1;
 	}
 	str++; // ignore ','
-	if(rtc_parse_time(str, &iv)){
+	if (rtc_parse_time(str, &iv)) {
 		return 1;
 	}
 
 	if (iv.Hours == 0 && iv.Minutes == 0 && iv.Seconds < MIN_IVAL) {
 		return 1;
 	}
-	if(c == 2){
+	if (c == 2) {
 		rc.ival = iv;
 		rc.mode = IVAL_ENDLESS;
 		return 0;
@@ -441,26 +456,26 @@ static int8_t parse_ival(char *str){
 
 	/*parse start-time*/
 	str = (char*) memchr(str, ',', 20);
-	if(!str){
+	if (!str) {
 		return 1;
 	}
 	str++; // ignore ','
-	if(rtc_parse_time(str, &st)){
+	if (rtc_parse_time(str, &st)) {
 		return 1;
 	}
 
 	/*parse end-time*/
 	str = (char*) memchr(str, ',', 20);
-	if(!str){
+	if (!str) {
 		return 1;
 	}
 	str++; // ignore ','
-	if(rtc_parse_time(str, &en)){
+	if (rtc_parse_time(str, &en)) {
 		return 1;
 	}
 
 	/*check constrains*/
-	if (!rtc_time_lt(&st, &en)){
+	if (!rtc_time_lt(&st, &en)) {
 		return 2;
 	}
 
@@ -513,7 +528,6 @@ static void send_data(void) {
 	uint16_t i = 0;
 	uint8_t errcode = sens1.errc;
 
-
 	switch (errcode) {
 	case ERRC_NO_ERROR:
 		errstr = "";
@@ -526,7 +540,8 @@ static void send_data(void) {
 		errstr = "ERR: NO EOS. Something went wrong, please debug manually.\n";
 		break;
 	case ERRC_EOS_EARLY:
-		errstr = "ERR: EOS EARLY. Something went wrong, please debug manually.\n";
+		errstr =
+				"ERR: EOS EARLY. Something went wrong, please debug manually.\n";
 		break;
 	case ERRC_UNKNOWN:
 		errstr = "ERR: UNKNOWN. Unknown error occurred.\n";
@@ -541,9 +556,10 @@ static void send_data(void) {
 		HAL_UART_Transmit(&hrxtx, (uint8_t *) &errcode, 2, 200);
 		if (!errcode) {
 			/* send data */
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL),
-			MSPARAM_PIXEL * 4,
-			MSPARAM_PIXEL * 4 * 100);
+			HAL_UART_Transmit(&hrxtx,
+					(uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL),
+					MSPARAM_PIXEL * 4,
+					MSPARAM_PIXEL * 4 * 100);
 		}
 	} else { /* DATA_FORMAT_ASCII */
 		if (errcode) {
@@ -582,7 +598,8 @@ static void inform_SD_reset(void) {
 	/* Inform the File that an reset occurred */
 	res = sd_mount();
 	if (!res) {
-		res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf, FNAME_BUF_SZ);
+		res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf,
+				FNAME_BUF_SZ);
 		if (!res) {
 			res = sd_open_file_neworappend(f, fname.buf);
 			if (!res) {
@@ -602,7 +619,8 @@ static void inform_SD_rtc(void) {
 	uint8_t res = 0;
 	res = sd_mount();
 	if (!res) {
-		res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf, FNAME_BUF_SZ);
+		res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf,
+				FNAME_BUF_SZ);
 		if (!res) {
 			res = sd_open_file_neworappend(f, fname.buf);
 			if (!res) {
@@ -636,9 +654,12 @@ static void write_config_to_SD(void) {
 			 * 'mode,ival,start,end'
 			 * e.g.: '1,00:00:20,04:30:00,22:15:00*/
 			f_printf(f, "%U,", rc.mode);
-			f_printf(f, "%02U:%02U:%02U,", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
-			f_printf(f, "%02U:%02U:%02U,", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
-			f_printf(f, "%02U:%02U:%02U\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
+			f_printf(f, "%02U:%02U:%02U,", rc.ival.Hours, rc.ival.Minutes,
+					rc.ival.Seconds);
+			f_printf(f, "%02U:%02U:%02U,", rc.start.Hours, rc.start.Minutes,
+					rc.start.Seconds);
+			f_printf(f, "%02U:%02U:%02U\n", rc.end.Hours, rc.end.Minutes,
+					rc.end.Seconds);
 			sd_close(f);
 		}
 		sd_umount();
@@ -648,7 +669,7 @@ static void write_config_to_SD(void) {
 #endif
 }
 
-static void read_config_from_SD(void){
+static void read_config_from_SD(void) {
 #if HAS_SD
 # if RCCONF_MAX_ITIMES > 32
 # error "Attention buffer gets big.. Improve implementation :)"
@@ -656,7 +677,7 @@ static void read_config_from_SD(void){
 	/* max value of itime = 10000\n -> 6 BYTES * RCCONF_MAX_ITIMES
 	 * start end ival timestamp     -> 3 * 20 BYTES
 	 * three other number good will aprox. -> 20 BYTES*/
-	uint16_t sz = RCCONF_MAX_ITIMES*6 + 3*20 + 20;
+	uint16_t sz = RCCONF_MAX_ITIMES * 6 + 3 * 20 + 20;
 	uint8_t buf[sz];
 	uint8_t res;
 	uint32_t nr, rcconf_max_itimes;
@@ -680,7 +701,8 @@ static void read_config_from_SD(void){
 			fail = (token == NULL);
 			res = sscanf(token, "%lu", &nr);
 			if (!fail && res > 0 && nr > 0) {
-				rcconf_max_itimes = nr > RCCONF_MAX_ITIMES ? RCCONF_MAX_ITIMES : nr;
+				rcconf_max_itimes =
+						nr > RCCONF_MAX_ITIMES ? RCCONF_MAX_ITIMES : nr;
 				/*read itimes[i] from sd*/
 				for (uint i = 0; i < rcconf_max_itimes; ++i) {
 					token = strtok_r(rest, "\n", &rest);
@@ -715,10 +737,11 @@ static void read_config_from_SD(void){
 
 /** Store the measurment data to SD card.
  * Requires a mounted SD card. */
-static uint8_t measurement_to_SD(void){
+static uint8_t measurement_to_SD(void) {
 #if HAS_SD
 	int8_t res = 0;
-	res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf, FNAME_BUF_SZ);
+	res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf,
+			FNAME_BUF_SZ);
 	if (!res) {
 		res = sd_open_file_neworappend(f, fname.buf);
 		if (!res) {
@@ -767,7 +790,7 @@ static void multimeasure(void) {
 		/* Measure N times */
 		for (int n = 0; n < rc.iterations; ++n) {
 
-			debug("N: %u/%u\n", n+1, rc.iterations);
+			debug("N: %u/%u\n", n + 1, rc.iterations);
 			/* Generate timestamp */
 			rtc_get_now_str(ts_buff, TS_BUFF_SZ);
 
@@ -797,8 +820,8 @@ static void periodic_alarm_handler(void) {
 	debug("Periodic alarm \n");
 	RTC_TimeTypeDef new;
 	ts = rtc_get_now();
-	debug("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
-			ts.time.Minutes, ts.time.Seconds);
+	debug("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month,
+			ts.date.Date, ts.time.Hours, ts.time.Minutes, ts.time.Seconds);
 
 	if (rc.mode == IVAL_OFF) {
 		return;
@@ -822,7 +845,8 @@ static void periodic_alarm_handler(void) {
 	/* Do the measurement */
 	multimeasure();
 
-	debug("next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
+	debug("next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes,
+			rc.next_alarm.Seconds);
 }
 
 /**
@@ -880,7 +904,7 @@ static bool isON = false;
 static void dbg_test(void) {
 #if DBG_CODE
 
-	uint16_t sz = RCCONF_MAX_ITIMES*6 + 3*20 + 20;
+	uint16_t sz = RCCONF_MAX_ITIMES * 6 + 3 * 20 + 20;
 	uint8_t buf[sz];
 	uint8_t res;
 	uint bytesread;

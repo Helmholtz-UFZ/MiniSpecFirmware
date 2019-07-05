@@ -140,17 +140,22 @@ void leave_LPM_from_ISR(void) {
 	CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));
 }
 
-void power_switch_EN(bool on){
+/**
+ * Enables the Power-Switch. The 5V-Domain and
+ * the 3V domain are powered on if on_off is true,
+ * otherwise the domains are powered off.
+ */
+void power_switch_EN(bool on_off){
 #if USE_POWER_SWITCH
 	GPIO_PinState state;
 	state = HAL_GPIO_ReadPin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin);
-	if(state == GPIO_PIN_RESET && on) {
+	if(state == GPIO_PIN_RESET && on_off) {
 		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
-	} else if(state == GPIO_PIN_SET && !on) {
+	} else if(state == GPIO_PIN_SET && !on_off) {
 		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
 	}
 #else
-	UNUSED(on);
+	UNUSED(on_off);
 #endif
 }
 
