@@ -5,7 +5,7 @@
  *      Author: Bert Palm
  */
 
-#include "tim_usr.h"
+#include <lib_timer.h>
 
 
 /**

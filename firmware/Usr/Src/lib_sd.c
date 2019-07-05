@@ -5,10 +5,10 @@
  *      Author: palmb_ubu
  */
 
-#include "sd_card.h"
+#include <lib_sd.h>
+#include <lib_uart.h>
 #include "string.h"
 #include "stdio.h"
-#include "usart_usr.h"
 #include "sdmmc.h"
 
 uint8_t workBuffer[_MAX_SS];

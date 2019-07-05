@@ -19,11 +19,14 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
+#include <lib_spectrometer.h>
+#include <lib_uart.h>
 #include "main.h"
 #include "stm32l4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "power.h"
+#include "lib_cpu.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,9 +58,7 @@
 /* USER CODE BEGIN 0 */
 
 #include "usart.h"
-#include "usart_usr.h"
 #include "global_config.h"
-#include "micro_spec.h"
 #include "main_usr.h"
 
 /* USER CODE END 0 */

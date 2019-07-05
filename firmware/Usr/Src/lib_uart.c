@@ -5,7 +5,7 @@
  *      Author: Bert Palm
  */
 
-#include "usart_usr.h"
+#include <lib_uart.h>
 #include "string.h"
 #include <stdarg.h>
 #include <stdio.h>

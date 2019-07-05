@@ -5,9 +5,9 @@
  *      Author: palmb_ubu
  */
 
+#include <lib_rtc.h>
 #include "global_config.h"
 #include "main_usr.h"
-#include "rtc_usr.h"
 #include "string.h"
 #include "stdio.h"
 #include "power.h"

@@ -5,13 +5,13 @@
  *      Author: palmb_ubu
  */
 
+#include <lib_sd.h>
+#include <lib_spectrometer.h>
 #include "sd.h"
-#include "sd_card.h"
 #include "fatfs.h"
 #include "string.h"
 #include "stdio.h"
 #include "cmd_parser.h"
-#include "micro_spec.h"
 
 static filename_t fname = { .buf = { 0 }, .postfix = 0 };
 FIL *f = &SDFile;

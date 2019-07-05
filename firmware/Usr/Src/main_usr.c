@@ -5,16 +5,16 @@
  *      Author: Bert Palm
  */
 
+#include <lib_rtc.h>
+#include <lib_sd.h>
+#include <lib_spectrometer.h>
+#include <lib_timer.h>
+#include <lib_uart.h>
 #include "main_usr.h"
 #include "power.h"
 #include "rtc.h"
-#include "rtc_usr.h"
 #include "global_config.h"
-#include "micro_spec.h"
-#include "usart_usr.h"
 #include "cmd_parser.h"
-#include "tim_usr.h"
-#include "sd_card.h"
 #include "string.h"
 #include "fatfs.h"
 #include "alarm.h"

@@ -8,8 +8,8 @@
 #ifndef INC_CMD_PARSER_H_
 #define INC_CMD_PARSER_H_
 
+#include <lib_uart.h>
 #include "global_config.h"
-#include "usart_usr.h"
 #include "main_usr.h"
 
 /**

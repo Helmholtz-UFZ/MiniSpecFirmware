@@ -55,9 +55,9 @@
  *      4. sens_deinit()                                    \n
  */
 
-#include "micro_spec.h"
+#include <lib_spectrometer.h>
+#include <lib_timer.h>
 #include "global_config.h"
-#include "tim_usr.h"
 #include <string.h>
 
 //static uint16_t mem_block1[SENSOR_DATA_BUFFER_MAX_WORDS + 1];

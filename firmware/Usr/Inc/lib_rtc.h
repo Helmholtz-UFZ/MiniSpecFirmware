@@ -5,8 +5,8 @@
  *      Author: palmb_ubu
  */
 
-#ifndef INC_RTC_USR_H_
-#define INC_RTC_USR_H_
+#ifndef INC_LIB_RTC_H_
+#define INC_LIB_RTC_H_
 
 #include "rtc.h"
 
@@ -39,4 +39,4 @@ rtc_timestamp_t rtc_get_now(void);
 RTC_TimeTypeDef rtc_get_alermAtime(void);
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc);
 
-#endif /* INC_RTC_USR_H_ */
+#endif /* INC_LIB_RTC_H_ */

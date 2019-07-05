@@ -5,8 +5,8 @@
  *      Author: palmb_ubu
  */
 
-#ifndef INC_SD_CARD_H_
-#define INC_SD_CARD_H_
+#ifndef INC_LIB_SD_H_
+#define INC_LIB_SD_H_
 
 #include "global_config.h"
 #include "fatfs.h"
@@ -25,4 +25,4 @@ FRESULT sd_open_file_neworappend(FIL* f, char *fname);
 uint8_t sd_find_right_filename(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size);
 
 
-#endif /* INC_SD_CARD_H_ */
+#endif /* INC_LIB_SD_H_ */
