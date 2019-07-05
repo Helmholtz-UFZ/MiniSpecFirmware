@@ -69,6 +69,7 @@ typedef struct
 
 int run( void );
 void usr_hw_init(void);
+void init_timetype(RTC_TimeTypeDef *time);
 
 #endif /* __MAIN_USR_H__ */
 

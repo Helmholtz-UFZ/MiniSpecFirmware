@@ -8,6 +8,7 @@
 #include "cmd_parser.h"
 #include "main.h"
 #include "string.h"
+#include "stdio.h"
 
 usr_cmd_typedef extcmd;
 /*
@@ -216,4 +217,115 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
 		return;
 	}
+}
+
+/** Parse natural number from arg_buffer to arg.
+ *  Return 0 on success, otherwise non-zero */
+int8_t argparse_nr(uint32_t *nr) {
+	int res;
+	if (extcmd.arg_buffer[0] == 0) {
+		/* buffer empty */
+		return -1;
+	}
+	res = sscanf(extcmd.arg_buffer, "%lu", nr);
+	if (res <= 0) {
+		nr = 0;
+		return res;
+	}
+	return 0;
+}
+
+/** Parse string from arg_buffer to arg.
+ *  Return 0 on success, otherwise non-zero */
+int8_t argparse_str(char **str) {
+	UNUSED(str);
+	if (extcmd.arg_buffer[0] == 0) {
+		/* buffer empty */
+		return -1;
+	}
+	*str = extcmd.arg_buffer;
+	return 0;
+}
+
+/**
+ * Parse 'mode,ival,start,end' from string
+ * from arg_buffer and set the aprropiate
+ * params in rc-struct.
+ * If parsing fails, rc-struct is untouched.
+ *
+ * Return 0 on success,
+ * Return 1 on parsing error
+ * Return 2 on constrains error
+ *
+ * Note: Start time needs to be smaller than end time
+ */
+int8_t parse_ival(char *str, runtime_config_t* rc) {
+
+	uint c = 99;
+	RTC_TimeTypeDef iv, st, en, off;
+	init_timetype(&off);
+
+	/*parse first nr - alarm on/off*/
+	sscanf(str, "%u", &c);
+	if (c == 0) {
+		rc->start = off;
+		rc->end = off;
+		rc->ival = off;
+		rc->mode = IVAL_OFF;
+		return 0;
+	}
+	if (c != 1 && c != 2) {
+		return 1;
+	}
+	str++; //ignore c
+
+	/*parse interval*/
+	str = (char*) memchr(str, ',', 5);
+	if (!str) {
+		return 1;
+	}
+	str++; // ignore ','
+	if (rtc_parse_time(str, &iv)) {
+		return 1;
+	}
+
+	if (iv.Hours == 0 && iv.Minutes == 0 && iv.Seconds < MIN_IVAL) {
+		return 1;
+	}
+	if (c == 2) {
+		rc->ival = iv;
+		rc->mode = IVAL_ENDLESS;
+		return 0;
+	}
+
+	/*parse start-time*/
+	str = (char*) memchr(str, ',', 20);
+	if (!str) {
+		return 1;
+	}
+	str++; // ignore ','
+	if (rtc_parse_time(str, &st)) {
+		return 1;
+	}
+
+	/*parse end-time*/
+	str = (char*) memchr(str, ',', 20);
+	if (!str) {
+		return 1;
+	}
+	str++; // ignore ','
+	if (rtc_parse_time(str, &en)) {
+		return 1;
+	}
+
+	/*check constrains*/
+	if (!rtc_time_lt(&st, &en)) {
+		return 2;
+	}
+
+	rc->ival = iv;
+	rc->start = st;
+	rc->end = en;
+	rc->mode = IVAL_STARTEND;
+	return 0;
 }

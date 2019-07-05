@@ -10,6 +10,7 @@
 
 #include "global_config.h"
 #include "usart_usr.h"
+#include "main_usr.h"
 
 /**
  * enum for the defined commands
@@ -91,6 +92,10 @@ typedef struct
 extern usr_cmd_typedef extcmd;
 
 void parse_extcmd(uint8_t *buffer, uint16_t size);
+int8_t argparse_nr(uint32_t *nr);
+int8_t argparse_str(char **str);
+int8_t parse_ival(char *str, runtime_config_t* rc);
+
 
 
 #endif /* INC_CMD_PARSER_H_ */

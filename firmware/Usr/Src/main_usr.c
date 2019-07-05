@@ -17,19 +17,14 @@
 #include "sd_card.h"
 #include "string.h"
 #include "fatfs.h"
+#include "alarm.h"
 #include <stdio.h>
 
 static void send_data(void);
 static void multimeasure(void);
-static void set_initial_alarm(void);
 static void periodic_alarm_handler(void);
 static void handle_extcmd(void);
-static RTC_TimeTypeDef get_closest_next_alarm(void);
 static void dbg_test(void);
-
-static int8_t argparse_nr(uint32_t *nr);
-static int8_t argparse_str(char **str);
-static int8_t parse_ival(char *str);
 
 static void ok(void);
 
@@ -78,6 +73,8 @@ void usr_hw_init(void) {
 }
 
 static void run_init(void) {
+	power_switch_EN(ON);
+	usr_hw_init();
 
 	state.format = DATA_FORMAT_ASCII;
 	state.stream = false;
@@ -98,14 +95,6 @@ static void run_init(void) {
 	/* Overwrites default value from usr_uart.c */
 	rxtx.debug = true;
 #endif
-}
-
-int run(void) {
-	uint8_t err = 0;
-
-	power_switch_EN(ON);
-	usr_hw_init();
-	run_init();
 
 	if (state.format == DATA_FORMAT_ASCII) {
 		reply("\nstart\n");
@@ -113,14 +102,17 @@ int run(void) {
 
 	inform_SD_reset();
 	read_config_from_SD();
-	set_initial_alarm();
+	set_initial_alarm(&rc);
+}
+
+int run(void) {
+	run_init();
 
 	while (1) {
-		err = 0;
 
 		/* Uart IR is enabled only during (light) sleep phases */
 		//=================================================================
-		__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);//
+		__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM); //
 		if (!rxtx.wakeup && !state.stream && !rtc.alarmA_wakeup) {        //
 			power_switch_EN(OFF);
 			cpu_enter_LPM();
@@ -149,7 +141,7 @@ int run(void) {
 		if (state.stream) {
 			sensor_measure();
 			send_data();
-			if (err) {
+			if (sens1.errc) {
 				state.stream = 0;
 				sensor_deinit();
 			}
@@ -157,18 +149,16 @@ int run(void) {
 
 		if (rxtx.wakeup) {
 			parse_extcmd(rxtx_rxbuffer.base, rxtx_rxbuffer.size);
-
 			rxtx.wakeup = false;
 			rxtx.cmd_bytes = 0;
 			rxtx_restart_listening();
-			err = handle_extcmd();
+			handle_extcmd();
 		}
 	}
 	return 0;
 }
 
 static void handle_extcmd(void) {
-	uint8_t err = 0;
 	uint32_t tmp = 0;
 	char *str = NULL;
 
@@ -232,9 +222,8 @@ static void handle_extcmd(void) {
 	case USR_CMD_GET_RTC_TIME:
 		ts = rtc_get_now();
 		if (state.format == DATA_FORMAT_ASCII) {
-			reply("20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year,
-					ts.date.Month, ts.date.Date, ts.time.Hours, ts.time.Minutes,
-					ts.time.Seconds);
+			reply("20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+					ts.time.Minutes, ts.time.Seconds);
 		} else {
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Year, 1, 1000);
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Month, 1, 1000);
@@ -246,15 +235,11 @@ static void handle_extcmd(void) {
 		break;
 
 	case USR_CMD_GET_INTERVAL:
-		// TODO start mode end ival
 		if (state.format == DATA_FORMAT_ASCII) {
 			reply("interval mode: %u\n", rc.mode);
-			reply("start time: %02i:%02i:%02i\n", rc.start.Hours,
-					rc.start.Minutes, rc.start.Seconds);
-			reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes,
-					rc.end.Seconds);
-			reply("%02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes,
-					rc.ival.Seconds);
+			reply("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
+			reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
+			reply("%02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
 		} else {
 			/* Transmit binary */
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.mode, 1, 1000);
@@ -279,28 +264,20 @@ static void handle_extcmd(void) {
 		reply("itime[%u] is currently choosen for setting.\n", rc.itime_index);
 		reply("iteration per measurement: %u\n", rc.iterations);
 		reply("interval mode: %u\n", rc.mode);
-		reply("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes,
-				rc.start.Seconds);
-		reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes,
-				rc.end.Seconds);
-		reply("interval:   %02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes,
-				rc.ival.Seconds);
-		reply("next alarm: %02i:%02i:%02i\n", rc.next_alarm.Hours,
-				rc.next_alarm.Minutes, rc.next_alarm.Seconds);
+		reply("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
+		reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
+		reply("interval:   %02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
+		reply("next alarm: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 		ts = rtc_get_now();
-		reply("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year,
-				ts.date.Month, ts.date.Date, ts.time.Hours, ts.time.Minutes,
-				ts.time.Seconds);
+		reply("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+				ts.time.Minutes, ts.time.Seconds);
 		break;
 
 		/* SETTER ============================================================ */
 
 	case USR_CMD_SET_FORMAT:
-		/* parse argument */
-		if (extcmd.arg_buffer[0] == 0) {
-			tmp = 1;
-		} else {
-			sscanf(extcmd.arg_buffer, "%lu", &tmp);
+		if (argparse_nr(&tmp)) {
+			break;
 		}
 		/* check and set argument */
 		state.format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
@@ -316,7 +293,7 @@ static void handle_extcmd(void) {
 			/* 0 is the default itime, which is used for
 			 * the single measurement command. */
 			tmp = sensor_set_itime(tmp);
-			/* if minimal inntergartion time is underflown,
+			/* if minimal integration time is underflown,
 			 * the itime is set to the minmal possible(!) value.
 			 * To keep the config consistent we need to update
 			 * the default itime in slot 0. */
@@ -349,8 +326,7 @@ static void handle_extcmd(void) {
 		if (argparse_str(&str)) {
 			break;
 		}
-		err = rtc_parsecheck_datetime(str, &ts.time, &ts.date);
-		if (err) {
+		if (rtc_parsecheck_datetime(str, &ts.time, &ts.date)) {
 			break; // todo: error message
 		}
 		/* store the current time */
@@ -365,16 +341,15 @@ static void handle_extcmd(void) {
 		if (argparse_str(&str)) {
 			break;
 		}
-		err = parse_ival(str);
-		if (err) {
+		if (parse_ival(str, &rc)) {
 			break;
 		}
-		set_initial_alarm();
+		set_initial_alarm(&rc);
 		write_config_to_SD();
 		ok();
 		break;
 
-		/* DEBUG ============================================================ */
+		/* OTHER and DEBUG ============================================================ */
 
 	case USR_CMD_HELP:
 		reply(HELPSTR);
@@ -399,91 +374,7 @@ static void handle_extcmd(void) {
 	case USR_CMD_UNKNOWN:
 		reply("???\n");
 		break;
-
 	}
-}
-
-/**
- * Parse 'mode,ival,start,end' from string and
- * set the aprropiate params in rc-struct.
- * If parsing fails, rc-struct is untouched.
- *
- * Return 0 on success,
- * Return 1 on parsing error
- * Return 2 on constrains error
- *
- * Note: Start time needs to be smaller than end time
- */
-static int8_t parse_ival(char *str) {
-
-	uint c = 99;
-	RTC_TimeTypeDef iv, st, en, off;
-	off.Hours = 99;
-	off.Minutes = 99, off.Seconds = 99;
-
-	/*parse first nr - alarm on/off*/
-	sscanf(str, "%u", &c);
-	if (c == 0) {
-		rc.start = off;
-		rc.end = off;
-		rc.ival = off;
-		rc.mode = IVAL_OFF;
-		return 0;
-	}
-	if (c != 1 && c != 2) {
-		return 1;
-	}
-	str++; //ignore c
-
-	/*parse interval*/
-	str = (char*) memchr(str, ',', 5);
-	if (!str) {
-		return 1;
-	}
-	str++; // ignore ','
-	if (rtc_parse_time(str, &iv)) {
-		return 1;
-	}
-
-	if (iv.Hours == 0 && iv.Minutes == 0 && iv.Seconds < MIN_IVAL) {
-		return 1;
-	}
-	if (c == 2) {
-		rc.ival = iv;
-		rc.mode = IVAL_ENDLESS;
-		return 0;
-	}
-
-	/*parse start-time*/
-	str = (char*) memchr(str, ',', 20);
-	if (!str) {
-		return 1;
-	}
-	str++; // ignore ','
-	if (rtc_parse_time(str, &st)) {
-		return 1;
-	}
-
-	/*parse end-time*/
-	str = (char*) memchr(str, ',', 20);
-	if (!str) {
-		return 1;
-	}
-	str++; // ignore ','
-	if (rtc_parse_time(str, &en)) {
-		return 1;
-	}
-
-	/*check constrains*/
-	if (!rtc_time_lt(&st, &en)) {
-		return 2;
-	}
-
-	rc.ival = iv;
-	rc.start = st;
-	rc.end = en;
-	rc.mode = IVAL_STARTEND;
-	return 0;
 }
 
 /** print 'ok' */
@@ -491,34 +382,6 @@ static void ok(void) {
 	if (state.format == DATA_FORMAT_ASCII) {
 		reply("ok\n");
 	}
-}
-
-/** Parse natural number to arg.
- *  Return 0 on success, otherwise non-zero */
-static int8_t argparse_nr(uint32_t *nr) {
-	int res;
-	if (extcmd.arg_buffer[0] == 0) {
-		/* buffer empty */
-		return -1;
-	}
-	res = sscanf(extcmd.arg_buffer, "%lu", nr);
-	if (res <= 0) {
-		nr = 0;
-		return res;
-	}
-	return 0;
-}
-
-/** Parse string to arg.
- *  Return 0 on success, otherwise non-zero */
-static int8_t argparse_str(char **str) {
-	UNUSED(str);
-	if (extcmd.arg_buffer[0] == 0) {
-		/* buffer empty */
-		return -1;
-	}
-	*str = extcmd.arg_buffer;
-	return 0;
 }
 
 /** Local helper for sending data via the uart interface. */
@@ -540,8 +403,7 @@ static void send_data(void) {
 		errstr = "ERR: NO EOS. Something went wrong, please debug manually.\n";
 		break;
 	case ERRC_EOS_EARLY:
-		errstr =
-				"ERR: EOS EARLY. Something went wrong, please debug manually.\n";
+		errstr = "ERR: EOS EARLY. Something went wrong, please debug manually.\n";
 		break;
 	case ERRC_UNKNOWN:
 		errstr = "ERR: UNKNOWN. Unknown error occurred.\n";
@@ -556,10 +418,9 @@ static void send_data(void) {
 		HAL_UART_Transmit(&hrxtx, (uint8_t *) &errcode, 2, 200);
 		if (!errcode) {
 			/* send data */
-			HAL_UART_Transmit(&hrxtx,
-					(uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL),
-					MSPARAM_PIXEL * 4,
-					MSPARAM_PIXEL * 4 * 100);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL),
+			MSPARAM_PIXEL * 4,
+			MSPARAM_PIXEL * 4 * 100);
 		}
 	} else { /* DATA_FORMAT_ASCII */
 		if (errcode) {
@@ -599,7 +460,7 @@ static void inform_SD_reset(void) {
 	res = sd_mount();
 	if (!res) {
 		res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf,
-				FNAME_BUF_SZ);
+		FNAME_BUF_SZ);
 		if (!res) {
 			res = sd_open_file_neworappend(f, fname.buf);
 			if (!res) {
@@ -620,7 +481,7 @@ static void inform_SD_rtc(void) {
 	res = sd_mount();
 	if (!res) {
 		res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf,
-				FNAME_BUF_SZ);
+		FNAME_BUF_SZ);
 		if (!res) {
 			res = sd_open_file_neworappend(f, fname.buf);
 			if (!res) {
@@ -654,12 +515,9 @@ static void write_config_to_SD(void) {
 			 * 'mode,ival,start,end'
 			 * e.g.: '1,00:00:20,04:30:00,22:15:00*/
 			f_printf(f, "%U,", rc.mode);
-			f_printf(f, "%02U:%02U:%02U,", rc.ival.Hours, rc.ival.Minutes,
-					rc.ival.Seconds);
-			f_printf(f, "%02U:%02U:%02U,", rc.start.Hours, rc.start.Minutes,
-					rc.start.Seconds);
-			f_printf(f, "%02U:%02U:%02U\n", rc.end.Hours, rc.end.Minutes,
-					rc.end.Seconds);
+			f_printf(f, "%02U:%02U:%02U,", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
+			f_printf(f, "%02U:%02U:%02U,", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
+			f_printf(f, "%02U:%02U:%02U\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
 			sd_close(f);
 		}
 		sd_umount();
@@ -701,8 +559,7 @@ static void read_config_from_SD(void) {
 			fail = (token == NULL);
 			res = sscanf(token, "%lu", &nr);
 			if (!fail && res > 0 && nr > 0) {
-				rcconf_max_itimes =
-						nr > RCCONF_MAX_ITIMES ? RCCONF_MAX_ITIMES : nr;
+				rcconf_max_itimes = nr > RCCONF_MAX_ITIMES ? RCCONF_MAX_ITIMES : nr;
 				/*read itimes[i] from sd*/
 				for (uint i = 0; i < rcconf_max_itimes; ++i) {
 					token = strtok_r(rest, "\n", &rest);
@@ -723,7 +580,7 @@ static void read_config_from_SD(void) {
 					/* Read 'mode,ival,start,end' as one string from sd.
 					 * If parse_ival() fails, no times are set. */
 					token = rest;
-					parse_ival(token);
+					parse_ival(token, &rc);
 				}
 			}
 			sd_close(f);
@@ -741,7 +598,7 @@ static uint8_t measurement_to_SD(void) {
 #if HAS_SD
 	int8_t res = 0;
 	res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf,
-			FNAME_BUF_SZ);
+	FNAME_BUF_SZ);
 	if (!res) {
 		res = sd_open_file_neworappend(f, fname.buf);
 		if (!res) {
@@ -820,8 +677,8 @@ static void periodic_alarm_handler(void) {
 	debug("Periodic alarm \n");
 	RTC_TimeTypeDef new;
 	ts = rtc_get_now();
-	debug("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month,
-			ts.date.Date, ts.time.Hours, ts.time.Minutes, ts.time.Seconds);
+	debug("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+			ts.time.Minutes, ts.time.Seconds);
 
 	if (rc.mode == IVAL_OFF) {
 		return;
@@ -845,57 +702,11 @@ static void periodic_alarm_handler(void) {
 	/* Do the measurement */
 	multimeasure();
 
-	debug("next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes,
-			rc.next_alarm.Seconds);
+	debug("next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 }
 
-/**
- * Calculate and return the next alarm closest to now.
- *
- * Note: Call this ONLY in IVAL_STARTEND mode, otherwise
- * stuff break !
- */
-static RTC_TimeTypeDef get_closest_next_alarm(void) {
-	uint32_t start, end, now, ival, N, x;
-	rtc_timestamp_t t;
-	t = rtc_get_now();
-	now = rtc_time2seconds(&t.time);
-	ival = rtc_time2seconds(&rc.ival);
-	start = rtc_time2seconds(&rc.start);
-	end = rtc_time2seconds(&rc.end);
-	/*Safety window of 2 seconds. One is not enough
-	 * because we could be very close to a second transition.*/
-	now = now + 2;
-	/* N <= n < N+1, where n is the correct float-value */
-	N = (now - start) / ival;
-	x = (start + N * ival > now) ? N * ival : (N + 1) * ival;
-	x = (start + x <= end) ? start + x : start;
-	return rtc_seconds2time(x);
-}
 
-/*
- * Set the alarm if the user was submitting a new value.
- */
-static void set_initial_alarm(void) {
-	RTC_TimeTypeDef t;
-	if (rc.mode == IVAL_OFF) {
-		init_timetype(&rc.ival);
-		init_timetype(&rc.next_alarm);
-		HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
 
-	} else if (rc.mode == IVAL_STARTEND) {
-		t = get_closest_next_alarm();
-		rtc_set_alarmA(&t);
-		rc.next_alarm = rtc_get_alermAtime();
-
-	} else if (rc.mode == IVAL_ENDLESS) {
-		ts = rtc_get_now();
-		rtc_set_alarmA_by_offset(&ts.time, &rc.ival);
-		rc.next_alarm = rtc_get_alermAtime();
-	}
-}
-
-static bool isON = false;
 /* This function is used to test functions
  * or functionality under development.
  * Especially if the code is hard to reach
