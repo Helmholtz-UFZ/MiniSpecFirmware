@@ -18,28 +18,20 @@
 #include "string.h"
 #include "fatfs.h"
 #include "alarm.h"
+#include "sd.h"
 #include <stdio.h>
 
 static void send_data(void);
 static void multimeasure(void);
 static void periodic_alarm_handler(void);
-static void handle_extcmd(void);
+static void extcmd_handler(void);
 static void dbg_test(void);
 
 static void ok(void);
 
-static uint8_t measurement_to_SD(void);
-static void inform_SD_reset(void);
-static void inform_SD_rtc(void);
-static void read_config_from_SD(void);
-static void write_config_to_SD(void);
-
 static statemachine_config_t state;
 static runtime_config_t rc;
 static rtc_timestamp_t ts;
-
-static filename_t fname;
-FIL *f = &SDFile;
 
 #define TS_BUFF_SZ	32
 char ts_buff[TS_BUFF_SZ];
@@ -80,7 +72,6 @@ static void run_init(void) {
 	state.stream = false;
 	state.toSD = true;
 
-	memset(&fname, 0, sizeof(fname));
 	memset(&ts, 0, sizeof(ts));
 	memset(&rc, 0, sizeof(rc));
 	init_timetype(&rc.start);
@@ -101,7 +92,7 @@ static void run_init(void) {
 	}
 
 	inform_SD_reset();
-	read_config_from_SD();
+	read_config_from_SD(&rc);
 	set_initial_alarm(&rc);
 }
 
@@ -152,13 +143,13 @@ int run(void) {
 			rxtx.wakeup = false;
 			rxtx.cmd_bytes = 0;
 			rxtx_restart_listening();
-			handle_extcmd();
+			extcmd_handler();
 		}
 	}
 	return 0;
 }
 
-static void handle_extcmd(void) {
+static void extcmd_handler(void) {
 	uint32_t tmp = 0;
 	char *str = NULL;
 
@@ -333,7 +324,7 @@ static void handle_extcmd(void) {
 		rtc_get_now_str(ts_buff, TS_BUFF_SZ);
 		HAL_RTC_SetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
 		HAL_RTC_SetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
-		inform_SD_rtc();
+		inform_SD_rtc(ts_buff);
 		ok();
 		break;
 
@@ -345,7 +336,7 @@ static void handle_extcmd(void) {
 			break;
 		}
 		set_initial_alarm(&rc);
-		write_config_to_SD();
+		write_config_to_SD(&rc);
 		ok();
 		break;
 
@@ -452,230 +443,10 @@ static void send_data(void) {
 		}
 	}
 }
-
-static void inform_SD_reset(void) {
-#if HAS_SD
-	uint8_t res = 0;
-	/* Inform the File that an reset occurred */
-	res = sd_mount();
-	if (!res) {
-		res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf,
-		FNAME_BUF_SZ);
-		if (!res) {
-			res = sd_open_file_neworappend(f, fname.buf);
-			if (!res) {
-				res = f_printf(f, "\nThe sensor was reset/powered-down.\n");
-				res = sd_close(f);
-			}
-		}
-		res = sd_umount();
-	}
-#else
-	return;
-#endif
-}
-
-static void inform_SD_rtc(void) {
-#if HAS_SD
-	uint8_t res = 0;
-	res = sd_mount();
-	if (!res) {
-		res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf,
-		FNAME_BUF_SZ);
-		if (!res) {
-			res = sd_open_file_neworappend(f, fname.buf);
-			if (!res) {
-				f_printf(f, "The RTC was set. Old time: %S\n", ts_buff);
-				rtc_get_now_str(ts_buff, TS_BUFF_SZ);
-				f_printf(f, "                 New time: %S\n", ts_buff);
-				sd_close(f);
-			}
-		}
-		sd_umount();
-	}
-#else
-	return;
-#endif
-}
-
-static void write_config_to_SD(void) {
-#if HAS_SD
-	uint8_t res = 0;
-	res = sd_mount();
-	if (!res) {
-		res = sd_open(f, SD_CONFIGFILE_NAME, FA_WRITE | FA_CREATE_ALWAYS);
-		if (!res) {
-			f_printf(f, "%U\n", RCCONF_MAX_ITIMES);
-			for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
-				f_printf(f, "%LU\n", rc.itime[i]);
-			}
-			f_printf(f, "%U\n", rc.iterations);
-
-			/* We store the ival like the user command format:
-			 * 'mode,ival,start,end'
-			 * e.g.: '1,00:00:20,04:30:00,22:15:00*/
-			f_printf(f, "%U,", rc.mode);
-			f_printf(f, "%02U:%02U:%02U,", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
-			f_printf(f, "%02U:%02U:%02U,", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
-			f_printf(f, "%02U:%02U:%02U\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
-			sd_close(f);
-		}
-		sd_umount();
-	}
-#else
-	return;
-#endif
-}
-
-static void read_config_from_SD(void) {
-#if HAS_SD
-# if RCCONF_MAX_ITIMES > 32
-# error "Attention buffer gets big.. Improve implementation :)"
-# endif
-	/* max value of itime = 10000\n -> 6 BYTES * RCCONF_MAX_ITIMES
-	 * start end ival timestamp     -> 3 * 20 BYTES
-	 * three other number good will aprox. -> 20 BYTES*/
-	uint16_t sz = RCCONF_MAX_ITIMES * 6 + 3 * 20 + 20;
-	uint8_t buf[sz];
-	uint8_t res;
-	uint32_t nr, rcconf_max_itimes;
-	uint bytesread;
-	char *token, *rest;
-	bool fail;
-
-	memset(buf, 0, sz * sizeof(uint8_t));
-	rest = (char*) buf;
-	nr = 0;
-	fail = false;
-
-	res = sd_mount();
-	if (!res) {
-		res = sd_open(f, SD_CONFIGFILE_NAME, FA_READ);
-		if (!res) {
-			f_read(f, buf, sizeof(buf), &bytesread);
-			/* == parsing: == */
-			/* Read RCCONF_MAX_ITIMES from sd*/
-			token = strtok_r(rest, "\n", &rest);
-			fail = (token == NULL);
-			res = sscanf(token, "%lu", &nr);
-			if (!fail && res > 0 && nr > 0) {
-				rcconf_max_itimes = nr > RCCONF_MAX_ITIMES ? RCCONF_MAX_ITIMES : nr;
-				/*read itimes[i] from sd*/
-				for (uint i = 0; i < rcconf_max_itimes; ++i) {
-					token = strtok_r(rest, "\n", &rest);
-					res = sscanf(token, "%lu", &nr);
-					if (token == NULL || res <= 0) {
-						fail = true;
-						break;
-					}
-					rc.itime[i] = nr;
-				}
-			}
-			if (!fail) {
-				/* Read iterations aka. N from sd*/
-				token = strtok_r(rest, "\n", &rest);
-				res = sscanf(token, "%lu", &nr);
-				if (token != NULL && res > 0 && nr > 0) {
-					rc.iterations = nr;
-					/* Read 'mode,ival,start,end' as one string from sd.
-					 * If parse_ival() fails, no times are set. */
-					token = rest;
-					parse_ival(token, &rc);
-				}
-			}
-			sd_close(f);
-		}
-		sd_umount();
-	}
-#else
-	return;
-#endif
-}
-
-/** Store the measurment data to SD card.
- * Requires a mounted SD card. */
-static uint8_t measurement_to_SD(void) {
-#if HAS_SD
-	int8_t res = 0;
-	res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf,
-	FNAME_BUF_SZ);
-	if (!res) {
-		res = sd_open_file_neworappend(f, fname.buf);
-		if (!res) {
-			/* Write metadata (timestamp, errorcode, intergartion time) */
-			f_printf(f, "%S, %U, %LU, [,", ts_buff, sens1.errc, sens1.itime);
-			/* Write data */
-			if (!sens1.errc) {
-				/* Lopp through measurement results and store to file */
-				uint32_t *p = (uint32_t *) (sens1.data->wptr - MSPARAM_PIXEL);
-				for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
-					f_printf(f, "%U,", *(p++));
-				}
-			}
-			f_printf(f, "]\n");
-			res = sd_close(f);
-
-			/* Print what we wrote to sd.*/
-			debug("SD: wrote to File: %s, data:\n", fname.buf);
-			if (rxtx.debug) {
-				/* Use printf() instead of debug() to prevent 'dbg:' string before every value. */
-				printf("%s, %u, %lu, [,", ts_buff, sens1.errc, sens1.itime);
-				uint32_t *p = (uint32_t *) (sens1.data->wptr - MSPARAM_PIXEL);
-				for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
-					printf("%u,", (uint) *(p++));
-				}
-				printf("]\n");
-			}
-		}
-	}
-	return res;
-#else
-	return 100;
-#endif
-}
-
-static void multimeasure(void) {
-	int8_t res = 0;
-	for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
-		if (rc.itime[i] == 0) {
-			/* itime disabled */
-			continue;
-		}
-		sensor_set_itime(rc.itime[i]);
-		debug("itime[%u]=%lu\n", i, rc.itime[i]);
-
-		/* Measure N times */
-		for (int n = 0; n < rc.iterations; ++n) {
-
-			debug("N: %u/%u\n", n + 1, rc.iterations);
-			/* Generate timestamp */
-			rtc_get_now_str(ts_buff, TS_BUFF_SZ);
-
-			/* Make a measurement */
-			sensor_init();
-			sensor_measure();
-
-			if (state.toSD && HAS_SD) {
-				/* Write measurement to SD */
-				/* TODO One time mount and open per wakeup... */
-				res = sd_mount();
-				if (!res) {
-					/* Store the measurement on SD */
-					res = measurement_to_SD();
-					sd_umount();
-				}
-			}
-			if (sens1.errc) {
-				sensor_deinit();
-			}
-		}
-	}
-	sensor_deinit();
-}
-
 static void periodic_alarm_handler(void) {
 	debug("Periodic alarm \n");
 	RTC_TimeTypeDef new;
+	rtc_timestamp_t ts;
 	ts = rtc_get_now();
 	debug("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
@@ -705,7 +476,44 @@ static void periodic_alarm_handler(void) {
 	debug("next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 }
 
+static void multimeasure(void) {
+	int8_t res = 0;
+	for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
+		if (rc.itime[i] == 0) {
+			/* itime disabled */
+			continue;
+		}
+		sensor_set_itime(rc.itime[i]);
+		debug("itime[%u]=%lu\n", i, rc.itime[i]);
 
+		/* Measure N times */
+		for (int n = 0; n < rc.iterations; ++n) {
+
+			debug("N: %u/%u\n", n + 1, rc.iterations);
+			/* Generate timestamp */
+			rtc_get_now_str(ts_buff, TS_BUFF_SZ);
+
+			/* Make a measurement */
+			sensor_init();
+			sensor_measure();
+
+			if (state.toSD && HAS_SD) {
+				/* Write measurement to SD */
+				/* TODO One time mount and open per wakeup... */
+				res = sd_mount();
+				if (!res) {
+					/* Store the measurement on SD */
+					res = measurement_to_SD(ts_buff);
+					sd_umount();
+				}
+			}
+			if (sens1.errc) {
+				sensor_deinit();
+			}
+		}
+	}
+	sensor_deinit();
+}
 
 /* This function is used to test functions
  * or functionality under development.
@@ -714,6 +522,7 @@ static void periodic_alarm_handler(void) {
  * code is executed by timer. */
 static void dbg_test(void) {
 #if DBG_CODE
+extern FIL *f; // fixme does this work ?
 
 	uint16_t sz = RCCONF_MAX_ITIMES * 6 + 3 * 20 + 20;
 	uint8_t buf[sz];
