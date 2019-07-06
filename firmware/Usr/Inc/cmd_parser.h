@@ -42,8 +42,12 @@ typedef enum
 	USR_CMD_SET_RTC_TIME,
 	USR_CMD_SET_INTERVAL,
 
-	//debug and help
+	// other
 	USR_CMD_HELP,
+	USR_CMD_STORE_CONFIG,
+	USR_CMD_READ_CONFIG,
+
+	//debug
 	USR_CMD_DEBUG,
 	USR_CMD_DBGTEST,
 

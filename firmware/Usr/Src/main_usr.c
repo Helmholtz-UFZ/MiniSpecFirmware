@@ -28,6 +28,7 @@ static void extcmd_handler(void);
 static void dbg_test(void);
 
 static void ok(void);
+static void print_config(void);
 
 static statemachine_config_t state;
 static runtime_config_t rc;
@@ -47,21 +48,11 @@ void usr_hw_init(void) {
 	uint32_t *ACTLR = (uint32_t *) 0xE000E008;
 	*ACTLR |= SCnSCB_ACTLR_DISDEFWBUF_Msk;
 
-	/* We enable the interrupts later when we need them*/
-	HAL_NVIC_DisableIRQ(RXTX_IRQn);
-	HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
-	HAL_NVIC_DisableIRQ(EXTI2_IRQn);
-	HAL_NVIC_DisableIRQ(TIM5_IRQn);
+	// disable unused IR's
+	sensor_deinit();
 
-	rtc_init();
 	rxtx_init();
-	tim1_Init();
-	tim2_Init();
-	tim5_Init();
-
-	NVIC_EnableIRQ(RXTX_IRQn);
 	rxtx_restart_listening();
-
 }
 
 static void run_init(void) {
@@ -181,9 +172,9 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_STREAM_END:
+		ok();
 		sensor_deinit();
 		state.stream = 0;
-		ok();
 		break;
 
 		/* GETTER ============================================================ */
@@ -247,21 +238,7 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_GET_CONFIG:
-		for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
-			if (rc.itime[i] != 0) {
-				reply("itime[%u] = %lu\n", i, rc.itime[i]);
-			}
-		}
-		reply("itime[%u] is currently choosen for setting.\n", rc.itime_index);
-		reply("iteration per measurement: %u\n", rc.iterations);
-		reply("interval mode: %u\n", rc.mode);
-		reply("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
-		reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
-		reply("interval:   %02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
-		reply("next alarm: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
-		ts = rtc_get_now();
-		reply("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
-				ts.time.Minutes, ts.time.Seconds);
+		print_config();
 		break;
 
 		/* SETTER ============================================================ */
@@ -336,15 +313,26 @@ static void extcmd_handler(void) {
 			break;
 		}
 		set_initial_alarm(&rc);
-		write_config_to_SD(&rc);
 		ok();
 		break;
 
-		/* OTHER and DEBUG ============================================================ */
+		/* OTHER ============================================================ */
 
 	case USR_CMD_HELP:
 		reply(HELPSTR);
 		break;
+
+	case USR_CMD_STORE_CONFIG:
+		write_config_to_SD(&rc);
+		ok();
+		break;
+
+	case USR_CMD_READ_CONFIG:
+		read_config_from_SD(&rc);
+		ok();
+		break;
+
+		/* DEBUG ============================================================ */
 
 	case USR_CMD_DEBUG:
 		rxtx.debug = rxtx.debug ? false : true;
@@ -373,6 +361,24 @@ static void ok(void) {
 	if (state.format == DATA_FORMAT_ASCII) {
 		reply("ok\n");
 	}
+}
+
+static void print_config(void){
+		for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
+			if (rc.itime[i] != 0) {
+				reply("itime[%u] = %lu\n", i, rc.itime[i]);
+			}
+		}
+		reply("itime[%u] is currently choosen for setting.\n", rc.itime_index);
+		reply("iteration per measurement [N]: %u\n", rc.iterations);
+		reply("interval mode: %u\n", rc.mode);
+		reply("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
+		reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
+		reply("interval:   %02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
+		reply("next alarm: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
+		ts = rtc_get_now();
+		reply("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+				ts.time.Minutes, ts.time.Seconds);
 }
 
 /** Local helper for sending data via the uart interface. */
@@ -443,6 +449,7 @@ static void send_data(void) {
 		}
 	}
 }
+
 static void periodic_alarm_handler(void) {
 	debug("Periodic alarm \n");
 	RTC_TimeTypeDef new;
@@ -522,7 +529,7 @@ static void multimeasure(void) {
  * code is executed by timer. */
 static void dbg_test(void) {
 #if DBG_CODE
-extern FIL *f; // fixme does this work ?
+	extern FIL *f; // fixme does this work ?
 
 	uint16_t sz = RCCONF_MAX_ITIMES * 6 + 3 * 20 + 20;
 	uint8_t buf[sz];

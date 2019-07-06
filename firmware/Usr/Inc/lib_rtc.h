@@ -23,7 +23,6 @@ typedef struct
 
 extern rtc_t rtc;
 
-void rtc_init(void);
 bool rtc_time_leq(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b);
 bool rtc_time_eq(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b);
 bool rtc_time_lt(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b);

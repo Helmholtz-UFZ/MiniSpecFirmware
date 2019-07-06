@@ -73,6 +73,34 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 		return;
 	}
 
+	str = "storeconf";
+	alias = "stcf";
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+		extcmd.cmd = USR_CMD_STORE_CONFIG;
+		/* Set pointer to char after the '=' */
+		str = (char*) memchr(buffer, '=', sz) + 1;
+		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
+		 * listening again on the rx line. */
+		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
+		return;
+	}
+
+	str = "readconf";
+	alias = "rdcf";
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+		extcmd.cmd = USR_CMD_READ_CONFIG;
+		/* Set pointer to char after the '=' */
+		str = (char*) memchr(buffer, '=', sz) + 1;
+		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
+		 * listening again on the rx line. */
+		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
+		return;
+	}
+
 	str = "#debug\r";
 	sz = strlen(str);
 	aliassz = strlen(alias);

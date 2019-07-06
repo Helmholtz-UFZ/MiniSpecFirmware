@@ -140,7 +140,8 @@
  * and _IN has a pullup. This means:
  * 	SD plugged   : SD_DETECT_PIN is RESET (low)
  * 	SD unplugged : SD_DETECT_PIN is SET (high) */
-#define SD_DISABLE_HW_DETECTION		0
+#define SD_DISABLE_HW_DETECTION		1
+
 
 /* Minimal possible repetition of measurements by setting
  * the interval which updates timerA.

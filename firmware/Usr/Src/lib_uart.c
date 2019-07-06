@@ -66,6 +66,9 @@ void rxtx_init(void) {
 
 	//enable char match IR-Flag
 	RXTX->CR1 |= USART_CR1_CMIE;
+
+	HAL_NVIC_ClearPendingIRQ(RXTX_IRQn);
+	HAL_NVIC_EnableIRQ(RXTX_IRQn);
 }
 
 /**

@@ -22,57 +22,60 @@
 /* Borrowed from main.c */
 extern void SystemClock_Config(void);
 
-static void sys_reinit(void);
-static void sys_deinit(void);
+static void sys_deinit(uint8_t mode);
+static void sys_reinit(uint8_t mode);
 
-static void sys_reinit(void){
-	SystemClock_Config();
+static void sys_reinit(uint8_t mode) {
+	if (mode == DEEP_SLEEP_MODE) {
+		SystemClock_Config();
+	}
 
 	MX_GPIO_Init();
-	MX_DMA_Init();
-	MX_TIM2_Init();
-	MX_TIM1_Init();
-	MX_TIM5_Init();
-	MX_TIM3_Init();
-	MX_SDMMC1_SD_Init();
-	MX_FATFS_Init();
-	MX_USART1_UART_Init();
 
-	/* Initialize interrupts see MX_NVIC_Init(); in main.c */
-	HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(EXTI2_IRQn);
-	HAL_NVIC_SetPriority(TIM1_CC_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);
-	HAL_NVIC_SetPriority(TIM5_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(TIM5_IRQn);
-	HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
-	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-	HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(USART1_IRQn);
-	HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
+	if (mode == DEEP_SLEEP_MODE) {
+		MX_DMA_Init();
+		MX_TIM2_Init();
+		MX_TIM1_Init();
+		MX_TIM5_Init();
+		MX_TIM3_Init();
+		MX_SDMMC1_SD_Init();
+		MX_FATFS_Init();
+		MX_USART1_UART_Init();
 
-	/* reinit statemachine hw modifications */
-	usr_hw_init();
-	// reanable character match
-	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);
+		/* Initialize interrupts see MX_NVIC_Init(); in main.c */
+		HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
+		HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+		HAL_NVIC_EnableIRQ(USART1_IRQn);
+		HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
+
+		/* reinit statemachine hw modifications */
+		usr_hw_init();
+		// reanable character match
+		__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);
+	}
 }
 
-static void sys_deinit(void){
-//	HAL_UART_Abort(&hrxtx);
-	HAL_UART_DeInit(&hrxtx);
+/**
+ * deinit system for power saving.
+ *
+ * if mode is DEEP_SLEEP_MODE (0) only the POWERSWITCH and CMDS_EN pins are left functional.
+ * if mode is LIGHT_SLEEP_MODE (1) the POWERSWITCH, the CMDS_EN and uart (txrx) pins
+ * are left functional.
+ */
+static void sys_deinit(uint8_t mode) {
+	if (mode == DEEP_SLEEP_MODE) {
+		HAL_UART_DeInit(&hrxtx);
+	}
+
 	HAL_TIM_Base_DeInit(&htim1);
 	HAL_TIM_Base_DeInit(&htim2);
 	HAL_TIM_Base_DeInit(&htim3);
 	HAL_TIM_Base_DeInit(&htim5);
-//	HAL_SD_Abort(&hsd1);
 	HAL_SD_DeInit(&hsd1);
 	FATFS_UnLinkDriver(SDPath);
 
 	// all pins to analog (save a lot power
-	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
 	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 
@@ -89,22 +92,26 @@ static void sys_deinit(void){
 	 * the Powerswitch line tied to GND */
 	GPIO_InitStruct.Pin &= ~(CMDS_EN_Pin);
 	GPIO_InitStruct.Pin &= ~(POWER5V_SWITCH_ENBL_Pin);
+
+	// keep uart alive
+	if (mode == LIGHT_SLEEP_MODE) {
+		GPIO_InitStruct.Pin &= ~(GPIO_PIN_6 | GPIO_PIN_7);
+	}
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
-
 
 /**
  * Enables the Power-Switch. The 5V-Domain and
  * the 3V domain are powered on if on_off is true,
  * otherwise the domains are powered off.
  */
-void power_switch_EN(bool on_off){
+void power_switch_EN(bool on_off) {
 #if USE_POWER_SWITCH
 	GPIO_PinState state;
 	state = HAL_GPIO_ReadPin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin);
-	if(state == GPIO_PIN_RESET && on_off) {
+	if (state == GPIO_PIN_RESET && on_off) {
 		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
-	} else if(state == GPIO_PIN_SET && !on_off) {
+	} else if (state == GPIO_PIN_SET && !on_off) {
 		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
 	}
 #else
@@ -112,26 +119,29 @@ void power_switch_EN(bool on_off){
 #endif
 }
 
-void cpu_enter_LPM(void){
+void cpu_enter_LPM(void) {
 
 	while (!rxtx.wakeup && !rtc.alarmA_wakeup) {
 		HAL_Delay(200); // prevent very fast switching of CMD_EN Pin
-		if( HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET){
+		if (HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET) {
 			debug("enter light sleep mode\n");
+			sys_deinit(LIGHT_SLEEP_MODE);
 			cpu_sleep();
-		}else{
+			sys_reinit(LIGHT_SLEEP_MODE);
+		} else {
 			debug("enter deep sleep mode\n");
-			sys_deinit();
-			while (!rxtx.wakeup && !rtc.alarmA_wakeup && HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_RESET){
+			sys_deinit(DEEP_SLEEP_MODE);
+			while (!rxtx.wakeup && !rtc.alarmA_wakeup
+					&& HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_RESET) {
 				cpu_stop2();
 			}
-			sys_reinit();
+			sys_reinit(DEEP_SLEEP_MODE);
 		}
 	}
 }
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-	if(GPIO_Pin == CMDS_EN_Pin){
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	if (GPIO_Pin == CMDS_EN_Pin) {
 		leave_LPM_from_ISR();
 	}
 }

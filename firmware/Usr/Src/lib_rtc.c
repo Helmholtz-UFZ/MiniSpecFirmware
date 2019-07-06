@@ -6,6 +6,7 @@
  */
 
 #include <lib_rtc.h>
+#include "lib_cpu.h"
 #include "global_config.h"
 #include "main_usr.h"
 #include "string.h"
@@ -13,10 +14,6 @@
 #include "power.h"
 
 rtc_t rtc = {false};
-
-void rtc_init(void){
-
-}
 
 /**
  * Parse a string to a date and time object.
