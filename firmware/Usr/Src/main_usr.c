@@ -28,7 +28,7 @@ static void extcmd_handler(void);
 static void dbg_test(void);
 
 static void ok(void);
-static void print_config(void);
+static void print_config(runtime_config_t *rc);
 
 static statemachine_config_t state;
 static runtime_config_t rc;
@@ -238,7 +238,7 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_GET_CONFIG:
-		print_config();
+		print_config(&rc);
 		break;
 
 		/* SETTER ============================================================ */
@@ -329,6 +329,7 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_READ_CONFIG:
 		read_config_from_SD(&rc);
+		set_initial_alarm(&rc);
 		ok();
 		break;
 
@@ -363,19 +364,20 @@ static void ok(void) {
 	}
 }
 
-static void print_config(void){
+static void print_config(runtime_config_t *rc){
+		rtc_timestamp_t ts;
 		for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
-			if (rc.itime[i] != 0) {
-				reply("itime[%u] = %lu\n", i, rc.itime[i]);
+			if (rc->itime[i] != 0) {
+				reply("itime[%u] = %lu\n", i, rc->itime[i]);
 			}
 		}
-		reply("itime[%u] is currently choosen for setting.\n", rc.itime_index);
-		reply("iteration per measurement [N]: %u\n", rc.iterations);
-		reply("interval mode: %u\n", rc.mode);
-		reply("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
-		reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
-		reply("interval:   %02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
-		reply("next alarm: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
+		reply("itime[%u] is currently choosen for setting.\n", rc->itime_index);
+		reply("iteration per measurement [N]: %u\n", rc->iterations);
+		reply("interval mode: %u\n", rc->mode);
+		reply("start time: %02i:%02i:%02i\n", rc->start.Hours, rc->start.Minutes, rc->start.Seconds);
+		reply("end time:   %02i:%02i:%02i\n", rc->end.Hours, rc->end.Minutes, rc->end.Seconds);
+		reply("interval:   %02i:%02i:%02i\n", rc->ival.Hours, rc->ival.Minutes, rc->ival.Seconds);
+		reply("next alarm: %02i:%02i:%02i\n", rc->next_alarm.Hours, rc->next_alarm.Minutes, rc->next_alarm.Seconds);
 		ts = rtc_get_now();
 		reply("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 				ts.time.Minutes, ts.time.Seconds);
@@ -529,22 +531,11 @@ static void multimeasure(void) {
  * code is executed by timer. */
 static void dbg_test(void) {
 #if DBG_CODE
-	extern FIL *f; // fixme does this work ?
+	runtime_config_t rc;
+	read_config_from_SD(&rc);
+	reply("config on SD:\n");
+	print_config(&rc);
 
-	uint16_t sz = RCCONF_MAX_ITIMES * 6 + 3 * 20 + 20;
-	uint8_t buf[sz];
-	uint8_t res;
-	uint bytesread;
-
-	memset(buf, 0, sz * sizeof(uint8_t));
-	res = sd_mount();
-	if (!res) {
-		res = sd_open(f, SD_CONFIGFILE_NAME, FA_READ);
-		if (!res) {
-			f_read(f, buf, sizeof(buf), &bytesread);
-			reply("Config-file on SD:\n%s", buf);
-		}
-	}
 #else
 	reply("not implemented\n");
 #endif

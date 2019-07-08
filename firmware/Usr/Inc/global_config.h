@@ -128,7 +128,7 @@
 /*Maximum file size in Byte (default 1MB)*/
 #define SD_MAX_FILESIZE			(100 * 1024 * 1024)
 
-/* If defined: no HW detection (Pin high/low) is done
+/* If defined: HW detection (Pin high/low) is done
  * by BSP_PlatformIsDetected() in fatfs_platform.c
  *
  * Attention: DISABLE_SD_INIT is not the correct define
@@ -140,7 +140,7 @@
  * and _IN has a pullup. This means:
  * 	SD plugged   : SD_DETECT_PIN is RESET (low)
  * 	SD unplugged : SD_DETECT_PIN is SET (high) */
-#define SD_DISABLE_HW_DETECTION		1
+#define USE_SD_HW_DETECTION		1
 
 
 /* Minimal possible repetition of measurements by setting
