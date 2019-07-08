@@ -299,7 +299,7 @@ static void extcmd_handler(void) {
 			break;
 		}
 		if (rtc_parsecheck_datetime(str, &ts.time, &ts.date)) {
-			break; // todo: error message
+			break;
 		}
 		/* store the current time */
 		rtc_get_now_str(ts_buff, TS_BUFF_SZ);
@@ -357,7 +357,6 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_DBGTEST:
-		/* This call do nothing if DBG_CODE is not defined */
 		dbg_test();
 		ok();
 		break;
