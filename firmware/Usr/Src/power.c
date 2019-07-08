@@ -31,15 +31,15 @@ static void sys_reinit(uint8_t mode) {
 	}
 
 	MX_GPIO_Init();
+	MX_TIM2_Init();
+	MX_TIM1_Init();
+	MX_TIM5_Init();
+	MX_TIM3_Init();
+	MX_SDMMC1_SD_Init();
+	MX_FATFS_Init();
 
 	if (mode == DEEP_SLEEP_MODE) {
 		MX_DMA_Init();
-		MX_TIM2_Init();
-		MX_TIM1_Init();
-		MX_TIM5_Init();
-		MX_TIM3_Init();
-		MX_SDMMC1_SD_Init();
-		MX_FATFS_Init();
 		MX_USART1_UART_Init();
 
 		/* Initialize interrupts see MX_NVIC_Init(); in main.c */
@@ -80,7 +80,6 @@ static void sys_deinit(uint8_t mode) {
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 
 	GPIO_InitStruct.Pin = GPIO_PIN_All;
-	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
@@ -88,8 +87,16 @@ static void sys_deinit(uint8_t mode) {
 	HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 	HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
 
+	/* Keep Depug functionality */
+	if (mode == LIGHT_SLEEP_MODE) {
+		GPIO_InitStruct.Pin = GPIO_PIN_All;
+		GPIO_InitStruct.Pin &= ~(GPIO_PIN_13 | GPIO_PIN_14);
+	}
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
 	/* keep the CMDS_EN Line active listening and
 	 * the Powerswitch line tied to GND */
+	GPIO_InitStruct.Pin = GPIO_PIN_All;
 	GPIO_InitStruct.Pin &= ~(CMDS_EN_Pin);
 	GPIO_InitStruct.Pin &= ~(POWER5V_SWITCH_ENBL_Pin);
 

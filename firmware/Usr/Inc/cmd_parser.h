@@ -55,6 +55,8 @@ typedef enum
 
 #define HELPSTR  "" \
 	"h      - print this help\n"\
+	"stcf   - store config to sd\n"\
+	"rdcf   - read config from sd\n"\
 /*	"#debug - toggle dbg messages"        hidden feature*/\
 /*	"#test  - run a test command"         hidden feature*/\
 	"m      - measure\n"\

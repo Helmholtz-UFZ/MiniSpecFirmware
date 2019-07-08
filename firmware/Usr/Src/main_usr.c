@@ -545,7 +545,8 @@ static void dbg_test(void) {
 			reply("Config-file on SD:\n%s", buf);
 		}
 	}
-#endif
+#else
 	reply("not implemented\n");
+#endif
 	return;
 }
