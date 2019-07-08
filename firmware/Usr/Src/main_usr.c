@@ -386,10 +386,10 @@ static void print_config(runtime_config_t *rc){
 		reply("ii: %u  ('i=' set itime[%u])\n", rc->itime_index, rc->itime_index);
 		reply("iter. per meas. [N]: %u\n", rc->iterations);
 		reply("interval mode: %u\n", rc->mode);
-		reply("start time:       %02i:%02i:%02i\n", rc->start.Hours, rc->start.Minutes, rc->start.Seconds);
-		reply("end time:         %02i:%02i:%02i\n", rc->end.Hours, rc->end.Minutes, rc->end.Seconds);
-		reply("interval:         %02i:%02i:%02i\n", rc->ival.Hours, rc->ival.Minutes, rc->ival.Seconds);
-		reply("next auto-meas.:  %02i:%02i:%02i\n", rc->next_alarm.Hours, rc->next_alarm.Minutes, rc->next_alarm.Seconds);
+		reply("start time:      %02i:%02i:%02i\n", rc->start.Hours, rc->start.Minutes, rc->start.Seconds);
+		reply("end time:        %02i:%02i:%02i\n", rc->end.Hours, rc->end.Minutes, rc->end.Seconds);
+		reply("interval:        %02i:%02i:%02i\n", rc->ival.Hours, rc->ival.Minutes, rc->ival.Seconds);
+		reply("next auto-meas.: %02i:%02i:%02i\n", rc->next_alarm.Hours, rc->next_alarm.Minutes, rc->next_alarm.Seconds);
 		ts = rtc_get_now();
 		reply("now:  20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 				ts.time.Minutes, ts.time.Seconds);
