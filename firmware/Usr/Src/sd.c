@@ -145,6 +145,7 @@ uint8_t read_config_from_SD(runtime_config_t *rc) {
 					 * If parse_ival() fails, no times are set. */
 					token = rest;
 					fail = parse_ival(token, rc);
+					res = 0;
 				}
 			}
 			sd_close(f);

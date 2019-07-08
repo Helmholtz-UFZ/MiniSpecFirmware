@@ -320,7 +320,7 @@ int8_t parse_ival(char *str, runtime_config_t* rc) {
 	if (iv.Hours == 0 && iv.Minutes == 0 && iv.Seconds < MIN_IVAL) {
 		return 1;
 	}
-	if (c == 2) {
+	if (c == 1) {
 		rc->ival = iv;
 		rc->mode = IVAL_ENDLESS;
 		return 0;

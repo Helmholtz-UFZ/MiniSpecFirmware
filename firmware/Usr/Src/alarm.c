@@ -24,6 +24,11 @@ RTC_TimeTypeDef get_closest_next_alarm(runtime_config_t *rc) {
 	/*Safety window of 2 seconds. One is not enough
 	 * because we could be very close to a second transition.*/
 	now = now + 2;
+
+	if (now < start || now > end){
+		return rtc_seconds2time(start);
+	}
+
 	/* N <= n < N+1, where n is the correct float-value */
 	N = (now - start) / ival;
 	x = (start + N * ival > now) ? N * ival : (N + 1) * ival;

@@ -32,8 +32,8 @@
 typedef enum
 {
 	IVAL_OFF = 0,
-	IVAL_STARTEND = 1,
-	IVAL_ENDLESS = 2,
+	IVAL_ENDLESS = 1,
+	IVAL_STARTEND = 2,
 }ival_mode_t;
 
 #define RCCONF_MAX_ITIMES  32

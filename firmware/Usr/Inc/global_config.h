@@ -106,7 +106,7 @@
 /* If enabled all sensor errors are ignored during
  * stream mode. This can be useful for debugging,
  * the sensor connectivity */
-#define IGNORE_ERRORS_IN_STREAM 	1
+#define IGNORE_ERRORS_IN_STREAM 	0
 
 /* If 0 all code that access the SD card is disabled. */
 #define HAS_SD	 			1
