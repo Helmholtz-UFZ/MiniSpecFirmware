@@ -124,8 +124,12 @@ int run(void) {
 			sensor_measure();
 			send_data();
 			if (sens1.errc) {
-				state.stream = 0;
 				sensor_deinit();
+#if IGNORE_ERRORS_IN_STREAM
+				sensor_init();
+#else
+				state.stream = 0;
+#endif
 			}
 		}
 
@@ -323,14 +327,22 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_STORE_CONFIG:
-		write_config_to_SD(&rc);
-		ok();
+		tmp = write_config_to_SD(&rc);
+		if (!tmp){
+			ok();
+		} else {
+			printf("ERR: write to SD faild\n");
+		}
 		break;
 
 	case USR_CMD_READ_CONFIG:
-		read_config_from_SD(&rc);
-		set_initial_alarm(&rc);
-		ok();
+		tmp = read_config_from_SD(&rc);
+		if (!tmp){
+			set_initial_alarm(&rc);
+			ok();
+		} else {
+			printf("ERR: read from SD faild\n");
+		}
 		break;
 
 		/* DEBUG ============================================================ */
@@ -532,7 +544,11 @@ static void multimeasure(void) {
 static void dbg_test(void) {
 #if DBG_CODE
 	runtime_config_t rc;
-	read_config_from_SD(&rc);
+	if (read_config_from_SD(&rc)){
+		debug("read failed\n");
+		return;
+	}
+	rc.next_alarm.Hours = rc.next_alarm.Minutes = rc.next_alarm.Seconds = 99;
 	reply("config on SD:\n");
 	print_config(&rc);
 

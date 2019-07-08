@@ -61,7 +61,7 @@ void inform_SD_rtc(char *oldtimestamp_str) {
 #endif
 }
 
-void write_config_to_SD(runtime_config_t *rc) {
+uint8_t write_config_to_SD(runtime_config_t *rc) {
 #if HAS_SD
 	uint8_t res = 0;
 	res = sd_mount();
@@ -81,16 +81,17 @@ void write_config_to_SD(runtime_config_t *rc) {
 			f_printf(f, "%02U:%02U:%02U,", rc->ival.Hours, rc->ival.Minutes, rc->ival.Seconds);
 			f_printf(f, "%02U:%02U:%02U,", rc->start.Hours, rc->start.Minutes, rc->start.Seconds);
 			f_printf(f, "%02U:%02U:%02U\n", rc->end.Hours, rc->end.Minutes, rc->end.Seconds);
-			sd_close(f);
+			res = sd_close(f);
 		}
 		sd_umount();
 	}
+	return res;
 #else
-	return;
+	return NO_SD;
 #endif
 }
 
-void read_config_from_SD(runtime_config_t *rc) {
+uint8_t read_config_from_SD(runtime_config_t *rc) {
 #if HAS_SD
 # if RCCONF_MAX_ITIMES > 32
 # error "Attention buffer gets big.. Improve implementation :)"
@@ -143,15 +144,19 @@ void read_config_from_SD(runtime_config_t *rc) {
 					/* Read 'mode,ival,start,end' as one string from sd.
 					 * If parse_ival() fails, no times are set. */
 					token = rest;
-					parse_ival(token, rc); // fixme &rc / rc ???
+					fail = parse_ival(token, rc);
 				}
 			}
 			sd_close(f);
 		}
 		sd_umount();
 	}
+	if (res){
+		return res;
+	}
+	return fail;
 #else
-	return;
+	return NO_SD;
 #endif
 }
 
@@ -192,7 +197,7 @@ uint8_t measurement_to_SD(char *timestamp_str) {
 	}
 	return res;
 #else
-	return 100;
+	return NO_SD;
 #endif
 }
 

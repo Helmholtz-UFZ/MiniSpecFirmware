@@ -12,12 +12,13 @@
 #include "global_config.h"
 #include "main_usr.h"
 
+#define NO_SD	100
 
 uint8_t measurement_to_SD(char *timestamp_str);
 void inform_SD_reset(void);
 void inform_SD_rtc(char *oldtimestamp_str);
-void write_config_to_SD(runtime_config_t *rc);
-void read_config_from_SD(runtime_config_t *rc);
+uint8_t write_config_to_SD(runtime_config_t *rc);
+uint8_t read_config_from_SD(runtime_config_t *rc);
 
 
 #endif /* INC_SD_H_ */

@@ -103,6 +103,11 @@
 /* Enables Debug code*/
 #define DBG_CODE			1
 
+/* If enabled all sensor errors are ignored during
+ * stream mode. This can be useful for debugging,
+ * the sensor connectivity */
+#define IGNORE_ERRORS_IN_STREAM 	1
+
 /* If 0 all code that access the SD card is disabled. */
 #define HAS_SD	 			1
 
@@ -125,7 +130,7 @@
 
 #define SD_CONFIGFILE_NAME		"CONFIG.TXT"
 
-/*Maximum file size in Byte (default 1MB)*/
+/*Maximum file size in Byte (default 100MB)*/
 #define SD_MAX_FILESIZE			(100 * 1024 * 1024)
 
 /* If defined: HW detection (Pin high/low) is done
@@ -147,7 +152,7 @@
  * the interval which updates timerA.
  * Take maximal integration time and processing in account.
  * In seconds. default=11*/
-#define MIN_IVAL		11
+#define MIN_IVAL		5
 
 /*
  * Define the Uart Instance that is used to communicate
