@@ -89,17 +89,14 @@ The data from this test is not written to SD card.
 Now set the **timings**. 
 * First set the RTC with `rtc=`.
 * Now choose your mode..
-  * *endless* mode, use `ival=2,IVAL` for example `ival=2,00:15:00` to set the alarm to every 15 minutes and y're done.
-  * *start-end* mode use `ival=1,IVAL,START,END`. e.g. `ival=1,00:10:00,04:30:00,18:00:00` - this set a alarm to every 10 minutes
+  * *endless* mode, use `ival=1,IVAL` for example `ival=1,00:15:00` to set the alarm to every 15 minutes and y're done.
+  * *start-end* mode use `ival=2,IVAL,START,END`. e.g. `ival=2,00:10:00,04:30:00,18:00:00` - this set a alarm to every 10 minutes
 if the time (RTC) is between half-past four and six-O'Clock evening. 
 The times are inclusive so a measurement will happen at 4:30(!), 4:40, ... , 17:50, 18:00(!).
 
 Further Notes: 
 * To recall the settings to yr mind use `c?`
 * With `ival=0` one can disable the interval - no measurements will occur. 
-* Everytime `ival` is called and executed, the current multi-measure-config is written to the SD in a file called config. This includes
-all integration times, the iteration value (N), the mode, the start and end time and the interval.
-* If the board resets the config file is read. Unfortunally the RTC-time is impossible to recover.
 
 Command                        | Short             | Brief description                                                     |
 --------------------           | -----             | ------------------------------------------------------------          |
@@ -122,7 +119,7 @@ Command                        | Short             | Brief description          
 **debug**                      |                   | Toggle debug prints on or off.                                        |
 
 where
- * **MODE  ={0\|1\|2}**: 0:off, 1:start-end-mode, 2:endless-mode
+ * **MODE  ={0\|1\|2}**: 0:off, 1:endless-mode, 2:start-end-mode 
  * **IVAL  =hh:mm:ss**: can omitted if MODE is 0
  * **START =hh:mm:ss**: can omitted if MODE is 0 or 1
  * **END   =hh:mm:ss**: can omitted if MODE is 0 or 1
