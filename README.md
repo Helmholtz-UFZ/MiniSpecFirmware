@@ -14,6 +14,7 @@ https://git.ufz.de/MET/WG6/Sensornetworks/Micro_Spectrometer/microspecsensorboar
 HW_Version 2.1:
 https://git.ufz.de/MET/WG6/Sensornetworks/Micro_Spectrometer/microspecsensorboard_v2_1
 
+
 Differences in usage with HW-Versions-Change 2.0 to 2.1
 -------------------------------------
 
@@ -27,12 +28,28 @@ Differences in usage with HW-Versions-Change 2.0 to 2.1
 - ParallelPort Data D2 is switched from PA3 to PA8
 - ADC-RESET signal removed
 - ADC-PD signal removed
+- new Signal CMDS_EN on Pin PB11
+- new *deep sleep mode*
+
+
+Main SW features
+----------------
+* single measurement and stream
+* SD card
+* RTC
+* atomatic measurements with start and end time and periodic interval
+* multi measurements (up to 32 with no pause)
+* deep sleep mode 
+
 
 Communication with the Board
 ----------------------------
 To send commands to the board, a *Virtual COM Port* via USB is used.
 Connect the USB, and look for the Port `/dev/ttyACMn` (n=0...) under Linux,
 or `COMn` (n=0...) in the Device Manager in Windows. 
+
+Disable *Deep-Sleep-Function* by set Pin *CMDS_EN* aka. **PB11** high. 
+One can simply achieve that by wire *3.3V* to *CMDS_EN*. 
 
 Then open a terminal and send the appropiate *User Commands* (see below).
 
@@ -64,7 +81,11 @@ the upper cuttable Part to the actual Nucleo Board must be wired. See *Differenc
 
 
 Implementet User Comands and Usage
-------------------------
+----------------------------------
+**Light vs. Deep Sleep Mode**: The system only can communicate (Uart) with the user in *light sleep mode*. 
+To enable this, see section *Communication* above.
+In *Deep Sleep Mode* only the RTC is still fuctional, thus very low power consumption is reached. 
+Nevertheless the automatic, periodic measurements still working, as the device will wake up on RTC-alarm, perform the measurement, write them to SD and sleep deep again.
 
 **Single Measurement**: As a human use `format=1` make the output readable. Use `i=` to set integration time and use `m` to measure and receive the data immedeatly. Use `gd` to receive the data again. As a machine use `format=0` and make yr admin contact us.
 
@@ -83,8 +104,7 @@ In the *endless-mode* the alarm occure every time the interval is reached - very
 * Set the index to **1** by using `ii=1`. 
 * Now you can set the next integration time with `i=` again. 
 * Continue with the last steps (`ii=2`,`i=`,`ii=3`,...) until the number of integration times you want to set is reached, the maximum is 32. 
-* May you want to check the result with `c?`. Also you can enable debug prints with `debug` and run a test multimeasurement with `mm`. 
-The data from this test is not written to SD card.
+* May you want to check the result with `c?`. Also you can enable debug prints with `#debug` and run a test multimeasurement with `mm` (nothing is written to SD with `mm`).
 
 Now set the **timings**. 
 * First set the RTC with `rtc=`.
@@ -98,8 +118,17 @@ Further Notes:
 * To recall the settings to yr mind use `c?`
 * With `ival=0` one can disable the interval - no measurements will occur. 
 
+**Store and Recall from SD**:
+If you are satisfied with your timing and measurement configuration (check with `c?`) you can store the config on the SD card.
+Use `stcf` for this. These settings are automatically loaded on system-reset (also power-loss). One also can manually read and 
+apply the config from the sd to the runtime system configuration by using `rdcf`.
+
+
 Command                        | Short             | Brief description                                                     |
 --------------------           | -----             | ------------------------------------------------------------          |
+**help**                       | **h**             | Print a brief help.                                                   |
+**storeconf**                  | **stcf**          | Store the timing config to the config file on the SD.                 |
+**readconf**                   | **rdcf**          | Read the timing config from the config-file on the SD.                |
 **measure**                    | **m**             | Make a simgle measurement. Return the values or errorcode             |
 **multimeasure**               | **mm**            | Make a multi measurement. For manual testing use with debug on.       | 
 **stream**                     |                   | Stream measurement and data.                                          |
@@ -108,18 +137,18 @@ Command                        | Short             | Brief description          
 **rtc?**                       |                   | Get the current Real-Time of the System.                              |
 **ival?**                      |                   | Get the current interval and mode in the format MODE,IVAL,START,END.  |
 **config?**                    | **c?**            | Print current config info. For humans only.                           |
-**itime?**                     | **i?**            | Get the current intergration time of the sensor in micro seconds [us] |
-**itimeindex?**                | **ii?**           | Get the current index for setting the intergration time               |
+**itime?**                     | **i?**            | Get the intergration time for index 0 in micro seconds [us]           |
+**itimeindex?**                | **ii?**           | Get the integration time and index, to which the index currently points to. |
 **itime=[54..100000]**         | **i=[54..100000]**| Set the integration time of the sensor in micro seconds [us]          |
 **itimeindex=[0..31]**         | **ii=[1..31]**    | Set the index for setting the integration time                        |
-**iterations=[0..31]**         | **N=[1..31]**     | Set the repetitions of a measurement                                  |
+**iterations=[0..31]**         | **N=[1..31]**     | Set the repetitions of a measurement.                                 |
 **format={0\|1}**              |                   | Set the output format to 0=Binary, or to 1=ASCII                      |
 **rtc=20YY-MM-DDThh:mm:ss**    |                   | Set the Real-Time-Clock and the Calendar. No Daylightsaving is used.  |
 **ival=MODE,IVAL,START,END**   |                   | Set the regular automatic measurement.                                | 
-**debug**                      |                   | Toggle debug prints on or off.                                        |
+**#debug**                     |                   | Toggle debug prints on or off.                                        |
 
 where
  * **MODE  ={0\|1\|2}**: 0:off, 1:endless-mode, 2:start-end-mode 
- * **IVAL  =hh:mm:ss**: can omitted if MODE is 0
- * **START =hh:mm:ss**: can omitted if MODE is 0 or 1
- * **END   =hh:mm:ss**: can omitted if MODE is 0 or 1
+ * **IVAL  =hh:mm:ss**: omit if MODE is 0
+ * **START =hh:mm:ss**: omit if MODE is 0 or 1
+ * **END   =hh:mm:ss**: omit if MODE is 0 or 1
