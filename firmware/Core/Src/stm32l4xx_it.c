@@ -19,8 +19,6 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include <lib_spectrometer.h>
-#include <lib_uart.h>
 #include "main.h"
 #include "stm32l4xx_it.h"
 /* Private includes ----------------------------------------------------------*/

@@ -520,4 +520,4 @@ VP_TIM5_VS_OPM.Mode=OPM_bit
 VP_TIM5_VS_OPM.Signal=TIM5_VS_OPM
 board=NUCLEO-L476RG
 boardIOC=true
-isbadioc=true
+isbadioc=false
