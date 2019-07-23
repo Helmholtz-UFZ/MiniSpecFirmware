@@ -128,12 +128,20 @@ void power_switch_EN(bool on_off) {
 
 void cpu_enter_LPM(void) {
 
+	bool asleep = false;
+
 	while (!rxtx.wakeup && !rtc.alarmA_wakeup) {
-		HAL_Delay(200); // prevent very fast switching of CMD_EN Pin
+		if (asleep){
+			HAL_Delay(200); // prevent very fast switching of CMD_EN Pin
+		}
+		asleep = true;
 		if (HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET) {
 			debug("enter light sleep mode\n");
 			sys_deinit(LIGHT_SLEEP_MODE);
-			cpu_sleep();
+			while (!rxtx.wakeup && !rtc.alarmA_wakeup
+					&& HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET) {
+				cpu_sleep();
+			}
 			sys_reinit(LIGHT_SLEEP_MODE);
 		} else {
 			debug("enter deep sleep mode\n");

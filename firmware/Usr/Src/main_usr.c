@@ -253,6 +253,9 @@ static void extcmd_handler(void) {
 		}
 		/* check and set argument */
 		state.format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
+		if(state.format == DATA_FORMAT_BIN){
+			rxtx.debug = false;
+		}
 		ok();
 		break;
 
