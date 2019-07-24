@@ -48,7 +48,6 @@ void usr_hw_init(void) {
 	uint32_t *ACTLR = (uint32_t *) 0xE000E008;
 	*ACTLR |= SCnSCB_ACTLR_DISDEFWBUF_Msk;
 
-	// disable unused IR's
 	sensor_deinit();
 
 	rxtx_init();
@@ -156,8 +155,8 @@ static void extcmd_handler(void) {
 		ok();
 		sensor_init();
 		sensor_measure();
-		send_data();
 		sensor_deinit();
+		send_data();
 		/* A single measurement during stream mode, end the stream mode. */
 		state.stream = 0;
 		break;
@@ -189,9 +188,9 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_GET_ITIME:
 		if (state.format == DATA_FORMAT_BIN) {
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &sens1.itime, 4, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime[0], 4, 1000);
 		} else {
-			reply("integration time [0] = %lu us\n", sens1.itime);
+			reply("integration time [0] = %lu us\n", rc.itime[0]);
 		}
 		break;
 
@@ -253,6 +252,9 @@ static void extcmd_handler(void) {
 		}
 		/* check and set argument */
 		state.format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
+		if(state.format == DATA_FORMAT_BIN){
+			rxtx.debug = false;
+		}
 		ok();
 		break;
 
@@ -533,6 +535,7 @@ static void multimeasure(void) {
 		}
 	}
 	sensor_deinit();
+	sensor_set_itime(rc.itime[0]);
 }
 
 /* This function is used to test functions
