@@ -101,7 +101,7 @@
 #define DBG_SEND_ALL		0
 
 /* Enables Debug code*/
-#define DBG_CODE			1
+#define DBG_CODE			0
 
 /* If enabled all sensor errors are ignored during
  * stream mode. This can be useful for debugging,
@@ -109,7 +109,7 @@
 #define IGNORE_ERRORS_IN_STREAM 	0
 
 /* If 0 all code that access the SD card is disabled. */
-#define HAS_SD	 			1
+#define HAS_SD	 			0
 
 /* if 0 Powerswitch is always on */
 #define USE_POWER_SWITCH	1

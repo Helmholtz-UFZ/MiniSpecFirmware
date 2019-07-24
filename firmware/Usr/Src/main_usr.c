@@ -48,7 +48,6 @@ void usr_hw_init(void) {
 	uint32_t *ACTLR = (uint32_t *) 0xE000E008;
 	*ACTLR |= SCnSCB_ACTLR_DISDEFWBUF_Msk;
 
-	// disable unused IR's
 	sensor_deinit();
 
 	rxtx_init();

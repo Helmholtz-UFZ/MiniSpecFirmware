@@ -117,8 +117,16 @@ void power_switch_EN(bool on_off) {
 	GPIO_PinState state;
 	state = HAL_GPIO_ReadPin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin);
 	if (state == GPIO_PIN_RESET && on_off) {
+
+		// enable the tim channels for the ST- and EOS- signal so the line is pulled down
+		// by the uC. This ensures a low signal on these lines.
+		TIM2->CCER |= TIM_CCER_CC3E;
+		TIM1->CCER |= TIM_CCER_CC2E;
+
 		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
+
 	} else if (state == GPIO_PIN_SET && !on_off) {
+
 		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
 	}
 #else
@@ -137,12 +145,12 @@ void cpu_enter_LPM(void) {
 		asleep = true;
 		if (HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET) {
 			debug("enter light sleep mode\n");
-			sys_deinit(LIGHT_SLEEP_MODE);
+//			sys_deinit(LIGHT_SLEEP_MODE);
 			while (!rxtx.wakeup && !rtc.alarmA_wakeup
 					&& HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET) {
 				cpu_sleep();
 			}
-			sys_reinit(LIGHT_SLEEP_MODE);
+//			sys_reinit(LIGHT_SLEEP_MODE);
 		} else {
 			debug("enter deep sleep mode\n");
 			sys_deinit(DEEP_SLEEP_MODE);
