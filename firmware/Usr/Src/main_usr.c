@@ -188,9 +188,9 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_GET_ITIME:
 		if (state.format == DATA_FORMAT_BIN) {
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &sens1.itime, 4, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime[0], 4, 1000);
 		} else {
-			reply("integration time [0] = %lu us\n", sens1.itime);
+			reply("integration time [0] = %lu us\n", rc.itime[0]);
 		}
 		break;
 
@@ -536,6 +536,7 @@ static void multimeasure(void) {
 		}
 	}
 	sensor_deinit();
+	sensor_set_itime(rc.itime[0]);
 }
 
 /* This function is used to test functions
