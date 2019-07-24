@@ -429,7 +429,7 @@ static void send_data(void) {
 	if (state.format == DATA_FORMAT_BIN) {
 		/*Send the errorcode nevertheless an error occurred or not.*/
 		HAL_UART_Transmit(&hrxtx, (uint8_t *) &errcode, 2, 200);
-		if (!errcode) {
+		if (true) {
 			/* send data */
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL),
 			MSPARAM_PIXEL * 4,
