@@ -155,8 +155,8 @@ static void extcmd_handler(void) {
 		ok();
 		sensor_init();
 		sensor_measure();
-		send_data();
 		sensor_deinit();
+		send_data();
 		/* A single measurement during stream mode, end the stream mode. */
 		state.stream = 0;
 		break;
@@ -429,7 +429,7 @@ static void send_data(void) {
 	if (state.format == DATA_FORMAT_BIN) {
 		/*Send the errorcode nevertheless an error occurred or not.*/
 		HAL_UART_Transmit(&hrxtx, (uint8_t *) &errcode, 2, 200);
-		if (true) {
+		if (!errcode) {
 			/* send data */
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL),
 			MSPARAM_PIXEL * 4,

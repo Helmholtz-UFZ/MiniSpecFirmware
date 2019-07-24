@@ -38,21 +38,9 @@ static void sys_reinit(uint8_t mode) {
 	MX_TIM1_Init();
 	MX_TIM5_Init();
 	MX_TIM3_Init();
-//	tim1_Init();
-//	tim2_Init();
-//	tim5_Init();
-	TIM_OC_InitTypeDef sConfigOC = {0};
-	sConfigOC.OCMode = TIM_OCMODE_FORCED_INACTIVE;
-	HAL_TIM_OC_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4);
-	sConfigOC.OCMode = TIM_OCMODE_FORCED_INACTIVE;
-	HAL_TIM_OC_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_3);
-	HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3);
-	HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4);
-	HAL_TIM_OC_Start(&htim1, TIM_CHANNEL_4);
-	HAL_TIM_OC_Start(&htim2, TIM_CHANNEL_3);
-	HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_3);
-	HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
-
+	tim1_Init();
+	tim2_Init();
+	tim5_Init();
 
 	if (mode == DEEP_SLEEP_MODE) {
 		MX_DMA_Init();
@@ -137,10 +125,9 @@ void power_switch_EN(bool on_off) {
 		// enable the tim channels for the ST- and EOS- signal so the line is pulled down
 		// by the uC. This ensures a low signal on these lines.
 		TIM2->CCER |= TIM_CCER_CC3E;
-		TIM1->CCER |= TIM_CCER_CC2E;
-
+		TIM1->CCER |= TIM_CCER_CC4E;
 		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
-		HAL_Delay(5);
+		HAL_Delay(1);
 
 	} else if (state == GPIO_PIN_SET && !on_off) {
 

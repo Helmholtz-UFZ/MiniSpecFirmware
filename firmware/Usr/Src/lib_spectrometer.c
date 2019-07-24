@@ -83,21 +83,14 @@ void sensor_init(void) {
 	sens1.data->wptr = secure_memblock1.memblock;
 	sens1.errc = ERRC_UNKNOWN;
 
+	// disable - it is enabled in a IRQHandler on demand
+	NVIC_DisableIRQ(EXTI2_IRQn);
+	// enable the other
+	HAL_NVIC_ClearPendingIRQ(TIM1_CC_IRQn);
+	HAL_NVIC_ClearPendingIRQ(TIM5_IRQn);
+	HAL_NVIC_EnableIRQ(TIM5_IRQn);
+	HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);
 
-	HAL_TIM_OC_Stop(&htim1, TIM_CHANNEL_4);
-	HAL_TIM_OC_Stop(&htim2, TIM_CHANNEL_3);
-	HAL_TIM_OC_Stop(&htim3, TIM_CHANNEL_3);
-	HAL_TIM_OC_Stop(&htim3, TIM_CHANNEL_4);
-	__HAL_TIM_DISABLE(&htim1);
-	__HAL_TIM_DISABLE(&htim2);
-	__HAL_TIM_DISABLE(&htim3);
-	MX_TIM2_Init();
-	MX_TIM1_Init();
-	MX_TIM5_Init();
-	MX_TIM3_Init();
-	tim1_Init();
-	tim2_Init();
-	tim5_Init();
 	// enable TIM channels
 
 	// Do not use TIM_CCxChannelCmd() see
@@ -122,13 +115,9 @@ void sensor_init(void) {
 	// MAIN OUT PUT enable
 	__HAL_TIM_MOE_ENABLE(&htim1);
 	// all CCRx-IR in the NVIC
-	NVIC_ClearPendingIRQ(TIM1_CC_IRQn);
-	NVIC_EnableIRQ(TIM1_CC_IRQn);
 
 	// TIM5 - safty timer
 	// en IR in module
-	NVIC_ClearPendingIRQ(TIM5_IRQn);
-	HAL_NVIC_EnableIRQ(TIM5_IRQn);
 	__HAL_TIM_CLEAR_IT(&htim5, TIM_IT_UPDATE);
 	__HAL_TIM_ENABLE_IT(&htim5, TIM_IT_UPDATE);
 
@@ -149,6 +138,7 @@ void sensor_deinit(void) {
 	TIM3->CR1 &= ~TIM_CR1_CEN;
 	NVIC_DisableIRQ(TIM1_CC_IRQn);
 	NVIC_DisableIRQ(EXTI2_IRQn);
+	NVIC_DisableIRQ(TIM5_IRQn);
 	sens1.status = SENS_UNINITIALIZED;
 }
 
