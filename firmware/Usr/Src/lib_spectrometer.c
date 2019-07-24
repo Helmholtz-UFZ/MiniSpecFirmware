@@ -83,6 +83,21 @@ void sensor_init(void) {
 	sens1.data->wptr = secure_memblock1.memblock;
 	sens1.errc = ERRC_UNKNOWN;
 
+
+	HAL_TIM_OC_Stop(&htim1, TIM_CHANNEL_4);
+	HAL_TIM_OC_Stop(&htim2, TIM_CHANNEL_3);
+	HAL_TIM_OC_Stop(&htim3, TIM_CHANNEL_3);
+	HAL_TIM_OC_Stop(&htim3, TIM_CHANNEL_4);
+	__HAL_TIM_DISABLE(&htim1);
+	__HAL_TIM_DISABLE(&htim2);
+	__HAL_TIM_DISABLE(&htim3);
+	MX_TIM2_Init();
+	MX_TIM1_Init();
+	MX_TIM5_Init();
+	MX_TIM3_Init();
+	tim1_Init();
+	tim2_Init();
+	tim5_Init();
 	// enable TIM channels
 
 	// Do not use TIM_CCxChannelCmd() see

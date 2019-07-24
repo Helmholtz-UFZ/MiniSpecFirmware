@@ -31,12 +31,28 @@ static void sys_reinit(uint8_t mode) {
 	}
 
 	MX_GPIO_Init();
+	MX_SDMMC1_SD_Init();
+	MX_FATFS_Init();
+
 	MX_TIM2_Init();
 	MX_TIM1_Init();
 	MX_TIM5_Init();
 	MX_TIM3_Init();
-	MX_SDMMC1_SD_Init();
-	MX_FATFS_Init();
+//	tim1_Init();
+//	tim2_Init();
+//	tim5_Init();
+	TIM_OC_InitTypeDef sConfigOC = {0};
+	sConfigOC.OCMode = TIM_OCMODE_FORCED_INACTIVE;
+	HAL_TIM_OC_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4);
+	sConfigOC.OCMode = TIM_OCMODE_FORCED_INACTIVE;
+	HAL_TIM_OC_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_3);
+	HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3);
+	HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4);
+	HAL_TIM_OC_Start(&htim1, TIM_CHANNEL_4);
+	HAL_TIM_OC_Start(&htim2, TIM_CHANNEL_3);
+	HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_3);
+	HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_4);
+
 
 	if (mode == DEEP_SLEEP_MODE) {
 		MX_DMA_Init();
@@ -124,6 +140,7 @@ void power_switch_EN(bool on_off) {
 		TIM1->CCER |= TIM_CCER_CC2E;
 
 		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
+		HAL_Delay(5);
 
 	} else if (state == GPIO_PIN_SET && !on_off) {
 
@@ -145,12 +162,12 @@ void cpu_enter_LPM(void) {
 		asleep = true;
 		if (HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET) {
 			debug("enter light sleep mode\n");
-//			sys_deinit(LIGHT_SLEEP_MODE);
+			sys_deinit(LIGHT_SLEEP_MODE);
 			while (!rxtx.wakeup && !rtc.alarmA_wakeup
 					&& HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET) {
 				cpu_sleep();
 			}
-//			sys_reinit(LIGHT_SLEEP_MODE);
+			sys_reinit(LIGHT_SLEEP_MODE);
 		} else {
 			debug("enter deep sleep mode\n");
 			sys_deinit(DEEP_SLEEP_MODE);
