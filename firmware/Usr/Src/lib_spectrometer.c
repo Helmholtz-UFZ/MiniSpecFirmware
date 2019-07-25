@@ -154,7 +154,7 @@ void sensor_deinit(void) {
  * measurement is done.
  *
  */
-void sensor_measure(void) {
+void sensor_measure(uint32_t itime) {
 	uint32_t int_time_cnt;
 
 	if (sens1.status < SENS_INITIALIZED) {
@@ -174,7 +174,9 @@ void sensor_measure(void) {
 
 	// 48 clock-cycles are added by the sensor to "high" of the ST-signal
 	// resulting in the integration-time (see c12880ma_kacc1226e.pdf)
-	int_time_cnt = MAX(sens1.itime, MIN_INTERGATION_TIME);
+	int_time_cnt = MIN(MAX_INTERGATION_TIME, itime);
+	int_time_cnt = MAX(MIN_INTERGATION_TIME, int_time_cnt);
+	sens1.itime = int_time_cnt;
 	int_time_cnt -= ITIME_CORRECTION;
 
 	// TIM5 - safty timer
@@ -339,27 +341,6 @@ static void post_process_values(void) {
 		*rptr = d;
 		rptr++;
 	}
-}
-
-/**
- * @brief 	Set the integration time in us for the sensor.
- *
- * The minimum is defined by MIN_INTERGATION_TIME
- * The maximum by MAX_INTERGATION_TIME
- *
- * @param int_time	The integration time in us
- * @return The integration time value set
- */
-uint32_t sensor_set_itime(uint32_t itime) {
-
-	if (itime < MIN_INTERGATION_TIME) {
-		sens1.itime = MIN_INTERGATION_TIME;
-	} else if (itime > MAX_INTERGATION_TIME) {
-		sens1.itime = MAX_INTERGATION_TIME;
-	} else {
-		sens1.itime = itime;
-	}
-	return sens1.itime;
 }
 
 

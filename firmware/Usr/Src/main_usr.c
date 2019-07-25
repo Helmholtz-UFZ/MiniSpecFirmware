@@ -120,7 +120,7 @@ int run(void) {
 		}
 
 		if (state.stream) {
-			sensor_measure();
+			sensor_measure(rc.itime[0]);
 			send_data();
 			if (sens1.errc) {
 				sensor_deinit();
@@ -154,7 +154,7 @@ static void extcmd_handler(void) {
 	case USR_CMD_SINGLE_MEASURE_START:
 		ok();
 		sensor_init();
-		sensor_measure();
+		sensor_measure(rc.itime[0]);
 		sensor_deinit();
 		send_data();
 		/* A single measurement during stream mode, end the stream mode. */
@@ -262,17 +262,12 @@ static void extcmd_handler(void) {
 		if (argparse_nr(&tmp)) {
 			break;
 		}
-		rc.itime[rc.itime_index] = tmp;
-		if (rc.itime_index == 0) {
-			/* 0 is the default itime, which is used for
-			 * the single measurement command. */
-			tmp = sensor_set_itime(tmp);
-			/* if minimal integration time is underflown,
-			 * the itime is set to the minmal possible(!) value.
-			 * To keep the config consistent we need to update
-			 * the default itime in slot 0. */
-			rc.itime[0] = tmp;
+		// always set default itime (index 0)
+		if(rc.itime_index == 0 || tmp > 0){
+			tmp = MAX(MIN_INTERGATION_TIME, tmp);
+			tmp = MIN(MAX_INTERGATION_TIME, tmp);
 		}
+		rc.itime[rc.itime_index] = tmp;
 		ok();
 		break;
 
@@ -505,7 +500,6 @@ static void multimeasure(void) {
 			/* itime disabled */
 			continue;
 		}
-		sensor_set_itime(rc.itime[i]);
 		debug("itime[%u]=%lu\n", i, rc.itime[i]);
 
 		/* Measure N times */
@@ -517,7 +511,7 @@ static void multimeasure(void) {
 
 			/* Make a measurement */
 			sensor_init();
-			sensor_measure();
+			sensor_measure(rc.itime[i]);
 
 			if (state.toSD && HAS_SD) {
 				/* Write measurement to SD */
@@ -535,7 +529,6 @@ static void multimeasure(void) {
 		}
 	}
 	sensor_deinit();
-	sensor_set_itime(rc.itime[0]);
 }
 
 /* This function is used to test functions

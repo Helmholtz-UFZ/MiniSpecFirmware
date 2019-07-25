@@ -74,7 +74,6 @@ extern sensor_t sens1;
 
 void sensor_init( void );
 void sensor_deinit( void );
-void sensor_measure( void );
-uint32_t sensor_set_itime( uint32_t int_time );
+void sensor_measure(uint32_t itime);
 
 #endif /* MICRO_SPEC_H_ */
