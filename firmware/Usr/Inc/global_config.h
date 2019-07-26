@@ -104,7 +104,7 @@
 #define DBG_CODE			1
 
 /* Set debug print ON/OFF on initial startup */
-#define USE_DBG_PRINT_FROM_STARTUP		1
+#define USE_DBG_PRINT_FROM_STARTUP		0
 
 /* If enabled all sensor errors are ignored during
  * stream mode. This can be useful for debugging,
