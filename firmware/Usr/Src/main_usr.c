@@ -72,7 +72,7 @@ static void run_init(void) {
 	rc.itime[0] = DEFAULT_INTEGRATION_TIME;
 	rc.mode = IVAL_OFF;
 
-#if DBG_CODE
+#if USE_DBG_PRINT_FROM_STARTUP
 	/* Overwrites default value from usr_uart.c */
 	rxtx.debug = true;
 #endif
