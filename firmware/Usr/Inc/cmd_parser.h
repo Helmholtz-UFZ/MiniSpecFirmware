@@ -43,6 +43,7 @@ typedef enum
 	USR_CMD_SET_INTERVAL,
 
 	// other
+	USR_CMD_VERSION,
 	USR_CMD_HELP,
 	USR_CMD_STORE_CONFIG,
 	USR_CMD_READ_CONFIG,
@@ -55,6 +56,7 @@ typedef enum
 
 #define HELPSTR  "" \
 	"h      - print this help\n"\
+	"version- print the firmware version"\
 	"stcf   - store config to sd\n"\
 	"rdcf   - read config from sd\n"\
 /*	"#debug - toggle dbg messages"        hidden feature*/\

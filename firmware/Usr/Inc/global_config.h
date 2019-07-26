@@ -171,4 +171,11 @@
  */
 #define UART_INSTANCE_NR			1
 
+#ifndef __FIRMWARE_VERSION
+#error "firmware version undefined."
+// Define as CTAG like so: -D__FIRMWARE_VERSION="$(shell git describe --always -dirty)"
+// in AC6: project->properties->C/C++build->settings
+//             ->tool settings->preprocessor->defined symbols
+#endif
+
 #endif /* GLOBAL_CONFIG_H_ */

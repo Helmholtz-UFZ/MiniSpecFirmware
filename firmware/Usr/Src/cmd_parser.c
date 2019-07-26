@@ -116,6 +116,13 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 		return;
 	}
 
+	str = "version\r";
+	sz = strlen(str);
+	if (memcmp(buffer, str, sz) == 0) {
+		extcmd.cmd = USR_CMD_VERSION;
+		return;
+	}
+
 	str = "help\r";
 	alias = "h\r";
 	sz = strlen(str);

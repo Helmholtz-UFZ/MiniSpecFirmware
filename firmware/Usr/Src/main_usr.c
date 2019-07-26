@@ -79,6 +79,7 @@ static void run_init(void) {
 
 	if (state.format == DATA_FORMAT_ASCII) {
 		reply("\nstart\n");
+		reply("firmware: %s\n", __FIRMWARE_VERSION);
 	}
 
 	inform_SD_reset();
@@ -181,6 +182,10 @@ static void extcmd_handler(void) {
 		break;
 
 		/* GETTER ============================================================ */
+
+	case USR_CMD_VERSION:
+		reply("firmware: %s\n", __FIRMWARE_VERSION);
+		break;
 
 	case USR_CMD_GET_DATA:
 		send_data();
