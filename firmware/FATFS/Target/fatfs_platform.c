@@ -29,7 +29,7 @@ uint8_t	BSP_PlatformIsDetected(void) {
 #if USE_SD_HW_DETECTION
     return status;
 #else
-	status = (uint8_t) 0x01;
+	status = SD_PRESENT;
 #endif
     /* USER CODE END 1 */ 
     return status;
