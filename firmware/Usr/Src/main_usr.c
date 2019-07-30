@@ -28,6 +28,7 @@ static void extcmd_handler(void);
 static void dbg_test(void);
 
 static void ok(void);
+static void fail(void);
 static void print_config(runtime_config_t *rc);
 
 static statemachine_config_t state;
@@ -74,7 +75,7 @@ static void run_init(void) {
 
 #if USE_DBG_PRINT_FROM_STARTUP
 	/* Overwrites default value from usr_uart.c */
-	rxtx.debug = true;
+	rxtx.use_debugprints = true;
 #endif
 
 	if (state.format == DATA_FORMAT_ASCII) {
@@ -159,7 +160,7 @@ static void extcmd_handler(void) {
 		sensor_deinit();
 		send_data();
 		/* A single measurement during stream mode, end the stream mode. */
-		state.stream = 0;
+		state.stream = false;
 		break;
 
 	case USR_CMD_MULTI_MEASURE_START:
@@ -172,13 +173,13 @@ static void extcmd_handler(void) {
 	case USR_CMD_STREAM_START:
 		ok();
 		sensor_init();
-		state.stream = 1;
+		state.stream = true;
 		break;
 
 	case USR_CMD_STREAM_END:
 		ok();
 		sensor_deinit();
-		state.stream = 0;
+		state.stream = false;
 		break;
 
 		/* GETTER ============================================================ */
@@ -258,7 +259,7 @@ static void extcmd_handler(void) {
 		/* check and set argument */
 		state.format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
 		if(state.format == DATA_FORMAT_BIN){
-			rxtx.debug = false;
+			rxtx.use_debugprints = false;
 		}
 		ok();
 		break;
@@ -283,6 +284,8 @@ static void extcmd_handler(void) {
 		if (tmp < RCCONF_MAX_ITIMES) {
 			rc.itime_index = tmp;
 			ok();
+		}else{
+			fail();
 		}
 		break;
 
@@ -293,6 +296,8 @@ static void extcmd_handler(void) {
 		if (0 < tmp && tmp < RCCONF_MAX_ITERATIONS) {
 			rc.iterations = tmp;
 			ok();
+		}else{
+			fail();
 		}
 		break;
 
@@ -333,7 +338,7 @@ static void extcmd_handler(void) {
 		if (!tmp){
 			ok();
 		} else {
-			printf("ERR: write to SD faild\n");
+			errreply("write to SD faild\n");
 		}
 		break;
 
@@ -343,15 +348,15 @@ static void extcmd_handler(void) {
 			set_initial_alarm(&rc);
 			ok();
 		} else {
-			printf("ERR: read from SD faild\n");
+			errreply("read from SD faild\n");
 		}
 		break;
 
 		/* DEBUG ============================================================ */
 
 	case USR_CMD_DEBUG:
-		rxtx.debug = rxtx.debug ? false : true;
-		if (rxtx.debug) {
+		rxtx.use_debugprints = rxtx.use_debugprints ? false : true;
+		if (rxtx.use_debugprints) {
 			reply("debug on\n");
 		} else {
 			reply("debug off\n");
@@ -360,7 +365,6 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_DBGTEST:
 		dbg_test();
-		ok();
 		break;
 
 	case USR_CMD_SET_SENSOR:
@@ -374,6 +378,13 @@ static void extcmd_handler(void) {
 static void ok(void) {
 	if (state.format == DATA_FORMAT_ASCII) {
 		reply("ok\n");
+	}
+}
+
+/** print 'fail' */
+static void fail(void) {
+	if (state.format == DATA_FORMAT_ASCII) {
+		errreply("argument error\n");
 	}
 }
 
@@ -543,7 +554,7 @@ static void multimeasure(void) {
  * code is executed by timer. */
 static void dbg_test(void) {
 #if DBG_CODE
-	runtime_config_t rc;
+	runtime_config_t rc = {0,};
 	if (read_config_from_SD(&rc)){
 		debug("read failed\n");
 		return;

@@ -63,11 +63,20 @@
 //static uint16_t mem_block1[SENSOR_DATA_BUFFER_MAX_WORDS + 1];
 static canary_memblock_t secure_memblock1;
 
-static sensor_buffer_t sens_buf = { SENSOR_DATA_BUFFER_SIZE,
-SENSOR_DATA_BUFFER_MAX_WORDS, secure_memblock1.memblock, secure_memblock1.memblock };
+static sensor_buffer_t sens_buf = {
+		.size = SENSOR_DATA_BUFFER_SIZE,
+		.words = SENSOR_DATA_BUFFER_MAX_WORDS,
+		.base = secure_memblock1.memblock,
+		.wptr = secure_memblock1.memblock
+};
 
 /* Handle for the micro sprectrometer */
-sensor_t sens1 = { SENS_UNINITIALIZED, &sens_buf, DEFAULT_INTEGRATION_TIME, ERRC_UNKNOWN};
+sensor_t sens1 = {
+		.status = SENS_UNINITIALIZED,
+		.data = &sens_buf,
+		.itime = DEFAULT_INTEGRATION_TIME,
+		.errc = ERRC_UNKNOWN
+};
 
 static void post_process_values(void);
 static void wait_for_measure_done(void);

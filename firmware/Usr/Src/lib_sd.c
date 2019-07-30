@@ -13,8 +13,7 @@
 
 uint8_t workBuffer[_MAX_SS];
 static void sd_reinit(void);
-static uint8_t sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf,
-		uint16_t size);
+static uint8_t sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size);
 
 
 /** Sometimes the SD card isn't recognized correctly,

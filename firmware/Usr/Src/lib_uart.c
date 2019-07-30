@@ -10,14 +10,18 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-rxtx_config_t rxtx = {false, false, 0};
+rxtx_config_t rxtx = {
+		.wakeup = false,
+		.cmd_bytes = 0,
+		.use_debugprints = false
+};
 
 /* Memory blocks and buffer for transmitting and receiving
  * via uart interface.*/
 static uint8_t rx_mem_block3[UART_RX_BUFFER_SZ];
 static uint8_t tx_mem_block3[UART_TX_BUFFER_SZ];
-uart_buffer_t rxtx_rxbuffer = { UART_RX_BUFFER_SZ, rx_mem_block3 };
-uart_buffer_t rxtx_txbuffer = { UART_TX_BUFFER_SZ, tx_mem_block3 };
+uart_buffer_t rxtx_rxbuffer = { .size = UART_RX_BUFFER_SZ, .base = rx_mem_block3 };
+uart_buffer_t rxtx_txbuffer = { .size = UART_TX_BUFFER_SZ, .base = tx_mem_block3 };
 
 /**
  * Overwrite weak _write function, to make printf print to serial.
@@ -116,7 +120,7 @@ int uart_printf(UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const
  */
 int debug(const char *__restrict format, ...) {
 	int len;
-	if (rxtx.debug) {
+	if (rxtx.use_debugprints) {
 		va_list args;
 		printf("dbg: ");
 		va_start(args, format);
@@ -137,6 +141,20 @@ int reply(const char *__restrict format, ...) {
 	int len;
 	va_list args;
 	printf("-> ");
+	va_start(args, format);
+	len = vprintf(format, args);
+	va_end(args);
+	return len;
+}
+/**
+ * Print a string to rxtx uart
+ * Act like printf() but put the string '->' upfront the message,
+ * so any format strings printf() can eat are possible.
+ */
+int errreply(const char *__restrict format, ...) {
+	int len;
+	va_list args;
+	printf("ERR: ");
 	va_start(args, format);
 	len = vprintf(format, args);
 	va_end(args);

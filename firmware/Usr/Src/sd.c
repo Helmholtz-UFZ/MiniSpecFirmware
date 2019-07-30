@@ -185,7 +185,7 @@ uint8_t measurement_to_SD(char *timestamp_str) {
 
 			/* Print what we wrote to sd.*/
 			debug("SD: wrote to File: %s, data:\n", fname.buf);
-			if (rxtx.debug) {
+			if (rxtx.use_debugprints) {
 				/* Use printf() instead of debug() to prevent 'dbg:' string before every value. */
 				printf("%s, %u, %lu, [,", timestamp_str, sens1.errc, sens1.itime);
 				uint32_t *p = (uint32_t *) (sens1.data->wptr - MSPARAM_PIXEL);

@@ -13,7 +13,7 @@
 #include "stdio.h"
 #include "power.h"
 
-rtc_t rtc = {false};
+rtc_t rtc = { .alarmA_wakeup = false };
 
 /**
  * Parse a string to a date and time object.
@@ -23,8 +23,7 @@ rtc_t rtc = {false};
  *
  * Return 0 on success, non-zero otherwise
  */
-uint8_t rtc_parsecheck_datetime(char* str, RTC_TimeTypeDef *sTime,
-		RTC_DateTypeDef *sDate) {
+uint8_t rtc_parsecheck_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate) {
 
 	char *p = str;
 	uint c;
@@ -244,73 +243,71 @@ void rtc_get_now_str(char *buffer, uint32_t sz) {
 	HAL_RTC_GetTime(&hrtc, &t, RTC_FORMAT_BIN);
 	HAL_RTC_GetDate(&hrtc, &d, RTC_FORMAT_BIN);
 
-	sprintf(buffer, "20%02i-%02i-%02iT%02i:%02i:%02i", d.Year, d.Month, d.Date, t.Hours, t.Minutes,
-			t.Seconds);
+	sprintf(buffer, "20%02i-%02i-%02iT%02i:%02i:%02i", d.Year, d.Month, d.Date, t.Hours, t.Minutes, t.Seconds);
 }
 
 /**
  * Fill the given timestamp with today and now values.
  */
-rtc_timestamp_t rtc_get_now(void){
+rtc_timestamp_t rtc_get_now(void) {
 	rtc_timestamp_t ts;
 	HAL_RTC_GetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
 	HAL_RTC_GetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
 	return ts;
 }
 
-RTC_TimeTypeDef rtc_get_alermAtime(void){
+RTC_TimeTypeDef rtc_get_alermAtime(void) {
 	RTC_AlarmTypeDef a;
 	HAL_RTC_GetAlarm(&hrtc, &a, RTC_ALARM_A, RTC_FORMAT_BIN);
 	return a.AlarmTime;
 }
 
 /** time '<=' time */
-bool rtc_time_leq(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b){
-	return ((a->Hours > b->Hours) ? 0 :
-			(a->Hours < b->Hours) ? 1 :
-			(a->Minutes > b->Minutes) ? 0 :
-			(a->Minutes < b->Minutes) ? 1 :
-			(a->Seconds > b->Seconds) ? 0 : 1);
+bool rtc_time_leq(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b) {
+	return ((a->Hours > b->Hours) ? 0 : (a->Hours < b->Hours) ? 1 : (a->Minutes > b->Minutes) ? 0 :
+			(a->Minutes < b->Minutes) ? 1 : (a->Seconds > b->Seconds) ? 0 : 1);
 }
 
 /** time '==' time */
-bool rtc_time_eq(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b){
+bool rtc_time_eq(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b) {
 	return (a->Hours == b->Hours && a->Minutes == b->Minutes && a->Seconds == b->Seconds);
 }
 
 /** time '<' time */
-bool rtc_time_lt(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b){
-	return (rtc_time_leq(a,b) && !rtc_time_eq(a,b));
+bool rtc_time_lt(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b) {
+	return (rtc_time_leq(a, b) && !rtc_time_eq(a, b));
 }
 
-RTC_TimeTypeDef rtc_time_add(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b){
+RTC_TimeTypeDef rtc_time_add(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b) {
 	RTC_TimeTypeDef c;
 	uint carry = 0; // this is += or ++ do not work, because of optimization (?)
-	c.Hours = 0; c.Minutes = 0; c.Seconds = 0;
+	c.Hours = 0;
+	c.Minutes = 0;
+	c.Seconds = 0;
 	c.Seconds = a->Seconds + b->Seconds;
-	if(c.Seconds > 59){
+	if (c.Seconds > 59) {
 		c.Seconds -= 60;
 		carry = 1;
 	}
 	c.Minutes = a->Minutes + b->Minutes + carry;
 	carry = 0;
-	if(c.Minutes > 59){
+	if (c.Minutes > 59) {
 		c.Minutes -= 60;
 		carry = 1;
 	}
 	c.Hours = a->Hours + b->Hours + carry;
-	if(c.Hours > 24){
+	if (c.Hours > 24) {
 		c.Hours -= 24;
 	}
 	return c;
 	// TODO carry ?
 }
 
-uint32_t rtc_time2seconds(RTC_TimeTypeDef *t){
-	return (t->Hours * 60 + t->Minutes ) * 60 + t->Seconds;
+uint32_t rtc_time2seconds(RTC_TimeTypeDef *t) {
+	return (t->Hours * 60 + t->Minutes) * 60 + t->Seconds;
 }
 
-RTC_TimeTypeDef rtc_seconds2time(uint32_t s){
+RTC_TimeTypeDef rtc_seconds2time(uint32_t s) {
 	uint32_t x = s;
 	RTC_TimeTypeDef t;
 	t.Hours = x / 3600;
@@ -325,8 +322,7 @@ RTC_TimeTypeDef rtc_seconds2time(uint32_t s){
  * Note: Overwrite __weak function in stm32l4xx_hal_rtc.c
  * Note: This is called from within a interrupt.
  */
-void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
-{
+void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc) {
 	UNUSED(hrtc);
 
 	rtc.alarmA_wakeup = true;
