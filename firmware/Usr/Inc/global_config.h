@@ -104,7 +104,7 @@
 #define DBG_CODE			1
 
 /* Set debug print ON/OFF on initial startup */
-#define USE_DBG_PRINT_FROM_STARTUP		0
+#define USE_DBG_PRINT_FROM_STARTUP		1
 
 /* If enabled all sensor errors are ignored during
  * stream mode. This can be useful for debugging,
@@ -148,7 +148,7 @@
  * and _IN has a pullup. This means:
  * 	SD plugged   : SD_DETECT_PIN is RESET (low)
  * 	SD unplugged : SD_DETECT_PIN is SET (high) */
-#define USE_SD_HW_DETECTION		1
+#define USE_SD_HW_DETECTION		0
 
 
 /* Minimal possible repetition of measurements by setting
