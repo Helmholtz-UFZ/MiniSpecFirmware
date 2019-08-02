@@ -13,6 +13,10 @@
 #define DEEP_SLEEP_MODE 	0
 #define LIGHT_SLEEP_MODE 	1
 
+/** in milli seconds*/
+#define VOLTAGEREF_STABILIZATION_DELAY	(50)
+
+
 void power_switch_EN(bool);
 void cpu_enter_LPM(void);
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);

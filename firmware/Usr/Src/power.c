@@ -127,7 +127,9 @@ void power_switch_EN(bool on_off) {
 		TIM2->CCER |= TIM_CCER_CC3E;
 		TIM1->CCER |= TIM_CCER_CC4E;
 		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
-		HAL_Delay(1);
+
+		// wait for stabilisation of voltage reference buffer
+		HAL_Delay(VOLTAGEREF_STABILIZATION_DELAY);
 
 	} else if (state == GPIO_PIN_SET && !on_off) {
 
