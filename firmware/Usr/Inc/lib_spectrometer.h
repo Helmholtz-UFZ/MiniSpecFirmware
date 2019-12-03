@@ -25,7 +25,7 @@ typedef struct
 	const uint16_t size; /*		        !< buffer size in bytes  */
 	const uint16_t words; /*                !< buffer size in (16bit-)words  */
 	uint32_t* base; /*			!< pointer to the start of the buffer  */
-	volatile uint32_t volatile *wptr; /*	!< write pointer for the data, points to the next empty location  */
+	volatile uint32_t* volatile wptr; /*	!< write pointer for the data, points to the next empty location  */
 } sensor_buffer_t;
 
 #define CANARYSIZE	32
