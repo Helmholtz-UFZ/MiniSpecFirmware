@@ -140,6 +140,10 @@ void power_switch_EN(bool on_off) {
 #endif
 }
 
+void init_rtc_batterie_backup(void){
+
+}
+
 void cpu_enter_LPM(void) {
 
 	bool asleep = false;
@@ -152,16 +156,14 @@ void cpu_enter_LPM(void) {
 		if (HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET) {
 			debug("enter light sleep mode\n");
 			sys_deinit(LIGHT_SLEEP_MODE);
-			while (!rxtx.wakeup && !rtc.alarmA_wakeup
-					&& HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET) {
+			while (!rxtx.wakeup && !rtc.alarmA_wakeup && HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET) {
 				cpu_sleep();
 			}
 			sys_reinit(LIGHT_SLEEP_MODE);
 		} else {
 			debug("enter deep sleep mode\n");
 			sys_deinit(DEEP_SLEEP_MODE);
-			while (!rxtx.wakeup && !rtc.alarmA_wakeup
-					&& HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_RESET) {
+			while (!rxtx.wakeup && !rtc.alarmA_wakeup && HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_RESET) {
 				cpu_stop2();
 			}
 			sys_reinit(DEEP_SLEEP_MODE);

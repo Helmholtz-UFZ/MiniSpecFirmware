@@ -116,7 +116,7 @@ int run(void) {
 			periodic_alarm_handler();
 			if (state.stream) {
 				/* The handler has deinit the sensor,
-				 * undo that now if we are in stream mode */
+				 * undo that now, if we are in stream mode */
 				sensor_init();
 			}
 		}
