@@ -39,7 +39,7 @@ extern RTC_HandleTypeDef hrtc;
 void MX_RTC_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+void rtc_just_set_handle(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

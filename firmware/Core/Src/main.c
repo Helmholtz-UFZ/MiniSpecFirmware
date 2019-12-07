@@ -110,10 +110,12 @@ int main(void)
   MX_SDMMC1_SD_Init();
   MX_FATFS_Init();
 
-  if ( ! READ_BIT(RTC->ISR, RTC_ISR_INITS) ){
+  if ( READ_BIT(RTC->ISR, RTC_ISR_INITS) ){
 	  /* if bit is set, the rtc is already initialized.
 	   * see Note in "Calendar initialization and configuration"
 	   * in RM0351(reference-manual) p. 1226 */
+	  rtc_just_set_handle();
+  } else {
 	  MX_RTC_Init();
   }
 
