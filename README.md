@@ -143,7 +143,7 @@ Command                        | Short             | Brief description          
 **itimeindex=[0..31]**         | **ii=[1..31]**    | Set the index for setting the integration time                        |
 **iterations=[0..31]**         | **N=[1..31]**     | Set the repetitions of a measurement.                                 |
 **format={0\|1}**              |                   | Set the output format to 0=Binary, or to 1=ASCII                      |
-**rtc=20YY-MM-DDThh:mm:ss**    |                   | Set the Real-Time-Clock and the Calendar. No Daylightsaving is used.  |
+**rtc=20YY-MM-DDThh:mm:ss**    |                   | Set the Real-Time-Clock and the Calendar. No Daylightsaving is used. YY > 0 ! (see also Important Notes) |
 **ival=MODE,IVAL,START,END**   |                   | Set the regular automatic measurement.                                | 
 **#debug**                     |                   | Toggle debug prints on or off.                                        |
 
@@ -152,3 +152,26 @@ where
  * **IVAL  =hh:mm:ss**: omit if MODE is 0
  * **START =hh:mm:ss**: omit if MODE is 0 or 1
  * **END   =hh:mm:ss**: omit if MODE is 0 or 1
+
+
+Important Notes
+---------------
+
+**Never use the year 2000 for the RTC, in combination with a backup batterie**
+
+A problem will arise, iff:
+ * the RTC year was set to 2000
+ * backup batterie on VBAT
+ * a VDD power breakdown in the very same year (2000)
+
+On power restore, the device checks if the RTC was initialized, by checking the year. 
+As the last two digits of the year are 0, these are equal to the default value, 
+which indicates, that the RTC wasn't initialiezed and it is done then, whereby the RTC will set to its default values.
+
+
+
+
+
+
+
+
