@@ -140,10 +140,6 @@ void power_switch_EN(bool on_off) {
 #endif
 }
 
-void init_rtc_batterie_backup(void){
-
-}
-
 void cpu_enter_LPM(void) {
 
 	bool asleep = false;

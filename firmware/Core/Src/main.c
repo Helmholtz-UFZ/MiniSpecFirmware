@@ -94,9 +94,11 @@ int main(void)
   /* Configure the system clock */
   SystemClock_Config();
 
+#if 0
   /* USER CODE BEGIN SysInit */
-
+#error "CUBE_MX fucked it up"
   /* USER CODE END SysInit */
+#endif
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
@@ -107,7 +109,14 @@ int main(void)
   MX_TIM3_Init();
   MX_SDMMC1_SD_Init();
   MX_FATFS_Init();
-  MX_RTC_Init();
+
+  if ( ! READ_BIT(RTC->ISR, RTC_ISR_INITS) ){
+	  /* if bit is set, the rtc is already initialized.
+	   * see Note in "Calendar initialization and configuration"
+	   * in RM0351(reference-manual) p. 1226 */
+	  MX_RTC_Init();
+  }
+
   MX_USART1_UART_Init();
 
   /* Initialize interrupts */
