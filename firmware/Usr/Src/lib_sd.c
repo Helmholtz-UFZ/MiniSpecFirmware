@@ -10,6 +10,8 @@
 #include "string.h"
 #include "stdio.h"
 #include "sdmmc.h"
+#include "stdio_usr.h"
+
 
 uint8_t workBuffer[_MAX_SS];
 static void sd_reinit(void);

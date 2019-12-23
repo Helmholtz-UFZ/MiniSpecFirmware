@@ -93,6 +93,7 @@ uint8_t write_config_to_SD(runtime_config_t *rc) {
 }
 
 uint8_t read_config_from_SD(runtime_config_t *rc) {
+	// todo save whole rc to SD (debugprints, ...)
 #if HAS_SD
 # if RCCONF_MAX_ITIMES > 32
 # error "Attention buffer gets big.. Improve implementation :)"

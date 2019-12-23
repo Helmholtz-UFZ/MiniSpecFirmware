@@ -129,7 +129,10 @@ int main(void)
   Properties -> C/C++ General -> Paths and Symbols
   */
 
-  run();
+  run_init();
+  while (1){
+	  run();
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */

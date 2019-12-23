@@ -8,6 +8,7 @@
 
 #include "main_usr.h"
 #include "lib_uart.h"
+#include "stdio_usr.h"
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -88,3 +89,36 @@ int errreply(const char *__restrict format, ...) {
 	return len;
 }
 
+
+/** print 'ok' */
+void ok(void) {
+	if (rc.format == DATA_FORMAT_ASCII) {
+		reply("ok\n");
+	}
+}
+
+/** print 'fail' */
+void fail(void) {
+	if (rc.format == DATA_FORMAT_ASCII) {
+		errreply("argument error\n");
+	}
+}
+
+void print_config(runtime_config_t *rc){
+		rtc_timestamp_t ts;
+		for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
+			if (rc->itime[i] != 0) {
+				reply("itime[%u] = %lu\n", i, rc->itime[i]);
+			}
+		}
+		reply("ii: %u  ('i=' set itime[%u])\n", rc->itime_index, rc->itime_index);
+		reply("iter. per meas. [N]: %u\n", rc->iterations);
+		reply("interval mode: %u\n", rc->mode);
+		reply("start time:      %02i:%02i:%02i\n", rc->start.Hours, rc->start.Minutes, rc->start.Seconds);
+		reply("end time:        %02i:%02i:%02i\n", rc->end.Hours, rc->end.Minutes, rc->end.Seconds);
+		reply("interval:        %02i:%02i:%02i\n", rc->ival.Hours, rc->ival.Minutes, rc->ival.Seconds);
+		reply("next auto-meas.: %02i:%02i:%02i\n", rc->next_alarm.Hours, rc->next_alarm.Minutes, rc->next_alarm.Seconds);
+		ts = rtc_get_now();
+		reply("now:  20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+				ts.time.Minutes, ts.time.Seconds);
+}

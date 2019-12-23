@@ -71,7 +71,8 @@ typedef struct
 	uint16_t postfix;
 } filename_t;
 
-int run( void );
+void run_init(void);
+void run(void);
 void usr_hw_init(void);
 void init_timetype(RTC_TimeTypeDef *time);
 

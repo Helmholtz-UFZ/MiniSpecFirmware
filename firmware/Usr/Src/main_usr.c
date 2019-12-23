@@ -20,6 +20,7 @@
 #include "alarm.h"
 #include "sd.h"
 #include <stdio.h>
+#include "stdio_usr.h"
 
 static void send_data(void);
 static void multimeasure(bool to_sd);
@@ -27,12 +28,9 @@ static void periodic_alarm_handler(void);
 static void extcmd_handler(void);
 static void dbg_test(void);
 
-static void ok(void);
-static void fail(void);
-static void print_config(runtime_config_t *rc);
+runtime_config_t rc;
 
 static rtc_timestamp_t ts;
-runtime_config_t rc;
 
 #define TS_BUFF_SZ	32
 char ts_buff[TS_BUFF_SZ];
@@ -54,94 +52,94 @@ void usr_hw_init(void) {
 	rxtx_restart_listening();
 }
 
-static void run_init(void) {
+void run_init(void) {
 	power_switch_EN(ON);
 	usr_hw_init();
 
-	rc.use_debugprints = false;
-	rc.format = DATA_FORMAT_ASCII;
-	rc.stream = false;
-
 	memset(&ts, 0, sizeof(ts));
 	memset(&rc, 0, sizeof(rc));
+
+	// init runtime config
+#if USE_DBG_PRINT_FROM_STARTUP
+	/* Overwrites default value from usr_uart.c */
+	rc.use_debugprints = true;
+#else
+	rc.use_debugprints = false;
+#endif
+	rc.format = DATA_FORMAT_ASCII;
+	rc.stream = false;
+	rc.iterations = 1;
+	rc.itime[0] = DEFAULT_INTEGRATION_TIME;
+	rc.mode = IVAL_OFF;
 	init_timetype(&rc.start);
 	init_timetype(&rc.end);
 	init_timetype(&rc.ival);
 	init_timetype(&rc.next_alarm);
-	rc.iterations = 1;
-	rc.itime[0] = DEFAULT_INTEGRATION_TIME;
-	rc.mode = IVAL_OFF;
 
-#if USE_DBG_PRINT_FROM_STARTUP
-	/* Overwrites default value from usr_uart.c */
-	rc.use_debugprints = true;
-#endif
-
+	// inform user
 	if (rc.format == DATA_FORMAT_ASCII) {
 		reply("\nstart\n");
 		reply("firmware: %s\n", __FIRMWARE_VERSION);
 	}
 
+	// read/write info from/to sd
 	inform_SD_reset();
 	read_config_from_SD(&rc);
+
 	set_initial_alarm(&rc);
 }
 
-int run(void) {
-	run_init();
+void run(void) {
+	// this is called in a endless loop (!)
 
-	while (1) {
+	/* Uart IR is enabled only during (light) sleep phases */
+	//=================================================================
+	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM); //
+	if (!rxtx.wakeup && !rc.stream && !rtc.alarmA_wakeup) {        //
+		power_switch_EN(OFF);
+		cpu_enter_LPM();
+		power_switch_EN(ON);
+	}                                                                 //
+	__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);                        //
+	//=================================================================
 
-		/* Uart IR is enabled only during (light) sleep phases */
-		//=================================================================
-		__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM); //
-		if (!rxtx.wakeup && !rc.stream && !rtc.alarmA_wakeup) {        //
-			power_switch_EN(OFF);
-			cpu_enter_LPM();
-			power_switch_EN(ON);
-		}                                                                 //
-		__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);                        //
-		//=================================================================
+	if (hrxtx.ErrorCode) {
+		/* See stm32l4xx_hal_uart.h for ErrorCodes.
+		 * Handle Uart Errors immediately because every further
+		 * send (e.g. printf) would overwrite the Error Code.*/
+		rxtx_restart_listening();
+	}
 
-		if (hrxtx.ErrorCode) {
-			/* See stm32l4xx_hal_uart.h for ErrorCodes.
-			 * Handle Uart Errors immediately because every further
-			 * send (e.g. printf) would overwrite the Error Code.*/
-			rxtx_restart_listening();
-		}
-
-		if (rtc.alarmA_wakeup) {
-			rtc.alarmA_wakeup = false;
-			periodic_alarm_handler();
-			if (rc.stream) {
-				/* The handler has deinit the sensor,
-				 * undo that now, if we are in stream mode */
-				sensor_init();
-			}
-		}
-
+	if (rtc.alarmA_wakeup) {
+		rtc.alarmA_wakeup = false;
+		periodic_alarm_handler();
 		if (rc.stream) {
-			sensor_measure(rc.itime[0]);
-			send_data();
-			if (sens1.errc) {
-				sensor_deinit();
-#if IGNORE_ERRORS_IN_STREAM
-				sensor_init();
-#else
-				rc.stream = 0;
-#endif
-			}
-		}
-
-		if (rxtx.wakeup) {
-			parse_extcmd(rxtx_rxbuffer.base, rxtx_rxbuffer.size);
-			rxtx.wakeup = false;
-			rxtx.cmd_bytes = 0;
-			rxtx_restart_listening();
-			extcmd_handler();
+			/* The handler has deinit the sensor,
+			 * undo that now, if we are in stream mode */
+			sensor_init();
 		}
 	}
-	return 0;
+
+	if (rc.stream) {
+		sensor_measure(rc.itime[0]);
+		send_data();
+		if (sens1.errc) {
+			sensor_deinit();
+#if IGNORE_ERRORS_IN_STREAM
+			sensor_init();
+#else
+			rc.stream = 0;
+#endif
+		}
+	}
+
+	if (rxtx.wakeup) {
+		parse_extcmd(rxtx_rxbuffer.base, rxtx_rxbuffer.size);
+		rxtx.wakeup = false;
+		rxtx.cmd_bytes = 0;
+		rxtx_restart_listening();
+		extcmd_handler();
+	}
 }
 
 static void extcmd_handler(void) {
@@ -369,39 +367,6 @@ static void extcmd_handler(void) {
 		reply("???\n");
 		break;
 	}
-}
-
-/** print 'ok' */
-static void ok(void) {
-	if (rc.format == DATA_FORMAT_ASCII) {
-		reply("ok\n");
-	}
-}
-
-/** print 'fail' */
-static void fail(void) {
-	if (rc.format == DATA_FORMAT_ASCII) {
-		errreply("argument error\n");
-	}
-}
-
-static void print_config(runtime_config_t *rc){
-		rtc_timestamp_t ts;
-		for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
-			if (rc->itime[i] != 0) {
-				reply("itime[%u] = %lu\n", i, rc->itime[i]);
-			}
-		}
-		reply("ii: %u  ('i=' set itime[%u])\n", rc->itime_index, rc->itime_index);
-		reply("iter. per meas. [N]: %u\n", rc->iterations);
-		reply("interval mode: %u\n", rc->mode);
-		reply("start time:      %02i:%02i:%02i\n", rc->start.Hours, rc->start.Minutes, rc->start.Seconds);
-		reply("end time:        %02i:%02i:%02i\n", rc->end.Hours, rc->end.Minutes, rc->end.Seconds);
-		reply("interval:        %02i:%02i:%02i\n", rc->ival.Hours, rc->ival.Minutes, rc->ival.Seconds);
-		reply("next auto-meas.: %02i:%02i:%02i\n", rc->next_alarm.Hours, rc->next_alarm.Minutes, rc->next_alarm.Seconds);
-		ts = rtc_get_now();
-		reply("now:  20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
-				ts.time.Minutes, ts.time.Seconds);
 }
 
 /** Local helper for sending data via the uart interface. */
