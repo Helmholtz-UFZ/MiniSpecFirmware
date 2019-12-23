@@ -55,10 +55,6 @@ typedef struct {
 	/* The number of bytes received */
 	volatile uint16_t cmd_bytes;
 
-	/* Flag for enabling /disabling the debug() function
-	 * during runtime with a usr command, namely 'debug'.*/
-	bool use_debugprints;
-
 } rxtx_config_t;
 
 extern rxtx_config_t rxtx;

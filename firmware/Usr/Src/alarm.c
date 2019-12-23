@@ -7,13 +7,15 @@
 
 #include "alarm.h"
 
+static RTC_TimeTypeDef get_closest_next_alarm(runtime_config_t *rc);
+
 /**
  * Calculate and return the next alarm closest to now.
  *
  * Note: Call this ONLY in IVAL_STARTEND mode, otherwise
  * stuff break !
  */
-RTC_TimeTypeDef get_closest_next_alarm(runtime_config_t *rc) {
+static RTC_TimeTypeDef get_closest_next_alarm(runtime_config_t *rc) {
 	uint32_t start, end, now, ival, N, x;
 	rtc_timestamp_t t;
 	t = rtc_get_now();

@@ -22,7 +22,7 @@
 #include <stdio.h>
 
 static void send_data(void);
-static void multimeasure(void);
+static void multimeasure(bool to_sd);
 static void periodic_alarm_handler(void);
 static void extcmd_handler(void);
 static void dbg_test(void);
@@ -31,9 +31,8 @@ static void ok(void);
 static void fail(void);
 static void print_config(runtime_config_t *rc);
 
-static statemachine_config_t state;
-static runtime_config_t rc;
 static rtc_timestamp_t ts;
+runtime_config_t rc;
 
 #define TS_BUFF_SZ	32
 char ts_buff[TS_BUFF_SZ];
@@ -59,9 +58,9 @@ static void run_init(void) {
 	power_switch_EN(ON);
 	usr_hw_init();
 
-	state.format = DATA_FORMAT_ASCII;
-	state.stream = false;
-	state.toSD = true;
+	rc.use_debugprints = false;
+	rc.format = DATA_FORMAT_ASCII;
+	rc.stream = false;
 
 	memset(&ts, 0, sizeof(ts));
 	memset(&rc, 0, sizeof(rc));
@@ -75,10 +74,10 @@ static void run_init(void) {
 
 #if USE_DBG_PRINT_FROM_STARTUP
 	/* Overwrites default value from usr_uart.c */
-	rxtx.use_debugprints = true;
+	rc.use_debugprints = true;
 #endif
 
-	if (state.format == DATA_FORMAT_ASCII) {
+	if (rc.format == DATA_FORMAT_ASCII) {
 		reply("\nstart\n");
 		reply("firmware: %s\n", __FIRMWARE_VERSION);
 	}
@@ -96,7 +95,7 @@ int run(void) {
 		/* Uart IR is enabled only during (light) sleep phases */
 		//=================================================================
 		__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM); //
-		if (!rxtx.wakeup && !state.stream && !rtc.alarmA_wakeup) {        //
+		if (!rxtx.wakeup && !rc.stream && !rtc.alarmA_wakeup) {        //
 			power_switch_EN(OFF);
 			cpu_enter_LPM();
 			power_switch_EN(ON);
@@ -114,14 +113,14 @@ int run(void) {
 		if (rtc.alarmA_wakeup) {
 			rtc.alarmA_wakeup = false;
 			periodic_alarm_handler();
-			if (state.stream) {
+			if (rc.stream) {
 				/* The handler has deinit the sensor,
 				 * undo that now, if we are in stream mode */
 				sensor_init();
 			}
 		}
 
-		if (state.stream) {
+		if (rc.stream) {
 			sensor_measure(rc.itime[0]);
 			send_data();
 			if (sens1.errc) {
@@ -129,7 +128,7 @@ int run(void) {
 #if IGNORE_ERRORS_IN_STREAM
 				sensor_init();
 #else
-				state.stream = 0;
+				rc.stream = 0;
 #endif
 			}
 		}
@@ -160,26 +159,24 @@ static void extcmd_handler(void) {
 		sensor_deinit();
 		send_data();
 		/* A single measurement during stream mode, end the stream mode. */
-		state.stream = false;
+		rc.stream = false;
 		break;
 
 	case USR_CMD_MULTI_MEASURE_START:
 		ok();
-		state.toSD = false;
-		multimeasure();
-		state.toSD = true;
+		multimeasure(false);
 		break;
 
 	case USR_CMD_STREAM_START:
 		ok();
 		sensor_init();
-		state.stream = true;
+		rc.stream = true;
 		break;
 
 	case USR_CMD_STREAM_END:
 		ok();
 		sensor_deinit();
-		state.stream = false;
+		rc.stream = false;
 		break;
 
 		/* GETTER ============================================================ */
@@ -193,7 +190,7 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_GET_ITIME:
-		if (state.format == DATA_FORMAT_BIN) {
+		if (rc.format == DATA_FORMAT_BIN) {
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime[0], 4, 1000);
 		} else {
 			reply("integration time [0] = %lu us\n", rc.itime[0]);
@@ -202,7 +199,7 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_GET_INDEXED_ITIME:
 		tmp = rc.itime[rc.itime_index];
-		if (state.format == DATA_FORMAT_BIN) {
+		if (rc.format == DATA_FORMAT_BIN) {
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime_index, 4, 1000);
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) &tmp, 4, 1000);
 		} else {
@@ -212,7 +209,7 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_GET_RTC_TIME:
 		ts = rtc_get_now();
-		if (state.format == DATA_FORMAT_ASCII) {
+		if (rc.format == DATA_FORMAT_ASCII) {
 			reply("20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 					ts.time.Minutes, ts.time.Seconds);
 		} else {
@@ -226,7 +223,7 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_GET_INTERVAL:
-		if (state.format == DATA_FORMAT_ASCII) {
+		if (rc.format == DATA_FORMAT_ASCII) {
 			reply("interval mode: %u\n", rc.mode);
 			reply("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
 			reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
@@ -257,9 +254,9 @@ static void extcmd_handler(void) {
 			break;
 		}
 		/* check and set argument */
-		state.format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
-		if(state.format == DATA_FORMAT_BIN){
-			rxtx.use_debugprints = false;
+		rc.format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
+		if(rc.format == DATA_FORMAT_BIN){
+			rc.use_debugprints = false;
 		}
 		ok();
 		break;
@@ -355,8 +352,8 @@ static void extcmd_handler(void) {
 		/* DEBUG ============================================================ */
 
 	case USR_CMD_DEBUG:
-		rxtx.use_debugprints = rxtx.use_debugprints ? false : true;
-		if (rxtx.use_debugprints) {
+		rc.use_debugprints = rc.use_debugprints ? false : true;
+		if (rc.use_debugprints) {
 			reply("debug on\n");
 		} else {
 			reply("debug off\n");
@@ -376,14 +373,14 @@ static void extcmd_handler(void) {
 
 /** print 'ok' */
 static void ok(void) {
-	if (state.format == DATA_FORMAT_ASCII) {
+	if (rc.format == DATA_FORMAT_ASCII) {
 		reply("ok\n");
 	}
 }
 
 /** print 'fail' */
 static void fail(void) {
-	if (state.format == DATA_FORMAT_ASCII) {
+	if (rc.format == DATA_FORMAT_ASCII) {
 		errreply("argument error\n");
 	}
 }
@@ -436,7 +433,7 @@ static void send_data(void) {
 		break;
 	}
 
-	if (state.format == DATA_FORMAT_BIN) {
+	if (rc.format == DATA_FORMAT_BIN) {
 		/*Send the errorcode nevertheless an error occurred or not.*/
 		HAL_UART_Transmit(&hrxtx, (uint8_t *) &errcode, 2, 200);
 		if (!errcode) {
@@ -504,12 +501,12 @@ static void periodic_alarm_handler(void) {
 	rc.next_alarm = rtc_get_alermAtime();
 
 	/* Do the measurement */
-	multimeasure();
+	multimeasure(true);
 
 	debug("next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 }
 
-static void multimeasure(void) {
+static void multimeasure(bool to_sd) {
 	int8_t res = 0;
 	for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
 		if (rc.itime[i] == 0) {
@@ -529,7 +526,7 @@ static void multimeasure(void) {
 			sensor_init();
 			sensor_measure(rc.itime[i]);
 
-			if (state.toSD && HAS_SD) {
+			if (to_sd && HAS_SD) {
 				/* Write measurement to SD */
 				/* TODO One time mount and open per wakeup... */
 				res = sd_mount();

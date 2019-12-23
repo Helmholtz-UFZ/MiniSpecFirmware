@@ -43,6 +43,8 @@ typedef struct
 	uint8_t iterations;
 	uint32_t itime[RCCONF_MAX_ITIMES];
 	uint8_t itime_index;
+
+	// see also ival_mode_t
 	ival_mode_t mode;
 
 	RTC_TimeTypeDef start;
@@ -50,15 +52,17 @@ typedef struct
 	RTC_TimeTypeDef ival;
 	RTC_TimeTypeDef next_alarm;
 
-} runtime_config_t;
+	/* Flag for enabling /disabling the debug() function
+	 * during runtime with a usr command, namely 'debug'.*/
+	bool use_debugprints;
 
-typedef struct
-{
+	// the format to use for communication can be: DATA_FORMAT_BIN or DATA_FORMAT_ASCII
 	bool format;
 	bool stream;
-	bool toSD;
 
-} statemachine_config_t;
+} runtime_config_t;
+
+extern runtime_config_t rc;
 
 #define FNAME_BUF_SZ 	128
 typedef struct
