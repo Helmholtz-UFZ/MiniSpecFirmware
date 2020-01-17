@@ -18,6 +18,7 @@
 #include "usart.h"
 #include "fatfs.h"
 #include "gpio.h"
+#include "stdio_usr.h"
 
 /* Borrowed from main.c */
 extern void SystemClock_Config(void);

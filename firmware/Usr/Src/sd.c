@@ -13,6 +13,7 @@
 #include "stdio.h"
 #include "cmd_parser.h"
 #include "main_usr.h"
+#include "stdio_usr.h"
 
 static filename_t fname = { .buf = { 0 }, .postfix = 0 };
 FIL *f = &SDFile;

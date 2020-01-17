@@ -114,7 +114,7 @@ int main(void)
 	  /* if bit is set, the rtc is already initialized.
 	   * see Note in "Calendar initialization and configuration"
 	   * in RM0351(reference-manual) p. 1226 */
-	  rtc_just_set_handle();
+	  rtc_reinit_after_wakup();
   } else {
 	  MX_RTC_Init();
   }

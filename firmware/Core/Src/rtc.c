@@ -129,7 +129,7 @@ void HAL_RTC_MspDeInit(RTC_HandleTypeDef* rtcHandle)
 
 /* USER CODE BEGIN 1 */
 
-void rtc_just_set_handle(void)
+void rtc_reinit_after_wakup(void)
 {
   /** Initialize RTC Only */
   hrtc.Instance = RTC;
@@ -143,6 +143,11 @@ void rtc_just_set_handle(void)
   hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
   hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
   hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
+
+
+  __HAL_RTC_WRITEPROTECTION_DISABLE(&hrtc);
+  HAL_RTC_WaitForSynchro(&hrtc);
+  __HAL_RTC_WRITEPROTECTION_ENABLE(&hrtc);
 }
 
 /* USER CODE END 1 */
