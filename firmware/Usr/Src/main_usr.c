@@ -110,6 +110,16 @@ void run(void) {
 		rxtx_restart_listening();
 	}
 
+
+	if (!rxtx.wakeup && !rc.stream && !rtc.alarmA_wakeup) {
+		// We got an edge on the CMDS_EN_Pin pin.
+		//
+		// This is a pre-release hack for the `triggered mode` feature,
+		// which allow the user to send a rising edge (trigger) on the
+		// CMDS_EN_Pin, which will then start an immediate (multi-)measurement.
+		multimeasure(true);
+	}
+
 	if (rtc.alarmA_wakeup) {
 		rtc.alarmA_wakeup = false;
 		periodic_alarm_handler();
