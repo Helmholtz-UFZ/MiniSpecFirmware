@@ -118,7 +118,7 @@ void run(void) {
 		// This is a pre-release hack for the `triggered mode` feature,
 		// which allow the user to send a rising edge (trigger) on the
 		// CMDS_EN_Pin, which will then start an immediate (multi-)measurement.
-		multimeasure(true);
+//		multimeasure(true);
 	}
 
 	if (rtc.alarmA_wakeup) {
@@ -164,7 +164,6 @@ static void extcmd_handler(void) {
 	case USR_CMD_SINGLE_MEASURE_START:
 		ok();
 		sensor_init();
-		rc.itime[0] = autoadjust_itime(33000, 54000);
 		sensor_measure(rc.itime[0]);
 		sensor_deinit();
 		send_data();
@@ -275,13 +274,22 @@ static void extcmd_handler(void) {
 		if (argparse_nr(&tmp)) {
 			break;
 		}
-		// always set default itime (index 0)
+		// always check itime
+		// note: default itime (index 0) cannot reseted
 		if(rc.itime_index == 0 || tmp > 0){
 			tmp = MAX(MIN_INTERGATION_TIME, tmp);
 			tmp = MIN(MAX_INTERGATION_TIME, tmp);
 		}
 		rc.itime[rc.itime_index] = tmp;
 		ok();
+		break;
+
+	case USR_CMD_SET_ITIME_AUTO:
+		tmp = autoadjust_itime(33000, 54000);
+		rc.itime[rc.itime_index] = tmp;
+		if (rc.format == DATA_FORMAT_ASCII) {
+			reply("set integration time [%u] = %lu us\n", rc.itime_index, tmp);
+		}
 		break;
 
 	case USR_CMD_SET_ITIME_INDEX:

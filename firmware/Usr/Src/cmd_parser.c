@@ -187,6 +187,16 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 		return;
 	}
 
+	str = "autoadjust\r";
+	alias = "aa\r";
+	sz = strlen(str);
+	aliassz = strlen(alias);
+	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+		extcmd.cmd = USR_CMD_SET_ITIME_AUTO;
+		return;
+	}
+
+
 	str = "itimeindex=";
 	alias = "ii=";
 	sz = strlen(str);

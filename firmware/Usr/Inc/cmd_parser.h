@@ -37,6 +37,7 @@ typedef enum
 	USR_CMD_SET_FORMAT, // 0 - raw/bin or 1 - ascii
 	USR_CMD_SET_SENSOR, // UNUSED (for future use) - choose if sens 1 or sens 2
 	USR_CMD_SET_ITIME,
+	USR_CMD_SET_ITIME_AUTO,
 	USR_CMD_SET_ITIME_INDEX,
 	USR_CMD_SET_MULTI_MEASURE_ITERATIONS,
 	USR_CMD_SET_RTC_TIME,
