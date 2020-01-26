@@ -91,7 +91,8 @@ void run_init(void) {
 
 void run(void) {
 	// this is called in a endless loop (!)
-
+	autoadjust_itime();
+	return;
 	/* Uart IR is enabled only during (light) sleep phases */
 	//=================================================================
 	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM); //
@@ -518,51 +519,6 @@ static void multimeasure(bool to_sd) {
 	}
 	sensor_deinit();
 }
-
-
-uint32_t get_max_pixel_value(void){
-	uint32_t maxval = 0;
-	uint32_t *p = (uint32_t *) (sens1.data->wptr - MSPARAM_PIXEL);
-	for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
-		maxval = MAX(maxval, p[i]);
-		// todo optimization: break if saturation
-		// todo optimization: start in middle, in both directions
-	}
-	return maxval;
-}
-
-uint32_t get_next_itime(uint32_t itime, uint32_t lower, uint32_t upper){
-	
-	uint32_t maxval = 0;
-	maxval = get_max_pixel_value();
-	// if 3/5 < maxval < saturation => OK
-	return itime;
-}
-
-uint32_t autoadjust_itime(void){
-	uint32_t curr, new = 500;
-	uint32_t saturation = 2^16;
-	uint32_t lower = (uint32_t) (0.50 * saturation);
-	uint32_t upper = (uint32_t) (0.80 * saturation);
-
-	sensor_init();
-	for (uint16_t maxtry = 8; 0 < maxtry; --maxtry) {
-
-			sensor_measure(curr);
-
-			// calc
-			new = get_next_itime(curr, lower, upper);
-			if (curr == new){
-				break;
-			}
-			curr = new;
-	}
-	sensor_deinit();
-
-	return curr;
-
-}
-
 
 /* This function is used to test functions
  * or functionality under development.

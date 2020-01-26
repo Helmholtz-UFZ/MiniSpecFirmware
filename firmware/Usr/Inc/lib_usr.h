@@ -29,6 +29,10 @@
 #define MAX(A,B)	((A) > (B) ? (A) : (B) )
 #define MIN(A,B)	((A) < (B) ? (A) : (B) )
 
+#define UP 1
+#define DOWN -1
+#define FOUND 0
+
 #define BIT0		((uint16_t)0x0001)
 #define BIT1     	((uint16_t)0x0002)
 #define BIT2     	((uint16_t)0x0004)
