@@ -168,7 +168,37 @@ On power restore, the device checks if the RTC was initialized, by checking the 
 As the last two digits of the year are 0, these are equal to the default value, 
 which indicates, that the RTC wasn't initialiezed and it is done then, whereby the RTC will set to its default values.
 
-
+Timing of autoadjust
+--------------------
+A short light burst during a auto-adjustment can lead to a very long adjustion cycle. 
+Due the use of a binary search, up to 16 adjustments and therefor measurements are done. Every measurement take
+at least as long as the used interation time (plus a little overhead of a few ms). If a light burst occur 
+while the search just started in the upper half of the search interval [(max. itime)/2, max. itime], the
+algorithm 'thinks' it should search lower. All further corrections are done upwards to compensate the burst.
+In the end one initial measurement (~0.5s) and 17 measurements of nearly one second each, are made. 
+ 
+worst case (~17 sec):
+```
+[20:15:32:446] dbg: sensor curr itime: 499973 us   // dark
+[20:15:32:951] dbg: sensor curr itime: 1000000 us  // suddenly light -> down correction
+[20:15:33:956] dbg: sensor curr itime: 750000 us   // dark again (till end) -> up correction
+[20:15:34:711] dbg: sensor curr itime: 875000 us
+[20:15:35:591] dbg: sensor curr itime: 937500 us
+[20:15:36:533] dbg: sensor curr itime: 968750 us
+[20:15:37:507] dbg: sensor curr itime: 984375 us
+[20:15:38:496] dbg: sensor curr itime: 992187 us
+[20:15:39:493] dbg: sensor curr itime: 996093 us
+[20:15:40:493] dbg: sensor curr itime: 998046 us
+[20:15:41:496] dbg: sensor curr itime: 999022 us
+[20:15:42:499] dbg: sensor curr itime: 999510 us
+[20:15:43:504] dbg: sensor curr itime: 999754 us
+[20:15:44:508] dbg: sensor curr itime: 999876 us
+[20:15:45:512] dbg: sensor curr itime: 999937 us
+[20:15:46:516] dbg: sensor curr itime: 999967 us
+[20:15:47:521] dbg: sensor curr itime: 999982 us
+[20:15:48:525] dbg: sensor curr itime: 999989 us
+[20:15:49:533] -> integration time = 999992 us	   // returnd result
+```
 
 
 

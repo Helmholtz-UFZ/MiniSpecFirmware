@@ -57,8 +57,9 @@
 
 #include <lib_spectrometer.h>
 #include <lib_timer.h>
-#include "global_config.h"
 #include <string.h>
+#include "global_config.h"
+#include "stdio_usr.h"
 
 //static uint16_t mem_block1[SENSOR_DATA_BUFFER_MAX_WORDS + 1];
 static canary_memblock_t secure_memblock1;
@@ -164,6 +165,7 @@ void sensor_deinit(void) {
  *
  */
 void sensor_measure(uint32_t itime) {
+	debug("sensor itime: %lu us\n", itime);
 	uint32_t int_time_cnt;
 
 	if (sens1.status < SENS_INITIALIZED) {

@@ -21,6 +21,7 @@
 #include "sd.h"
 #include <stdio.h>
 #include "stdio_usr.h"
+#include "autoadjust_itime.h"
 
 static void send_data(void);
 static void multimeasure(bool to_sd);
@@ -91,7 +92,9 @@ void run_init(void) {
 
 void run(void) {
 	// this is called in a endless loop (!)
-	autoadjust_itime();
+	uint32_t itime = autoadjust_itime();
+	reply("integration time = %lu us\n", itime);
+//	HAL_Delay(1000);
 	return;
 	/* Uart IR is enabled only during (light) sleep phases */
 	//=================================================================
