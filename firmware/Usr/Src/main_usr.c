@@ -92,10 +92,7 @@ void run_init(void) {
 
 void run(void) {
 	// this is called in a endless loop (!)
-	uint32_t itime = autoadjust_itime(33000, 54000);
-	reply("integration time = %lu us\n", itime);
-//	HAL_Delay(1000);
-	return;
+
 	/* Uart IR is enabled only during (light) sleep phases */
 	//=================================================================
 	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM); //
@@ -167,6 +164,7 @@ static void extcmd_handler(void) {
 	case USR_CMD_SINGLE_MEASURE_START:
 		ok();
 		sensor_init();
+		rc.itime[0] = autoadjust_itime(33000, 54000);
 		sensor_measure(rc.itime[0]);
 		sensor_deinit();
 		send_data();

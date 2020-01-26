@@ -122,10 +122,13 @@ static uint32_t binary_search_itime( uint32_t min_itime, uint32_t max_itime, uin
  * Search for a good-choice integration time for the current
  * light conditions.
  *
- * Note: Worst case timing is about 16
+ * Note: Worst case timing is about 17 seconds (!)
+ * This can happen, if a light burst occur during search. The binary
+ * search will then start searching and just give up by the hard-coded
+ * limit of 16 searches.
  *
- * Side-effect: At last a measurement with the returned integration time was made.
- * So one could use the data from this measurement directly.
+ * Side-effect: The last measurement was made with the returned integration time,
+ * so this data is still available and could be used directly.
  */
 uint32_t autoadjust_itime(uint32_t lower, uint32_t upper){
 //uint32_t autoadjust_itime(void) {
