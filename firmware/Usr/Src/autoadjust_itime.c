@@ -127,21 +127,14 @@ static uint32_t binary_search_itime( uint32_t min_itime, uint32_t max_itime, uin
  * Side-effect: At last a measurement with the returned integration time was made.
  * So one could use the data from this measurement directly.
  */
-//uint32_t autoadjust_itime(uint32_t dark, uint32_t saturation, uint32_t lower, uint32_t upper){
-uint32_t autoadjust_itime(void) {
+uint32_t autoadjust_itime(uint32_t lower, uint32_t upper){
+//uint32_t autoadjust_itime(void) {
 
-	// curr = (1sec-54ms)/2
+	// first check the middle: (1sec-54ms)/2 ~ 500ms
 	uint32_t itime = (MAX_INTERGATION_TIME - MIN_INTERGATION_TIME) / 2;
 
-	uint32_t saturation = 60000;
-	uint32_t dark = 6000;
-	static const uint16_t satmax = 0xFFFF; // 2^16-1
-	if (saturation == 0 || saturation > satmax){
-		saturation = satmax;
-	}
-	uint32_t effectiv = saturation - dark;
-	uint32_t lower = dark + (uint32_t) (0.66 * effectiv);
-	uint32_t upper = dark + (uint32_t) (0.90 * effectiv);
+//	uint32_t lower = 33000; // ~50% (with darkcurrent 6000 and saturation 60'000)
+//	uint32_t upper = 54000; // ~90%
 	uint32_t maxval;
 	int8_t dir;
 
