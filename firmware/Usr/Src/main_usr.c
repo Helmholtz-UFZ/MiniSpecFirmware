@@ -72,6 +72,7 @@ void run_init(void) {
 	rc.iterations = 1;
 	rc.itime[0] = DEFAULT_INTEGRATION_TIME;
 	rc.mode = IVAL_OFF;
+	rc.trigger = false;
 	init_timetype(&rc.start);
 	init_timetype(&rc.end);
 	init_timetype(&rc.ival);
@@ -110,7 +111,7 @@ void run(void) {
 	}
 
 
-	if (!rxtx.wakeup && !rc.stream && !rtc.alarmA_wakeup) {
+	if (rc.trigger) {
 		// We got an edge on the CMDS_EN_Pin pin.
 		//
 		// This is a pre-release hack for the `triggered mode` feature,

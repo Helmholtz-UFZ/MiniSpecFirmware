@@ -147,7 +147,16 @@ void power_switch_EN(bool on_off) {
 sleepstatus_t get_sleepstatus(void) {
 	bool pinstate = HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin);
 
-	if (rxtx.wakeup || rtc.alarmA_wakeup) {
+	if (rc.mode == TRIGGERED && rc.trigger){
+		return AWAKE;
+	}
+
+	if (rc.mode != TRIGGERED && rtc.alarmA_wakeup) {
+		return AWAKE;
+	}
+
+	// work in triggered and non-triggered mode
+	if (rxtx.wakeup){
 		return AWAKE;
 	}
 
@@ -162,21 +171,30 @@ sleepstatus_t get_sleepstatus(void) {
 	return AWAKE;
 }
 
+//sleepstatus_t get_triggermode_status(sleepstatus_t old) {
+//	sleepstatus_t new = get_sleepstatus();
+//	if (old == DEEP_SLEEP_MODE && new == LIGHT_SLEEP_MODE
+//			&& rc.mode == TRIGGERED) {
+//		rc.trigger = true;
+//		return AWAKE;
+//	}
+//	return new;
+//}
+
 void cpu_enter_LPM(void) {
 	sleepstatus_t status;
-	bool keepsleepin = true;
 
 	power_switch_EN(OFF);
+	rc.sleeping = true;
 
-	while (keepsleepin) {
+	while (rc.sleeping) {
 
-		// prevent very fast switching of CMD_EN Pin
-		HAL_Delay(200);
+		HAL_Delay(100); // prevent very fast switching of CMD_EN Pin
 		status = get_sleepstatus();
 
 		switch (status) {
 		case AWAKE:
-			keepsleepin = false;
+			rc.sleeping = false;
 			break;
 
 		case DEEP_SLEEP_MODE:
@@ -203,13 +221,19 @@ void cpu_enter_LPM(void) {
 			break;
 		}
 	}
-
 	power_switch_EN(ON);
 }
-
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (GPIO_Pin == CMDS_EN_Pin) {
 		leave_LPM_from_ISR();
 	}
+
+	// rising edge in trigger-mode during sleeping, set the trigger
+	if (rc.mode == TRIGGERED
+			&& rc.sleeping
+			&& HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET) {
+		rc.trigger = true;
+	}
+
 }

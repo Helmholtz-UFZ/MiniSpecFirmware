@@ -34,6 +34,7 @@ typedef enum
 	IVAL_OFF = 0,
 	IVAL_ENDLESS = 1,
 	IVAL_STARTEND = 2,
+	TRIGGERED = 3,
 }ival_mode_t;
 
 #define RCCONF_MAX_ITIMES  32
@@ -59,6 +60,8 @@ typedef struct
 	// the format to use for communication can be: DATA_FORMAT_BIN or DATA_FORMAT_ASCII
 	bool format;
 	bool stream;
+	volatile bool sleeping;
+	volatile bool trigger;
 
 } runtime_config_t;
 
