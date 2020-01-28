@@ -112,12 +112,15 @@ void run(void) {
 
 
 	if (rc.trigger) {
+		rc.trigger = false;
 		// We got an edge on the CMDS_EN_Pin pin.
 		//
 		// This is a pre-release hack for the `triggered mode` feature,
 		// which allow the user to send a rising edge (trigger) on the
 		// CMDS_EN_Pin, which will then start an immediate (multi-)measurement.
-//		multimeasure(true);
+		if (rc.mode == TRIGGERED){
+			multimeasure(true);
+		}
 	}
 
 	if (rtc.alarmA_wakeup) {
