@@ -10,8 +10,12 @@
 
 #include "global_config.h"
 
-#define DEEP_SLEEP_MODE 	0
-#define LIGHT_SLEEP_MODE 	1
+typedef enum
+{
+	DEEP_SLEEP_MODE  = 0,
+	LIGHT_SLEEP_MODE = 1,
+	AWAKE = 2,
+} sleepstatus_t;
 
 /** in milli seconds*/
 #define VOLTAGEREF_STABILIZATION_DELAY	(50)

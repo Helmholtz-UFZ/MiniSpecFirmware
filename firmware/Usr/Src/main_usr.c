@@ -97,9 +97,7 @@ void run(void) {
 	//=================================================================
 	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM); //
 	if (!rxtx.wakeup && !rc.stream && !rtc.alarmA_wakeup) {        //
-		power_switch_EN(OFF);
 		cpu_enter_LPM();
-		power_switch_EN(ON);
 	}                                                                 //
 	__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);                        //
 	//=================================================================

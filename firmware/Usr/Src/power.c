@@ -120,48 +120,93 @@ static void sys_deinit(uint8_t mode) {
 void power_switch_EN(bool on_off) {
 #if USE_POWER_SWITCH
 	GPIO_PinState state;
-	state = HAL_GPIO_ReadPin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin);
+	state = HAL_GPIO_ReadPin(POWER5V_SWITCH_ENBL_GPIO_Port,
+	POWER5V_SWITCH_ENBL_Pin);
 	if (state == GPIO_PIN_RESET && on_off) {
 
 		// enable the tim channels for the ST- and EOS- signal so the line is pulled down
 		// by the uC. This ensures a low signal on these lines.
 		TIM2->CCER |= TIM_CCER_CC3E;
 		TIM1->CCER |= TIM_CCER_CC4E;
-		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port,
+		POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_SET);
 
 		// wait for stabilisation of voltage reference buffer
 		HAL_Delay(VOLTAGEREF_STABILIZATION_DELAY);
 
 	} else if (state == GPIO_PIN_SET && !on_off) {
 
-		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port, POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(POWER5V_SWITCH_ENBL_GPIO_Port,
+		POWER5V_SWITCH_ENBL_Pin, GPIO_PIN_RESET);
 	}
 #else
 	UNUSED(on_off);
 #endif
 }
 
-void cpu_enter_LPM(void) {
+sleepstatus_t get_sleepstatus(void) {
+	bool pinstate = HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin);
 
-	// prevent very fast switching of CMD_EN Pin
-	HAL_Delay(200);
-
-	if (HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET) {
-		debug("enter light sleep mode\n");
-		sys_deinit(LIGHT_SLEEP_MODE);
-		while (!rxtx.wakeup && !rtc.alarmA_wakeup && HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET) {
-			cpu_sleep();
-		}
-		sys_reinit(LIGHT_SLEEP_MODE);
-	} else {
-		debug("enter deep sleep mode\n");
-		sys_deinit(DEEP_SLEEP_MODE);
-		while (!rxtx.wakeup && !rtc.alarmA_wakeup && HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_RESET) {
-			cpu_stop2();
-		}
-		sys_reinit(DEEP_SLEEP_MODE);
+	if (rxtx.wakeup || rtc.alarmA_wakeup) {
+		return AWAKE;
 	}
+
+	if (pinstate == GPIO_PIN_SET) {
+		return LIGHT_SLEEP_MODE;
+	}
+
+	if (pinstate == GPIO_PIN_RESET) {
+		return DEEP_SLEEP_MODE;
+	}
+
+	return AWAKE;
 }
+
+void cpu_enter_LPM(void) {
+	sleepstatus_t status;
+	bool keepsleepin = true;
+
+	power_switch_EN(OFF);
+
+	while (keepsleepin) {
+
+		// prevent very fast switching of CMD_EN Pin
+		HAL_Delay(200);
+		status = get_sleepstatus();
+
+		switch (status) {
+		case AWAKE:
+			keepsleepin = false;
+			break;
+
+		case DEEP_SLEEP_MODE:
+			debug("enter deep sleep mode\n");
+			sys_deinit(DEEP_SLEEP_MODE);
+			while (status == DEEP_SLEEP_MODE) {
+				cpu_stop2();
+				status = get_sleepstatus();
+			}
+			sys_reinit(DEEP_SLEEP_MODE);
+			break;
+
+		case LIGHT_SLEEP_MODE:
+			debug("enter light sleep mode\n");
+			sys_deinit(LIGHT_SLEEP_MODE);
+			while (status == LIGHT_SLEEP_MODE) {
+				cpu_sleep();
+				status = get_sleepstatus();
+			}
+			sys_reinit(LIGHT_SLEEP_MODE);
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	power_switch_EN(ON);
+}
+
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (GPIO_Pin == CMDS_EN_Pin) {
