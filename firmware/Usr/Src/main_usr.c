@@ -94,7 +94,10 @@ void run_init(void) {
 void run(void) {
 	// this is called in a endless loop (!)
 
-	/* Uart IR is enabled only during (light) sleep phases */
+	/* Uart IR is enabled only during (light) sleep phases.
+	 * If a uart IR occur during the IR is disabled, it will
+	 * come up, immediately after enabling it agian.
+	 * (see next line) */
 	//=================================================================
 	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM); //
 	if (!rxtx.wakeup && !rc.stream && !rtc.alarmA_wakeup) {        //
@@ -110,6 +113,8 @@ void run(void) {
 		rxtx_restart_listening();
 	}
 
+	debug("rxtx,alarm,trigger: %i %i %i\n", rxtx.wakeup, rtc.alarmA_wakeup, rc.trigger);
+
 
 	if (rc.trigger) {
 		rc.trigger = false;
@@ -119,7 +124,7 @@ void run(void) {
 		// which allow the user to send a rising edge (trigger) on the
 		// CMDS_EN_Pin, which will then start an immediate (multi-)measurement.
 		if (rc.mode == TRIGGERED){
-			multimeasure(true);
+//			multimeasure(true);
 		}
 	}
 

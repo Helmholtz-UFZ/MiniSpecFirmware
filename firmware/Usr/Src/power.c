@@ -231,10 +231,14 @@ void cpu_enter_LPM(void) {
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (GPIO_Pin == CMDS_EN_Pin) {
 		leave_LPM_from_ISR();
+
+		// NOTE: CMDS_EN_Pin == TRIGGER_PIN
+
+
+		// rising edge in trigger-mode during sleeping, set the trigger
+		if (rc.mode == TRIGGERED && rc.sleeping && TRIGGER_PIN_SET) {
+			rc.trigger = true;
+		}
 	}
 
-	// rising edge in trigger-mode during sleeping, set the trigger
-	if (rc.mode == TRIGGERED && rc.sleeping && TRIGGER_PIN_SET) {
-		rc.trigger = true;
-	}
 }
