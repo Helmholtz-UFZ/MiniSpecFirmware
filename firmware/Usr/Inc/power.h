@@ -20,6 +20,7 @@ typedef enum
 /** in milli seconds*/
 #define VOLTAGEREF_STABILIZATION_DELAY	(50)
 
+#define TRIGGER_PIN_SET (HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET)
 
 void power_switch_EN(bool);
 void cpu_enter_LPM(void);

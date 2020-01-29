@@ -171,15 +171,6 @@ sleepstatus_t get_sleepstatus(void) {
 	return AWAKE;
 }
 
-//sleepstatus_t get_triggermode_status(sleepstatus_t old) {
-//	sleepstatus_t new = get_sleepstatus();
-//	if (old == DEEP_SLEEP_MODE && new == LIGHT_SLEEP_MODE
-//			&& rc.mode == TRIGGERED) {
-//		rc.trigger = true;
-//		return AWAKE;
-//	}
-//	return new;
-//}
 
 void cpu_enter_LPM(void) {
 	sleepstatus_t status;
@@ -189,7 +180,20 @@ void cpu_enter_LPM(void) {
 
 	while (rc.sleeping) {
 
-		HAL_Delay(100); // prevent very fast switching of CMD_EN Pin
+		/* To prevent a very fast switching between deep-sleep and
+		 * light sleep mode, we add a delay here.
+		 * Also, if we're in triggered-mode, we check the trigger-pin
+		 * status again. Only if the trigger was set in IRQ-Handler
+		 * and the pin is still high, we assume the pin was high for
+		 * about 90 ms. To use a timer module here, to check if the pin
+		 * was low in between would be more accurate but a bit overkill,
+		 * because nothing can really break here.*/
+		HAL_Delay(90);
+		if (rc.mode == TRIGGERED && rc.trigger){
+			rc.trigger = TRIGGER_PIN_SET;
+		}
+		HAL_Delay(10);
+
 		status = get_sleepstatus();
 
 		switch (status) {
@@ -230,10 +234,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	}
 
 	// rising edge in trigger-mode during sleeping, set the trigger
-	if (rc.mode == TRIGGERED
-			&& rc.sleeping
-			&& HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin) == GPIO_PIN_SET) {
+	if (rc.mode == TRIGGERED && rc.sleeping && TRIGGER_PIN_SET) {
 		rc.trigger = true;
 	}
-
 }

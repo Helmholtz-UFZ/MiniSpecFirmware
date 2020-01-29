@@ -310,18 +310,21 @@ int8_t parse_ival(char *str, runtime_config_t* rc) {
 	RTC_TimeTypeDef iv, st, en, off;
 	init_timetype(&off);
 
-	/*parse first nr - alarm on/off*/
+	/*parse mode */
 	sscanf(str, "%u", &c);
-	if (c == 0) {
+	if (c > 3) {
+		return 1;
+	}
+
+	rc->mode = c;
+
+	if (rc->mode == IVAL_OFF || rc->mode == TRIGGERED) {
 		rc->start = off;
 		rc->end = off;
 		rc->ival = off;
-		rc->mode = IVAL_OFF;
 		return 0;
 	}
-	if (c != 1 && c != 2) {
-		return 1;
-	}
+
 	str++; //ignore c
 
 	/*parse interval*/
@@ -333,13 +336,13 @@ int8_t parse_ival(char *str, runtime_config_t* rc) {
 	if (rtc_parse_time(str, &iv)) {
 		return 1;
 	}
-
 	if (iv.Hours == 0 && iv.Minutes == 0 && iv.Seconds < MIN_IVAL) {
 		return 1;
 	}
-	if (c == 1) {
-		rc->ival = iv;
-		rc->mode = IVAL_ENDLESS;
+
+	rc->ival = iv;
+
+	if (rc->mode == IVAL_ENDLESS) {
 		return 0;
 	}
 
@@ -352,7 +355,6 @@ int8_t parse_ival(char *str, runtime_config_t* rc) {
 	if (rtc_parse_time(str, &st)) {
 		return 1;
 	}
-
 	/*parse end-time*/
 	str = (char*) memchr(str, ',', 20);
 	if (!str) {
@@ -362,15 +364,13 @@ int8_t parse_ival(char *str, runtime_config_t* rc) {
 	if (rtc_parse_time(str, &en)) {
 		return 1;
 	}
-
 	/*check constrains*/
 	if (!rtc_time_lt(&st, &en)) {
 		return 2;
 	}
 
-	rc->ival = iv;
 	rc->start = st;
 	rc->end = en;
-	rc->mode = IVAL_STARTEND;
+
 	return 0;
 }

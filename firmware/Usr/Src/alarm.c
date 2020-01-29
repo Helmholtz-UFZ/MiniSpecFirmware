@@ -44,7 +44,7 @@ static RTC_TimeTypeDef get_closest_next_alarm(runtime_config_t *rc) {
 void set_initial_alarm(runtime_config_t *rc) {
 	RTC_TimeTypeDef t;
 	rtc_timestamp_t ts;
-	if (rc->mode == IVAL_OFF) {
+	if (rc->mode == IVAL_OFF || rc->mode == TRIGGERED) {
 		init_timetype(&rc->ival);
 		init_timetype(&rc->next_alarm);
 		HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
