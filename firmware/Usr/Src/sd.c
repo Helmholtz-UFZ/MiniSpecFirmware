@@ -192,7 +192,7 @@ uint8_t measurement_to_SD(char *timestamp_str) {
 			res = sd_close(f);
 
 			/* Print what we wrote to sd.*/
-			debug("SD: wrote to File: %s, data:\n", fname.buf);
+			debug("(sd) wrote to File: %s, data:\n", fname.buf);
 			if (rc.use_debugprints) {
 				/* Use printf() instead of debug() to prevent 'dbg:' string before every value. */
 				printf("%s, %u, %lu, [,", timestamp_str, sens1.errc, sens1.last_itime);

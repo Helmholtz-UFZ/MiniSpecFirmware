@@ -113,7 +113,7 @@ void run(void) {
 		rxtx_restart_listening();
 	}
 
-	debug("rxtx,alarm,trigger: %i %i %i\n", rxtx.wakeup, rtc.alarmA_wakeup, rc.trigger);
+	debug("(main) rxtx,alarm,trigger: %i %i %i\n", rxtx.wakeup, rtc.alarmA_wakeup, rc.trigger);
 
 
 	if (rc.trigger) {
@@ -124,7 +124,7 @@ void run(void) {
 		// which allow the user to send a rising edge (trigger) on the
 		// CMDS_EN_Pin, which will then start an immediate (multi-)measurement.
 		if (rc.mode == MODE_TRIGGERED){
-//			multimeasure(true);
+			multimeasure(true);
 		}
 	}
 
@@ -426,11 +426,11 @@ static void send_data(void) {
 }
 
 static void periodic_alarm_handler(void) {
-	debug("Periodic alarm \n");
+	debug("(palarm) Periodic alarm \n");
 	RTC_TimeTypeDef new;
 	rtc_timestamp_t ts;
 	ts = rtc_get_now();
-	debug("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+	debug("(palarm) now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
 
 	if (rc.mode == MODE_OFF) {
@@ -455,7 +455,7 @@ static void periodic_alarm_handler(void) {
 	/* Do the measurement */
 	multimeasure(true);
 
-	debug("next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
+	debug("(palarm) next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 }
 
 static void multimeasure(bool to_sd) {
@@ -471,12 +471,12 @@ static void multimeasure(bool to_sd) {
 			continue;
 		}
 
-		debug("itime[%u]=%ld\n", i, itime);
+		debug("(mm) itime[%u]=%ld\n", i, itime);
 
 		/* Measure N times */
 		for (int n = 0; n < rc.iterations; ++n) {
 
-			debug("N: %u/%u\n", n, rc.iterations - 1);
+			debug("(mm) N: %u/%u\n", n, rc.iterations - 1);
 			/* Generate timestamp */
 			rtc_get_now_str(ts_buff, TS_BUFF_SZ);
 
@@ -505,7 +505,7 @@ static void multimeasure(bool to_sd) {
 static void print_config_from_SD(void){
 	runtime_config_t rc = {0,};
 	if (read_config_from_SD(&rc)){
-		debug("read failed\n");
+		debug("(main) read failed\n");
 		return;
 	}
 	rc.next_alarm.Hours = rc.next_alarm.Minutes = rc.next_alarm.Seconds = 99;

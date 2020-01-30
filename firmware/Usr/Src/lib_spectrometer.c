@@ -169,7 +169,7 @@ void sensor_deinit(void) {
  *
  */
 void sensor_measure(uint32_t itime) {
-	debug("measure( %ld )\n", itime);
+	debug("(sens) itime: %ld us\n", itime);
 	uint32_t int_time_cnt;
 
 	if (sens1.status < SENS_INITIALIZED) {

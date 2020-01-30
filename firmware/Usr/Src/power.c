@@ -202,7 +202,7 @@ void cpu_enter_LPM(void) {
 			break;
 
 		case DEEP_SLEEP_MODE:
-			debug("enter deep sleep mode\n");
+			debug("(cpu) enter deep sleep mode\n");
 			sys_deinit(DEEP_SLEEP_MODE);
 			while (status == DEEP_SLEEP_MODE) {
 				cpu_stop2();
@@ -212,7 +212,7 @@ void cpu_enter_LPM(void) {
 			break;
 
 		case LIGHT_SLEEP_MODE:
-			debug("enter light sleep mode\n");
+			debug("(cpu) enter light sleep mode\n");
 			sys_deinit(LIGHT_SLEEP_MODE);
 			while (status == LIGHT_SLEEP_MODE) {
 				cpu_sleep();
