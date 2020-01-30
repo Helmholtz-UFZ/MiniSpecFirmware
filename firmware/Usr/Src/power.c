@@ -147,11 +147,11 @@ void power_switch_EN(bool on_off) {
 sleepstatus_t get_sleepstatus(void) {
 	bool pinstate = HAL_GPIO_ReadPin(CMDS_EN_GPIO_Port, CMDS_EN_Pin);
 
-	if (rc.mode == TRIGGERED && rc.trigger){
+	if (rc.mode == MODE_TRIGGERED && rc.trigger){
 		return AWAKE;
 	}
 
-	if (rc.mode != TRIGGERED && rtc.alarmA_wakeup) {
+	if (rc.mode != MODE_TRIGGERED && rtc.alarmA_wakeup) {
 		return AWAKE;
 	}
 
@@ -189,7 +189,7 @@ void cpu_enter_LPM(void) {
 		 * was low in between would be more accurate but a bit overkill,
 		 * because nothing can really break here.*/
 		HAL_Delay(90);
-		if (rc.mode == TRIGGERED && rc.trigger){
+		if (rc.mode == MODE_TRIGGERED && rc.trigger){
 			rc.trigger = TRIGGER_PIN_SET;
 		}
 		HAL_Delay(10);
@@ -236,7 +236,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 
 		// rising edge in trigger-mode during sleeping, set the trigger
-		if (rc.mode == TRIGGERED && rc.sleeping && TRIGGER_PIN_SET) {
+		if (rc.mode == MODE_TRIGGERED && rc.sleeping && TRIGGER_PIN_SET) {
 			rc.trigger = true;
 		}
 	}

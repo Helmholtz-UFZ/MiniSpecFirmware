@@ -28,6 +28,7 @@ static void multimeasure(bool to_sd);
 static void periodic_alarm_handler(void);
 static void extcmd_handler(void);
 static void dbg_test(void);
+static void print_config_from_SD(void);
 
 runtime_config_t rc;
 
@@ -70,7 +71,7 @@ void run_init(void) {
 	rc.format = DATA_FORMAT_ASCII;
 	rc.iterations = 1;
 	rc.itime[0] = DEFAULT_INTEGRATION_TIME;
-	rc.mode = IVAL_OFF;
+	rc.mode = MODE_OFF;
 	rc.trigger = false;
 	init_timetype(&rc.start);
 	init_timetype(&rc.end);
@@ -87,7 +88,7 @@ void run_init(void) {
 	inform_SD_reset();
 	read_config_from_SD(&rc);
 
-	set_initial_alarm(&rc);
+	init_mode(&rc);
 }
 
 void run(void) {
@@ -122,7 +123,7 @@ void run(void) {
 		// This is a pre-release hack for the `triggered mode` feature,
 		// which allow the user to send a rising edge (trigger) on the
 		// CMDS_EN_Pin, which will then start an immediate (multi-)measurement.
-		if (rc.mode == TRIGGERED){
+		if (rc.mode == MODE_TRIGGERED){
 //			multimeasure(true);
 		}
 	}
@@ -158,7 +159,7 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_SINGLE_MEASURE_START:
 		if (get_itime(rc.itime_index) <= 0) {
-			// todo errmesg -> itime disabled
+			errreply("intergration time not set\n");
 			break;
 		}
 		ok();
@@ -193,17 +194,6 @@ static void extcmd_handler(void) {
 		}
 		break;
 
-	case USR_CMD_GET_INDEXED_ITIME:
-		// todo rm this, redundant to i?
-		tmp = rc.itime[rc.itime_index];
-		if (rc.format == DATA_FORMAT_BIN) {
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime_index, 4, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &tmp, 4, 1000);
-		} else {
-			reply("integration time [%u] = %ld us\n", rc.itime_index, tmp);
-		}
-		break;
-
 	case USR_CMD_GET_RTC_TIME:
 		ts = rtc_get_now();
 		if (rc.format == DATA_FORMAT_ASCII) {
@@ -219,27 +209,6 @@ static void extcmd_handler(void) {
 		}
 		break;
 
-	case USR_CMD_GET_INTERVAL:
-		if (rc.format == DATA_FORMAT_ASCII) {
-			reply("interval mode: %u\n", rc.mode);
-			reply("start time: %02i:%02i:%02i\n", rc.start.Hours, rc.start.Minutes, rc.start.Seconds);
-			reply("end time:   %02i:%02i:%02i\n", rc.end.Hours, rc.end.Minutes, rc.end.Seconds);
-			reply("ival:       %02i:%02i:%02i\n", rc.ival.Hours, rc.ival.Minutes, rc.ival.Seconds);
-		} else {
-			/* Transmit binary */
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.mode, 1, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Hours, 1, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Minutes, 1, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.ival.Seconds, 1, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.start.Hours, 1, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.start.Minutes, 1, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.start.Seconds, 1, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.end.Hours, 1, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.end.Minutes, 1, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.end.Seconds, 1, 1000);
-		}
-		break;
-
 	case USR_CMD_GET_CONFIG:
 		print_config(&rc);
 		break;
@@ -248,6 +217,7 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_SET_FORMAT:
 		if (argparse_nr(&tmp)) {
+			fail();
 			break;
 		}
 		/* check and set argument */
@@ -260,6 +230,7 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_SET_ITIME:
 		if (argparse_nr(&tmp)) {
+			fail();
 			break;
 		}
 
@@ -276,18 +247,9 @@ static void extcmd_handler(void) {
 		ok();
 		break;
 
-	case USR_CMD_SET_ITIME_AUTO:
-		// TODO set params like so aa=x,y
-		// do not run autoadjust here ??
-		tmp = autoadjust_itime(33000, 54000);
-		rc.itime[rc.itime_index] = tmp;
-		if (rc.format == DATA_FORMAT_ASCII) {
-			reply("set integration time [%u] = %ld us\n", rc.itime_index, tmp);
-		}
-		break;
-
 	case USR_CMD_SET_ITIME_INDEX:
 		if (argparse_nr(&tmp)) {
+			fail();
 			break;
 		}
 		if (0 <= tmp && tmp < RCCONF_MAX_ITIMES) {
@@ -300,6 +262,7 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_SET_MULTI_MEASURE_ITERATIONS:
 		if (argparse_nr(&tmp)) {
+			fail();
 			break;
 		}
 		if (0 < tmp && tmp < RCCONF_MAX_ITERATIONS) {
@@ -312,9 +275,11 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_SET_RTC_TIME:
 		if (argparse_str(&str)) {
+			fail();
 			break;
 		}
 		if (rtc_parsecheck_datetime(str, &ts.time, &ts.date)) {
+			fail();
 			break;
 		}
 		/* store the current time */
@@ -325,14 +290,16 @@ static void extcmd_handler(void) {
 		ok();
 		break;
 
-	case USR_CMD_SET_INTERVAL:
+	case USR_CMD_SET_MODE:
 		if (argparse_str(&str)) {
+			fail();
 			break;
 		}
 		if (parse_ival(str, &rc)) {
+			fail();
 			break;
 		}
-		set_initial_alarm(&rc);
+		init_mode(&rc);
 		ok();
 		break;
 
@@ -342,7 +309,7 @@ static void extcmd_handler(void) {
 		reply(HELPSTR);
 		break;
 
-	case USR_CMD_STORE_CONFIG:
+	case USR_CMD_STORE_SDCONFIG:
 		tmp = write_config_to_SD(&rc);
 		if (!tmp){
 			ok();
@@ -351,11 +318,14 @@ static void extcmd_handler(void) {
 		}
 		break;
 
-	case USR_CMD_READ_CONFIG:
-		// todo use as `rdcf=1`
+	case USR_CMD_PRINT_SDCONFIG:
+			print_config_from_SD();
+			break;
+
+	case USR_CMD_READ_SDCONFIG:
 		tmp = read_config_from_SD(&rc);
 		if (!tmp){
-			set_initial_alarm(&rc);
+			init_mode(&rc);
 			ok();
 		} else {
 			errreply("read from SD faild\n");
@@ -463,13 +433,13 @@ static void periodic_alarm_handler(void) {
 	debug("now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
 
-	if (rc.mode == IVAL_OFF) {
+	if (rc.mode == MODE_OFF) {
 		return;
 	}
 
 	/* set new alarm */
 	new = rtc_time_add(&rc.next_alarm, &rc.ival);
-	if (rc.mode == IVAL_ENDLESS) {
+	if (rc.mode == MODE_ENDLESS) {
 		rtc_set_alarmA(&new);
 
 	} else { /* rc.mode == IVAL_STARTEND */
@@ -532,14 +502,7 @@ static void multimeasure(bool to_sd) {
 	sensor_deinit();
 }
 
-/* This function is used to test functions
- * or functionality under development.
- * Especially if the code is hard to reach
- * in the normal program flow. E.g. If the
- * code is executed by timer. */
-static void dbg_test(void) {
-	// todo use as `rdcf=0`
-#if DBG_CODE
+static void print_config_from_SD(void){
 	runtime_config_t rc = {0,};
 	if (read_config_from_SD(&rc)){
 		debug("read failed\n");
@@ -548,9 +511,13 @@ static void dbg_test(void) {
 	rc.next_alarm.Hours = rc.next_alarm.Minutes = rc.next_alarm.Seconds = 99;
 	reply("config on SD:\n");
 	print_config(&rc);
+}
 
-#else
-	reply("not implemented\n");
-#endif
+/* This function is used to test functions
+ * or functionality under development.
+ * Especially if the code is hard to reach
+ * in the normal program flow. E.g. If the
+ * code is executed by timer. */
+static void dbg_test(void) {
 	return;
 }

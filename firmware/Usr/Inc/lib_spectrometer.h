@@ -66,7 +66,7 @@ typedef struct
 {
 	volatile sensor_status_enum_t status;
 	volatile sensor_buffer_t *data;
-	uint32_t itime;
+	uint32_t last_itime;
 	sensor_errorcode errc;
 } sensor_t;
 

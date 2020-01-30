@@ -75,7 +75,7 @@ static sensor_buffer_t sens_buf = {
 sensor_t sens1 = {
 		.status = SENS_UNINITIALIZED,
 		.data = &sens_buf,
-		.itime = DEFAULT_INTEGRATION_TIME,
+		.last_itime = 0,
 		.errc = ERRC_UNKNOWN
 };
 
@@ -169,7 +169,7 @@ void sensor_deinit(void) {
  *
  */
 void sensor_measure(uint32_t itime) {
-	debug("sensor itime: %lu us\n", itime);
+	debug("measure( %ld )\n", itime);
 	uint32_t int_time_cnt;
 
 	if (sens1.status < SENS_INITIALIZED) {
@@ -187,12 +187,14 @@ void sensor_measure(uint32_t itime) {
 	// prevent SysTick to stretch time critical sections
 	HAL_SuspendTick();
 
+	// ensure constrains
+	itime = MIN(MAX_INTERGATION_TIME, itime);
+	itime = MAX(MIN_INTERGATION_TIME, itime);
+	sens1.last_itime = itime;
+
 	// 48 clock-cycles are added by the sensor to "high" of the ST-signal
 	// resulting in the integration-time (see c12880ma_kacc1226e.pdf)
-	int_time_cnt = MIN(MAX_INTERGATION_TIME, itime);
-	int_time_cnt = MAX(MIN_INTERGATION_TIME, int_time_cnt);
-	sens1.itime = int_time_cnt;
-	int_time_cnt -= ITIME_CORRECTION;
+	int_time_cnt = itime - ITIME_CORRECTION;
 
 	// TIM5 - safty timer
 	// en IR in module

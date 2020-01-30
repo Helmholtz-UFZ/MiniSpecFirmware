@@ -72,7 +72,7 @@ uint8_t write_config_to_SD(runtime_config_t *rc) {
 		if (!res) {
 			f_printf(f, "%U\n", RCCONF_MAX_ITIMES);
 			for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
-				f_printf(f, "%LU\n", rc->itime[i]);
+				f_printf(f, "%LD\n", rc->itime[i]);
 			}
 			f_printf(f, "%U\n", rc->iterations);
 
@@ -94,7 +94,7 @@ uint8_t write_config_to_SD(runtime_config_t *rc) {
 }
 
 uint8_t read_config_from_SD(runtime_config_t *rc) {
-	// todo save whole rc to SD (debugprints, ...)
+	// todo save whole rc to SD (debugprints, format ...)
 #if HAS_SD
 # if RCCONF_MAX_ITIMES > 32
 # error "Attention buffer gets big.. Improve implementation :)"
@@ -105,14 +105,15 @@ uint8_t read_config_from_SD(runtime_config_t *rc) {
 	uint16_t sz = RCCONF_MAX_ITIMES * 6 + 3 * 20 + 20;
 	uint8_t buf[sz];
 	uint8_t res;
-	uint32_t nr, rcconf_max_itimes;
+	uint32_t rcconf_max_itimes, natNr;
+	int32_t anyInt;
 	UINT bytesread;
 	char *token, *rest;
 	bool fail;
 
 	memset(buf, 0, sz * sizeof(uint8_t));
 	rest = (char*) buf;
-	nr = 0;
+	natNr = anyInt = 0;
 	fail = false;
 
 	res = sd_mount();
@@ -120,30 +121,34 @@ uint8_t read_config_from_SD(runtime_config_t *rc) {
 		res = sd_open(f, SD_CONFIGFILE_NAME, FA_READ);
 		if (!res) {
 			f_read(f, buf, sizeof(buf), &bytesread);
+
 			/* == parsing: == */
+
 			/* Read RCCONF_MAX_ITIMES from sd*/
 			token = strtok_r(rest, "\n", &rest);
 			fail = (token == NULL);
-			res = sscanf(token, "%lu", &nr);
-			if (!fail && res > 0 && nr > 0) {
-				rcconf_max_itimes = nr > RCCONF_MAX_ITIMES ? RCCONF_MAX_ITIMES : nr;
+			res = sscanf(token, "%lu", &natNr);
+			if (!fail && res > 0 && natNr > 0) {
+				rcconf_max_itimes = natNr > RCCONF_MAX_ITIMES ? RCCONF_MAX_ITIMES : natNr;
+
 				/*read itimes[i] from sd*/
 				for (uint i = 0; i < rcconf_max_itimes; ++i) {
 					token = strtok_r(rest, "\n", &rest);
-					res = sscanf(token, "%lu", &nr);
+					res = sscanf(token, "%ld", &anyInt);
 					if (token == NULL || res <= 0) {
 						fail = true;
 						break;
 					}
-					rc->itime[i] = nr;
+					rc->itime[i] = anyInt;
 				}
 			}
+
+			/* Read iterations aka. N from sd*/
 			if (!fail) {
-				/* Read iterations aka. N from sd*/
 				token = strtok_r(rest, "\n", &rest);
-				res = sscanf(token, "%lu", &nr);
-				if (token != NULL && res > 0 && nr > 0) {
-					rc->iterations = nr;
+				res = sscanf(token, "%lu", &natNr);
+				if (token != NULL && res > 0 && natNr > 0) {
+					rc->iterations = natNr;
 					/* Read 'mode,ival,start,end' as one string from sd.
 					 * If parse_ival() fails, no times are set. */
 					token = rest;
@@ -174,7 +179,7 @@ uint8_t measurement_to_SD(char *timestamp_str) {
 		res = sd_open_file_neworappend(f, fname.buf);
 		if (!res) {
 			/* Write metadata (timestamp, errorcode, intergartion time) */
-			f_printf(f, "%S, %U, %LU, [,", timestamp_str, sens1.errc, sens1.itime);
+			f_printf(f, "%S, %U, %LU, [,", timestamp_str, sens1.errc, sens1.last_itime);
 			/* Write data */
 			if (!sens1.errc) {
 				/* Lopp through measurement results and store to file */
@@ -190,7 +195,7 @@ uint8_t measurement_to_SD(char *timestamp_str) {
 			debug("SD: wrote to File: %s, data:\n", fname.buf);
 			if (rc.use_debugprints) {
 				/* Use printf() instead of debug() to prevent 'dbg:' string before every value. */
-				printf("%s, %u, %lu, [,", timestamp_str, sens1.errc, sens1.itime);
+				printf("%s, %u, %lu, [,", timestamp_str, sens1.errc, sens1.last_itime);
 				uint32_t *p = (uint32_t *) (sens1.data->wptr - MSPARAM_PIXEL);
 				for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
 					printf("%u,", (uint) *(p++));

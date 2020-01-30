@@ -107,6 +107,7 @@ void fail(void) {
 void print_config(runtime_config_t *rc){
 	// todo: mv this away from stdio_usr.c
 	rtc_timestamp_t ts;
+	reply("mode: %u\n", rc->mode);
 	for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
 		if (rc->itime[i] != 0) {
 			reply("itime[%u] = %ld\n", i, rc->itime[i]);
@@ -114,7 +115,6 @@ void print_config(runtime_config_t *rc){
 	}
 	reply("ii: %u  ('i=' set itime[%u])\n", rc->itime_index, rc->itime_index);
 	reply("iter. per meas. [N]: %u\n", rc->iterations);
-	reply("interval mode: %u\n", rc->mode);
 	reply("start time:      %02i:%02i:%02i\n", rc->start.Hours, rc->start.Minutes, rc->start.Seconds);
 	reply("end time:        %02i:%02i:%02i\n", rc->end.Hours, rc->end.Minutes, rc->end.Seconds);
 	reply("interval:        %02i:%02i:%02i\n", rc->ival.Hours, rc->ival.Minutes, rc->ival.Seconds);

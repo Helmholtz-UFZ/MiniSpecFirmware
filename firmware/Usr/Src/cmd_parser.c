@@ -11,6 +11,33 @@
 #include "stdio.h"
 
 usr_cmd_typedef extcmd;
+
+
+static bool _parsecmd(uint8_t *buf, char *cmd, char *alias){
+	uint8_t sz = strlen(cmd);
+	if (memcmp(buf, cmd, sz) == 0) {
+		return true;
+	}
+	if (alias){
+		sz = strlen(alias);
+		if (memcmp(buf, alias, sz) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static void _set_argbuf(uint8_t *buf, char *cmd){
+	/* Search the '=' */
+	char *p = (char*) memchr(buf, '=', strlen(cmd));
+
+	/* Copy the argstr to the arg_buffer, so we can reset
+	 * the receive buffer and listen on the rx-line again. */
+	if (p){
+		strncpy(extcmd.arg_buffer, p+1, ARGBUFFSZ);
+	}
+}
+
 /*
  * check and parse for an command and set the
  * variable usrcmd if any command was found.
@@ -21,236 +48,117 @@ usr_cmd_typedef extcmd;
  * @param buffer the buffer to check
  * @param size unused
  *
- * todo (future release) check the whole buffer up to size
  */
 void parse_extcmd(uint8_t *buffer, uint16_t size) {
 	UNUSED(size);
-	char *str, *alias;
-	uint16_t sz, aliassz;
 
 	/* init cmd structure */
 	extcmd.cmd = USR_CMD_UNKNOWN;
 	memset(&extcmd.arg_buffer, 0, ARGBUFFSZ);
 
-	str = "measure\r";
-	alias = "m\r";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+	if(_parsecmd(buffer, "measure\r", "m\r")){
 		extcmd.cmd = USR_CMD_SINGLE_MEASURE_START;
 		return;
 	}
 
-	str = "multimeasure\r";
-	alias = "mm\r";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+	if(_parsecmd(buffer, "multimeasure\r", "mm\r")){
 		extcmd.cmd = USR_CMD_MULTI_MEASURE_START;
 		return;
 	}
 
-	str = "getdata\r";
-	alias = "gd\r";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+	if(_parsecmd(buffer, "getdata\r", "gd\r")){
 		extcmd.cmd = USR_CMD_GET_DATA;
 		return;
 	}
 
-	str = "storeconf";
-	alias = "stcf";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
-		extcmd.cmd = USR_CMD_STORE_CONFIG;
-		/* Set pointer to char after the '=' */
-		str = (char*) memchr(buffer, '=', sz) + 1;
-		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
-		 * listening again on the rx line. */
-		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
+	if(_parsecmd(buffer, "storeconf", "stcf")){
+		extcmd.cmd = USR_CMD_STORE_SDCONFIG;
 		return;
 	}
 
-	str = "readconf";
-	alias = "rdcf";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
-		extcmd.cmd = USR_CMD_READ_CONFIG;
-		/* Set pointer to char after the '=' */
-		str = (char*) memchr(buffer, '=', sz) + 1;
-		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
-		 * listening again on the rx line. */
-		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
+	if(_parsecmd(buffer, "readconf", "rdcf")){
+		extcmd.cmd = USR_CMD_READ_SDCONFIG;
 		return;
 	}
 
-	str = "#debug\r";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0) {
+	if(_parsecmd(buffer, "printconf", "prcf")){
+		extcmd.cmd = USR_CMD_PRINT_SDCONFIG;
+		return;
+	}
+
+	if(_parsecmd(buffer, "#debug\r", NULL)){
 		extcmd.cmd = USR_CMD_DEBUG;
 		return;
 	}
 
-	str = "#test\r";
-	sz = strlen(str);
-	if (memcmp(buffer, str, sz) == 0) {
+	if(_parsecmd(buffer, "#test\r", NULL)){
 		extcmd.cmd = USR_CMD_DBGTEST;
 		return;
 	}
 
-	str = "version\r";
-	sz = strlen(str);
-	if (memcmp(buffer, str, sz) == 0) {
+	if(_parsecmd(buffer, "version\r", NULL)){
 		extcmd.cmd = USR_CMD_VERSION;
 		return;
 	}
 
-	str = "help\r";
-	alias = "h\r";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+	if(_parsecmd(buffer, "help\r", "h\r")){
 		extcmd.cmd = USR_CMD_HELP;
 		return;
 	}
 
-	str = "rtc?\r";
-	sz = strlen(str);
-	if (memcmp(buffer, str, sz) == 0) {
+	if(_parsecmd(buffer, "rtc?\r", NULL)){
 		extcmd.cmd = USR_CMD_GET_RTC_TIME;
 		return;
 	}
 
-	str = "ival?\r";
-	sz = strlen(str);
-	if (memcmp(buffer, str, sz) == 0) {
-		extcmd.cmd = USR_CMD_GET_INTERVAL;
-		return;
-	}
-
-	str = "config?\r";
-	alias = "c?\r";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+	if(_parsecmd(buffer, "config?\r", "c?\r")){
 		extcmd.cmd = USR_CMD_GET_CONFIG;
 		return;
 	}
 
-	str = "itime?\r";
-	alias = "i?\r";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+	if(_parsecmd(buffer, "itime?\r", "i?\r")){
 		extcmd.cmd = USR_CMD_GET_ITIME;
 		return;
 	}
 
-	str = "itimeindex?\r";
-	alias = "ii?\r";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
-		extcmd.cmd = USR_CMD_GET_INDEXED_ITIME;
-		return;
-	}
-
-	str = "itime=";
-	alias = "i=";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+	if(_parsecmd(buffer, "itime=", "i=")){
+		_set_argbuf(buffer, "itime=");
 		extcmd.cmd = USR_CMD_SET_ITIME;
-		/* Set pointer to char after the '=' */
-		str = (char*) memchr(buffer, '=', sz) + 1;
-		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
-		 * listening again on the rx line. */
-		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
 		return;
 	}
 
-	str = "autoadjust\r";
-	alias = "aa\r";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
-		extcmd.cmd = USR_CMD_SET_ITIME_AUTO;
-		return;
-	}
-
-
-	str = "itimeindex=";
-	alias = "ii=";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+	if(_parsecmd(buffer, "itimeindex=", "ii=")){
+		_set_argbuf(buffer, "itimeindex=");
 		extcmd.cmd = USR_CMD_SET_ITIME_INDEX;
-		/* Set pointer to char after the '=' */
-		str = (char*) memchr(buffer, '=', sz) + 1;
-		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
-		 * listening again on the rx line. */
-		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
 		return;
 	}
 
-	str = "iterations=";
-	alias = "N=";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+	if(_parsecmd(buffer, "iterations=", "N=")){
+		_set_argbuf(buffer, "iterations=");
 		extcmd.cmd = USR_CMD_SET_MULTI_MEASURE_ITERATIONS;
-		/* Set pointer to char after the '=' */
-		str = (char*) memchr(buffer, '=', sz) + 1;
-		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
-		 * listening again on the rx line. */
-		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
 		return;
 	}
 
-	str = "format=";
-	alias = "f=";
-	sz = strlen(str);
-	aliassz = strlen(alias);
-	if (memcmp(buffer, str, sz) == 0 || memcmp(buffer, alias, aliassz) == 0) {
+	if(_parsecmd(buffer, "format=", "f=")){
+		_set_argbuf(buffer, "format=");
 		extcmd.cmd = USR_CMD_SET_FORMAT;
-		/* Set pointer to char after the '=' */
-		str = (char*) memchr(buffer, '=', sz) + 1;
-		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
-		 * listening again on the rx line. */
-		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
 		return;
 	}
 
-	str = "rtc=";
-	sz = strlen(str);
-	if (memcmp(buffer, str, sz) == 0) {
+	if(_parsecmd(buffer, "rtc=", NULL)){
+		_set_argbuf(buffer, "rtc=");
 		extcmd.cmd = USR_CMD_SET_RTC_TIME;
-		/* Set pointer to char after the '=' */
-		str = (char*) memchr(buffer, '=', sz) + 1;
-		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
-		 * listening again on the rx line. */
-		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
 		return;
 	}
 
-	str = "ival=";
-	sz = strlen(str);
-	if (memcmp(buffer, str, sz) == 0) {
-		extcmd.cmd = USR_CMD_SET_INTERVAL;
-		/* Set pointer to char after the '=' */
-		str = (char*) memchr(buffer, '=', sz) + 1;
-		/* Copy arg str to arg_buffer, so we can reset the receive buffer and
-		 * listening again on the rx line. */
-		strncpy(extcmd.arg_buffer, str, ARGBUFFSZ);
+	if(_parsecmd(buffer, "mode=", NULL)){
+		_set_argbuf(buffer, "mode=");
+		extcmd.cmd = USR_CMD_SET_MODE;
 		return;
 	}
 }
 
-/** Parse natural number from arg_buffer to arg.
+/** Parse any +- integer from arg_buffer to arg.
  *  Return 0 on success, otherwise non-zero */
 int8_t argparse_nr(int32_t *nr) {
 	int res;
@@ -304,7 +212,7 @@ int8_t parse_ival(char *str, runtime_config_t* rc) {
 
 	rc->mode = c;
 
-	if (rc->mode == IVAL_OFF || rc->mode == TRIGGERED) {
+	if (rc->mode == MODE_OFF || rc->mode == MODE_TRIGGERED) {
 		rc->start = off;
 		rc->end = off;
 		rc->ival = off;
@@ -328,7 +236,7 @@ int8_t parse_ival(char *str, runtime_config_t* rc) {
 
 	rc->ival = iv;
 
-	if (rc->mode == IVAL_ENDLESS) {
+	if (rc->mode == MODE_ENDLESS) {
 		return 0;
 	}
 

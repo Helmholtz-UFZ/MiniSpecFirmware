@@ -31,11 +31,11 @@
 
 typedef enum
 {
-	IVAL_OFF = 0,
-	IVAL_ENDLESS = 1,
-	IVAL_STARTEND = 2,
-	TRIGGERED = 3,
-}ival_mode_t;
+	MODE_OFF = 0,
+	MODE_ENDLESS = 1,
+	MODE_STARTEND = 2,
+	MODE_TRIGGERED = 3,
+} run_mode_t;
 
 #define RCCONF_MAX_ITIMES  32
 #define RCCONF_MAX_ITERATIONS  32
@@ -46,7 +46,7 @@ typedef struct
 	uint8_t itime_index;
 
 	// see also ival_mode_t
-	ival_mode_t mode;
+	run_mode_t mode;
 
 	RTC_TimeTypeDef start;
 	RTC_TimeTypeDef end;

@@ -22,32 +22,28 @@ typedef enum
 	// run
 	USR_CMD_SINGLE_MEASURE_START,
 	USR_CMD_MULTI_MEASURE_START,
-	USR_CMD_STREAM_START,  // deprecated
-	USR_CMD_STREAM_END,    // deprecated
 
 	// getter
 	USR_CMD_GET_DATA,
 	USR_CMD_GET_ITIME,
-	USR_CMD_GET_INDEXED_ITIME,
 	USR_CMD_GET_RTC_TIME,
-	USR_CMD_GET_INTERVAL,
 	USR_CMD_GET_CONFIG,
 
 	//setter
 	USR_CMD_SET_FORMAT, // 0 - raw/bin or 1 - ascii
 	USR_CMD_SET_SENSOR, // UNUSED (for future use) - choose if sens 1 or sens 2
 	USR_CMD_SET_ITIME,
-	USR_CMD_SET_ITIME_AUTO,
 	USR_CMD_SET_ITIME_INDEX,
 	USR_CMD_SET_MULTI_MEASURE_ITERATIONS,
 	USR_CMD_SET_RTC_TIME,
-	USR_CMD_SET_INTERVAL,
+	USR_CMD_SET_MODE,
 
 	// other
 	USR_CMD_VERSION,
 	USR_CMD_HELP,
-	USR_CMD_STORE_CONFIG,
-	USR_CMD_READ_CONFIG,
+	USR_CMD_STORE_SDCONFIG,
+	USR_CMD_READ_SDCONFIG,
+	USR_CMD_PRINT_SDCONFIG,
 
 	//debug
 	USR_CMD_DEBUG,
@@ -55,30 +51,29 @@ typedef enum
 
 } usr_cmd_enum_t;
 
-#define HELPSTR  "" \
-	"h      - print this help\n"\
-	"version- print the firmware version\n"\
-	"stcf   - store config to sd\n"\
-	"rdcf   - read config from sd\n"\
-/*	"#debug - toggle dbg messages"        hidden feature*/\
-/*	"#test  - run a test command"         hidden feature*/\
-	"m      - measure\n"\
-	"mm     - multimeasure\n"\
-/*  "stream - streaming data\n"\          deprecated*/\
-/*	"end    - end stream\n"\              deprecated*/\
-	"gd     - get (last) data or error\n"\
-	"i?     - get intergration time\n"\
-	"ii?    - get (current) integration time index\n"\
-	"rtc?   - get current time\n"\
-	"ival?  - get interval\n"\
-	"c?     - get config\n"\
-	"i=     - set intergration time\n"\
-	"ii=    - set index to set inegration time for mm\n"\
-	"N=     - set iterations per measurement for mm\n"\
-	"rtc=   - set current time 20YY-MM-DDTHH:MM:SS\n"\
-	"format={0/1} - set format bin/ascii\n"\
-	"ival={0 / 1,IVAL / 2,IVAL,START,STOP} \n"\
-    "  - set interval with IVAL,STRT,STOP = HH:MM:SS\n\n"
+#define HELPSTR  "HELP\n" \
+	"h       - print this help\n"\
+	"version - print the firmware version\n"\
+	"stcf    - store config to sd\n"\
+	"prcf    - print the config, that is stored on sd\n"\
+	"rdcf    - read back the config from the sd into the system\n"\
+/*	"#debug  - toggle dbg messages"        hidden feature*/\
+/*	"#test   - run a test command"         hidden feature*/\
+	"m       - measure\n"\
+	"mm      - multimeasure\n"\
+	"gd      - get (last) data or error\n"\
+	"i?      - get intergration time\n"\
+	"rtc?    - get current time\n"\
+	"c?      - get config\n"\
+	"i=      - set intergration time (negativ values set to auto-adjust)\n"\
+	"ii=     - set index for setting inegration time\n"\
+	"N=      - set iterations per measurement (for mm)\n"\
+	"rtc=    - set current time format: '20YY-MM-DDTHH:MM:SS'\n"\
+	"format={0/1} \n"\
+	"        - set format bin/ascii \n"\
+	"mode={0 (off) / 1,IVAL / 2,IVAL,START,STOP / 3 (triggered)} \n"\
+    "        - set the mode with IVAL,STRT,STOP format: 'HH:MM:SS' \n"\
+	"\n"
 
 /** Size of the argument buffer in usr_cmd_typedef
  * must not exceed UART_RX_BUFFER_SZ */

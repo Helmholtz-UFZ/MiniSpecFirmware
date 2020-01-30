@@ -300,7 +300,6 @@ RTC_TimeTypeDef rtc_time_add(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b) {
 		c.Hours -= 24;
 	}
 	return c;
-	// TODO carry ?
 }
 
 uint32_t rtc_time2seconds(RTC_TimeTypeDef *t) {

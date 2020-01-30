@@ -41,20 +41,20 @@ static RTC_TimeTypeDef get_closest_next_alarm(runtime_config_t *rc) {
 /*
  * Set the alarm if the user was submitting a new value.
  */
-void set_initial_alarm(runtime_config_t *rc) {
+void init_mode(runtime_config_t *rc) {
 	RTC_TimeTypeDef t;
 	rtc_timestamp_t ts;
-	if (rc->mode == IVAL_OFF || rc->mode == TRIGGERED) {
+	if (rc->mode == MODE_OFF || rc->mode == MODE_TRIGGERED) {
 		init_timetype(&rc->ival);
 		init_timetype(&rc->next_alarm);
 		HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
 
-	} else if (rc->mode == IVAL_STARTEND) {
+	} else if (rc->mode == MODE_STARTEND) {
 		t = get_closest_next_alarm(rc);
 		rtc_set_alarmA(&t);
 		rc->next_alarm = rtc_get_alermAtime();
 
-	} else if (rc->mode == IVAL_ENDLESS) {
+	} else if (rc->mode == MODE_ENDLESS) {
 		ts = rtc_get_now();
 		rtc_set_alarmA_by_offset(&ts.time, &rc->ival);
 		rc->next_alarm = rtc_get_alermAtime();

@@ -254,7 +254,7 @@
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Debug">
-			<resource resourceType="PROJECT" workspacePath="minispec"/>
+			<resource resourceType="PROJECT" workspacePath="/minispec"/>
 		</configuration>
 		<configuration configurationName="Release"/>
 	</storageModule>
