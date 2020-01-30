@@ -68,7 +68,6 @@ void run_init(void) {
 	rc.use_debugprints = false;
 #endif
 	rc.format = DATA_FORMAT_ASCII;
-	rc.stream = false;
 	rc.iterations = 1;
 	rc.itime[0] = DEFAULT_INTEGRATION_TIME;
 	rc.mode = IVAL_OFF;
@@ -100,7 +99,7 @@ void run(void) {
 	 * (see next line) */
 	//=================================================================
 	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM); //
-	if (!rxtx.wakeup && !rc.stream && !rtc.alarmA_wakeup) {        //
+	if (!rxtx.wakeup && !rtc.alarmA_wakeup) {        //
 		cpu_enter_LPM();
 	}                                                                 //
 	__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);                        //
@@ -131,24 +130,6 @@ void run(void) {
 	if (rtc.alarmA_wakeup) {
 		rtc.alarmA_wakeup = false;
 		periodic_alarm_handler();
-		if (rc.stream) {
-			/* The handler has deinit the sensor,
-			 * undo that now, if we are in stream mode */
-			sensor_init();
-		}
-	}
-
-	if (rc.stream) {
-		sensor_measure(rc.itime[0]);
-		send_data();
-		if (sens1.errc) {
-			sensor_deinit();
-#if IGNORE_ERRORS_IN_STREAM
-			sensor_init();
-#else
-			rc.stream = 0;
-#endif
-		}
 	}
 
 	if (rxtx.wakeup) {
@@ -160,8 +141,18 @@ void run(void) {
 	}
 }
 
+uint32_t get_itime(){
+	if (rc.itime[rc.itime_index] < 0) {
+		return autoadjust_itime(33000, 54000);
+	}
+	if (rc.itime[rc.itime_index] == 0) {
+		return 0;
+	}
+	return rc.itime[rc.itime_index];
+}
+
 static void extcmd_handler(void) {
-	uint32_t tmp = 0;
+	int32_t tmp = 0;
 	char *str = NULL;
 
 	switch (extcmd.cmd) {
@@ -169,13 +160,15 @@ static void extcmd_handler(void) {
 	/* RUN ============================================================ */
 
 	case USR_CMD_SINGLE_MEASURE_START:
+		if (get_itime() <= 0) {
+			// todo errmesg -> itime disabled
+			break;
+		}
 		ok();
 		sensor_init();
-		sensor_measure(rc.itime[0]);
+		sensor_measure(rc.itime[rc.itime_index]);
 		sensor_deinit();
 		send_data();
-		/* A single measurement during stream mode, end the stream mode. */
-		rc.stream = false;
 		break;
 
 	case USR_CMD_MULTI_MEASURE_START:
@@ -183,19 +176,8 @@ static void extcmd_handler(void) {
 		multimeasure(false);
 		break;
 
-	case USR_CMD_STREAM_START:
-		ok();
-		sensor_init();
-		rc.stream = true;
-		break;
 
-	case USR_CMD_STREAM_END:
-		ok();
-		sensor_deinit();
-		rc.stream = false;
-		break;
-
-		/* GETTER ============================================================ */
+	/* GETTER ============================================================ */
 
 	case USR_CMD_VERSION:
 		reply("firmware: %s\n", __FIRMWARE_VERSION);
@@ -207,9 +189,9 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_GET_ITIME:
 		if (rc.format == DATA_FORMAT_BIN) {
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime[0], 4, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime[rc.itime_index], 4, 1000);
 		} else {
-			reply("integration time [0] = %lu us\n", rc.itime[0]);
+			reply("integration time [%u] = %ld us\n", rc.itime_index, rc.itime[rc.itime_index]);
 		}
 		break;
 
@@ -219,7 +201,7 @@ static void extcmd_handler(void) {
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime_index, 4, 1000);
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) &tmp, 4, 1000);
 		} else {
-			reply("integration time [%u] = %lu us\n", rc.itime_index, tmp);
+			reply("integration time [%u] = %ld us\n", rc.itime_index, tmp);
 		}
 		break;
 
@@ -281,9 +263,13 @@ static void extcmd_handler(void) {
 		if (argparse_nr(&tmp)) {
 			break;
 		}
-		// always check itime
-		// note: default itime (index 0) cannot reseted
-		if(rc.itime_index == 0 || tmp > 0){
+
+		// itime <  0: auto measure
+		// itime == 0: disable index
+		// itime >  0: check min/max
+		if(tmp < 0){
+			tmp = -1;
+		} else if ( tmp > 0){
 			tmp = MAX(MIN_INTERGATION_TIME, tmp);
 			tmp = MIN(MAX_INTERGATION_TIME, tmp);
 		}
@@ -295,7 +281,7 @@ static void extcmd_handler(void) {
 		tmp = autoadjust_itime(33000, 54000);
 		rc.itime[rc.itime_index] = tmp;
 		if (rc.format == DATA_FORMAT_ASCII) {
-			reply("set integration time [%u] = %lu us\n", rc.itime_index, tmp);
+			reply("set integration time [%u] = %ld us\n", rc.itime_index, tmp);
 		}
 		break;
 
@@ -303,7 +289,7 @@ static void extcmd_handler(void) {
 		if (argparse_nr(&tmp)) {
 			break;
 		}
-		if (tmp < RCCONF_MAX_ITIMES) {
+		if (0 <= tmp && tmp < RCCONF_MAX_ITIMES) {
 			rc.itime_index = tmp;
 			ok();
 		}else{
@@ -391,6 +377,7 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_SET_SENSOR:
 	case USR_CMD_UNKNOWN:
+	default:
 		reply("???\n");
 		break;
 	}
@@ -505,7 +492,7 @@ static void multimeasure(bool to_sd) {
 			/* itime disabled */
 			continue;
 		}
-		debug("itime[%u]=%lu\n", i, rc.itime[i]);
+		debug("itime[%u]=%ld\n", i, rc.itime[i]);
 
 		/* Measure N times */
 		for (int n = 0; n < rc.iterations; ++n) {

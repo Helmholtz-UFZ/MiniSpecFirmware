@@ -50,20 +50,6 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 		return;
 	}
 
-	str = "stream\r";
-	sz = strlen(str);
-	if (memcmp(buffer, str, sz) == 0) {
-		extcmd.cmd = USR_CMD_STREAM_START;
-		return;
-	}
-
-	str = "end\r";
-	sz = strlen(str);
-	if (memcmp(buffer, str, sz) == 0) {
-		extcmd.cmd = USR_CMD_STREAM_END;
-		return;
-	}
-
 	str = "getdata\r";
 	alias = "gd\r";
 	sz = strlen(str);
@@ -266,13 +252,13 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 
 /** Parse natural number from arg_buffer to arg.
  *  Return 0 on success, otherwise non-zero */
-int8_t argparse_nr(uint32_t *nr) {
+int8_t argparse_nr(int32_t *nr) {
 	int res;
 	if (extcmd.arg_buffer[0] == 0) {
 		/* buffer empty */
 		return -1;
 	}
-	res = sscanf(extcmd.arg_buffer, "%lu", nr);
+	res = sscanf(extcmd.arg_buffer, "%ld", nr);
 	if (res <= 0) {
 		nr = 0;
 		return res;

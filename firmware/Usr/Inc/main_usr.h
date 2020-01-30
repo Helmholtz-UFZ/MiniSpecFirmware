@@ -42,7 +42,7 @@ typedef enum
 typedef struct
 {
 	uint8_t iterations;
-	uint32_t itime[RCCONF_MAX_ITIMES];
+	int32_t itime[RCCONF_MAX_ITIMES];
 	uint8_t itime_index;
 
 	// see also ival_mode_t
@@ -59,8 +59,7 @@ typedef struct
 
 	// the format to use for communication can be: DATA_FORMAT_BIN or DATA_FORMAT_ASCII
 	bool format;
-	bool stream;
-	volatile bool sleeping;
+	bool sleeping;
 	volatile bool trigger;
 
 } runtime_config_t;

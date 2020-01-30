@@ -22,8 +22,8 @@ typedef enum
 	// run
 	USR_CMD_SINGLE_MEASURE_START,
 	USR_CMD_MULTI_MEASURE_START,
-	USR_CMD_STREAM_START,
-	USR_CMD_STREAM_END,
+	USR_CMD_STREAM_START,  // deprecated
+	USR_CMD_STREAM_END,    // deprecated
 
 	// getter
 	USR_CMD_GET_DATA,
@@ -64,8 +64,8 @@ typedef enum
 /*	"#test  - run a test command"         hidden feature*/\
 	"m      - measure\n"\
 	"mm     - multimeasure\n"\
-	"stream - streaming data\n"\
-	"end    - end stream\n"\
+/*  "stream - streaming data\n"\          deprecated*/\
+/*	"end    - end stream\n"\              deprecated*/\
 	"gd     - get (last) data or error\n"\
 	"i?     - get intergration time\n"\
 	"ii?    - get (current) integration time index\n"\
@@ -101,7 +101,7 @@ typedef struct
 extern usr_cmd_typedef extcmd;
 
 void parse_extcmd(uint8_t *buffer, uint16_t size);
-int8_t argparse_nr(uint32_t *nr);
+int8_t argparse_nr(int32_t *nr);
 int8_t argparse_str(char **str);
 int8_t parse_ival(char *str, runtime_config_t* rc);
 
