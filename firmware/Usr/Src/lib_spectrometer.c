@@ -88,6 +88,10 @@ static uint32_t map_status2errcode(uint8_t status);
  * and timer needed by the sensor.
  */
 void sensor_init(void) {
+	// todo only call sensor_init() if necessary
+	// measure -> check if init is needed
+	// if fails -> deinit, init, try again
+	// if fails, it fails
 	sens1.data = &sens_buf;
 	sens1.data->base = secure_memblock1.memblock;
 	sens1.data->wptr = secure_memblock1.memblock;

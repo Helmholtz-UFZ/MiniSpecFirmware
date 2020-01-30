@@ -57,7 +57,7 @@ typedef enum
 
 #define HELPSTR  "" \
 	"h      - print this help\n"\
-	"version- print the firmware version"\
+	"version- print the firmware version\n"\
 	"stcf   - store config to sd\n"\
 	"rdcf   - read config from sd\n"\
 /*	"#debug - toggle dbg messages"        hidden feature*/\

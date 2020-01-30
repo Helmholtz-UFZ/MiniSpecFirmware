@@ -141,14 +141,11 @@ void run(void) {
 	}
 }
 
-uint32_t get_itime(){
-	if (rc.itime[rc.itime_index] < 0) {
+uint32_t get_itime(uint8_t idx){
+	if (rc.itime[idx] < 0) {
 		return autoadjust_itime(33000, 54000);
 	}
-	if (rc.itime[rc.itime_index] == 0) {
-		return 0;
-	}
-	return rc.itime[rc.itime_index];
+	return rc.itime[idx];
 }
 
 static void extcmd_handler(void) {
@@ -160,7 +157,7 @@ static void extcmd_handler(void) {
 	/* RUN ============================================================ */
 
 	case USR_CMD_SINGLE_MEASURE_START:
-		if (get_itime() <= 0) {
+		if (get_itime(rc.itime_index) <= 0) {
 			// todo errmesg -> itime disabled
 			break;
 		}
@@ -188,6 +185,7 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_GET_ITIME:
+		// todo print `off` and `aa` if set so
 		if (rc.format == DATA_FORMAT_BIN) {
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime[rc.itime_index], 4, 1000);
 		} else {
@@ -196,6 +194,7 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_GET_INDEXED_ITIME:
+		// todo rm this, redundant to i?
 		tmp = rc.itime[rc.itime_index];
 		if (rc.format == DATA_FORMAT_BIN) {
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime_index, 4, 1000);
@@ -278,6 +277,8 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_SET_ITIME_AUTO:
+		// TODO set params like so aa=x,y
+		// do not run autoadjust here ??
 		tmp = autoadjust_itime(33000, 54000);
 		rc.itime[rc.itime_index] = tmp;
 		if (rc.format == DATA_FORMAT_ASCII) {
@@ -351,6 +352,7 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_READ_CONFIG:
+		// todo use as `rdcf=1`
 		tmp = read_config_from_SD(&rc);
 		if (!tmp){
 			set_initial_alarm(&rc);
@@ -363,6 +365,7 @@ static void extcmd_handler(void) {
 		/* DEBUG ============================================================ */
 
 	case USR_CMD_DEBUG:
+		// todo add levels
 		rc.use_debugprints = rc.use_debugprints ? false : true;
 		if (rc.use_debugprints) {
 			reply("debug on\n");
@@ -487,23 +490,29 @@ static void periodic_alarm_handler(void) {
 
 static void multimeasure(bool to_sd) {
 	int8_t res = 0;
-	for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
-		if (rc.itime[i] == 0) {
-			/* itime disabled */
+	uint32_t itime = 0;
+
+	for (uint8_t i = 0; i < RCCONF_MAX_ITIMES; ++i) {
+
+		itime = get_itime(i);
+
+		/* current itime is disabled */
+		if (itime == 0) {
 			continue;
 		}
-		debug("itime[%u]=%ld\n", i, rc.itime[i]);
+
+		debug("itime[%u]=%ld\n", i, itime);
 
 		/* Measure N times */
 		for (int n = 0; n < rc.iterations; ++n) {
 
-			debug("N: %u/%u\n", n + 1, rc.iterations);
+			debug("N: %u/%u\n", n, rc.iterations - 1);
 			/* Generate timestamp */
 			rtc_get_now_str(ts_buff, TS_BUFF_SZ);
 
 			/* Make a measurement */
 			sensor_init();
-			sensor_measure(rc.itime[i]);
+			sensor_measure(itime);
 
 			if (to_sd && HAS_SD) {
 				/* Write measurement to SD */
@@ -529,6 +538,7 @@ static void multimeasure(bool to_sd) {
  * in the normal program flow. E.g. If the
  * code is executed by timer. */
 static void dbg_test(void) {
+	// todo use as `rdcf=0`
 #if DBG_CODE
 	runtime_config_t rc = {0,};
 	if (read_config_from_SD(&rc)){
