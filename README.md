@@ -200,10 +200,10 @@ Command                      | Short           | Brief description              
 `mode=MODE,IVAL,START,END`   |                 | Set the system mode |
 
 where
- * `MODE  ={0\|1\|2\|3}`: 0:off, 1:ival1, 2:ival2, 3:triggered
- * `IVAL  =hh:mm:ss`: omit if MODE is 0 or 3
- * `START =hh:mm:ss`: omit if MODE is 0,1 or 3
- * `END   =hh:mm:ss`: omit if MODE is 0,1 or 3
+ * `MODE`  = `0`: off, `1`: ival1, `2`: ival2, `3`: triggered
+ * `IVAL`  =`hh:mm:ss`: omit if MODE is `0` or `3`
+ * `START` =`hh:mm:ss`: omit if MODE is `0`,`1` or `3`
+ * `END`   =`hh:mm:ss`: omit if MODE is `0`,`1` or `3`
 
 
 Important Notes
