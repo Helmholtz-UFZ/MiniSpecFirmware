@@ -104,7 +104,7 @@
 #define DBG_CODE			1
 
 /* Set debug print ON/OFF on initial startup */
-#define USE_DBG_PRINT_FROM_STARTUP		1
+#define DEFAULT_DEBUG_LVL		1
 
 /* If 0 all code that access the SD card is disabled. */
 #define HAS_SD	 			1

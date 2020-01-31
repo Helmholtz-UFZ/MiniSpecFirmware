@@ -62,12 +62,7 @@ void run_init(void) {
 	memset(&rc, 0, sizeof(rc));
 
 	// init runtime config
-#if USE_DBG_PRINT_FROM_STARTUP
-	/* Overwrites default value from usr_uart.c */
-	rc.use_debugprints = true;
-#else
-	rc.use_debugprints = false;
-#endif
+	rc.debuglevel = DEFAULT_DEBUG_LVL;
 	rc.format = DATA_FORMAT_ASCII;
 	rc.iterations = 1;
 	rc.itime[0] = DEFAULT_INTEGRATION_TIME;
@@ -113,7 +108,7 @@ void run(void) {
 		rxtx_restart_listening();
 	}
 
-	debug("(main) rxtx,alarm,trigger: %i %i %i\n", rxtx.wakeup, rtc.alarmA_wakeup, rc.trigger);
+	debug(3,"(main): rxtx,alarm,trigger: %i %i %i\n", rxtx.wakeup, rtc.alarmA_wakeup, rc.trigger);
 
 
 	if (rc.trigger) {
@@ -150,7 +145,7 @@ uint32_t get_itime(uint8_t idx){
 }
 
 static void extcmd_handler(void) {
-	int32_t tmp = 0;
+	int32_t nr = 0;
 	char *str = NULL;
 
 	switch (extcmd.cmd) {
@@ -186,7 +181,6 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_GET_ITIME:
-		// todo print `off` and `aa` if set so
 		if (rc.format == DATA_FORMAT_BIN) {
 			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime[rc.itime_index], 4, 1000);
 		} else {
@@ -210,26 +204,26 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_GET_CONFIG:
-		print_config(&rc);
+		print_config(&rc, "SYSTEM CONFIG");
 		break;
 
 		/* SETTER ============================================================ */
 
 	case USR_CMD_SET_FORMAT:
-		if (argparse_nr(&tmp)) {
+		if (argparse_nr(&nr)) {
 			fail();
 			break;
 		}
 		/* check and set argument */
-		rc.format = (tmp > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
+		rc.format = (nr > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
 		if(rc.format == DATA_FORMAT_BIN){
-			rc.use_debugprints = false;
+			rc.debuglevel = false;
 		}
 		ok();
 		break;
 
 	case USR_CMD_SET_ITIME:
-		if (argparse_nr(&tmp)) {
+		if (argparse_nr(&nr)) {
 			fail();
 			break;
 		}
@@ -237,23 +231,23 @@ static void extcmd_handler(void) {
 		// itime <  0: auto measure
 		// itime == 0: disable index
 		// itime >  0: check min/max
-		if(tmp < 0){
-			tmp = -1;
-		} else if ( tmp > 0){
-			tmp = MAX(MIN_INTERGATION_TIME, tmp);
-			tmp = MIN(MAX_INTERGATION_TIME, tmp);
+		if(nr < 0){
+			nr = -1;
+		} else if ( nr > 0){
+			nr = MAX(MIN_INTERGATION_TIME, nr);
+			nr = MIN(MAX_INTERGATION_TIME, nr);
 		}
-		rc.itime[rc.itime_index] = tmp;
+		rc.itime[rc.itime_index] = nr;
 		ok();
 		break;
 
 	case USR_CMD_SET_ITIME_INDEX:
-		if (argparse_nr(&tmp)) {
+		if (argparse_nr(&nr)) {
 			fail();
 			break;
 		}
-		if (0 <= tmp && tmp < RCCONF_MAX_ITIMES) {
-			rc.itime_index = tmp;
+		if (0 <= nr && nr < RCCONF_MAX_ITIMES) {
+			rc.itime_index = nr;
 			ok();
 		}else{
 			fail();
@@ -261,12 +255,12 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_SET_MULTI_MEASURE_ITERATIONS:
-		if (argparse_nr(&tmp)) {
+		if (argparse_nr(&nr)) {
 			fail();
 			break;
 		}
-		if (0 < tmp && tmp < RCCONF_MAX_ITERATIONS) {
-			rc.iterations = tmp;
+		if (0 < nr && nr < RCCONF_MAX_ITERATIONS) {
+			rc.iterations = nr;
 			ok();
 		}else{
 			fail();
@@ -310,8 +304,8 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_STORE_SDCONFIG:
-		tmp = write_config_to_SD(&rc);
-		if (!tmp){
+		nr = write_config_to_SD(&rc);
+		if (!nr){
 			ok();
 		} else {
 			errreply("write to SD faild\n");
@@ -323,8 +317,8 @@ static void extcmd_handler(void) {
 			break;
 
 	case USR_CMD_READ_SDCONFIG:
-		tmp = read_config_from_SD(&rc);
-		if (!tmp){
+		nr = read_config_from_SD(&rc);
+		if (!nr){
 			init_mode(&rc);
 			ok();
 		} else {
@@ -335,13 +329,12 @@ static void extcmd_handler(void) {
 		/* DEBUG ============================================================ */
 
 	case USR_CMD_DEBUG:
-		// todo add levels
-		rc.use_debugprints = rc.use_debugprints ? false : true;
-		if (rc.use_debugprints) {
-			reply("debug on\n");
-		} else {
-			reply("debug off\n");
+		if (argparse_nr(&nr)) {
+			fail();
+			break;
 		}
+		rc.debuglevel = nr;
+		debug(rc.debuglevel, "(main): level set to %u\n", rc.debuglevel);
 		break;
 
 	case USR_CMD_DBGTEST:
@@ -426,11 +419,11 @@ static void send_data(void) {
 }
 
 static void periodic_alarm_handler(void) {
-	debug("(palarm) Periodic alarm \n");
+	debug(1,"(palarm): Periodic alarm \n");
 	RTC_TimeTypeDef new;
 	rtc_timestamp_t ts;
 	ts = rtc_get_now();
-	debug("(palarm) now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+	debug(2,"(palarm): now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
 
 	if (rc.mode == MODE_OFF) {
@@ -455,7 +448,7 @@ static void periodic_alarm_handler(void) {
 	/* Do the measurement */
 	multimeasure(true);
 
-	debug("(palarm) next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
+	debug(2,"(palarm): next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 }
 
 static void multimeasure(bool to_sd) {
@@ -471,12 +464,12 @@ static void multimeasure(bool to_sd) {
 			continue;
 		}
 
-		debug("(mm) itime[%u]=%ld\n", i, itime);
+		debug(1,"(mm): itime[%u]=%ld\n", i, itime);
 
 		/* Measure N times */
 		for (int n = 0; n < rc.iterations; ++n) {
 
-			debug("(mm) N: %u/%u\n", n, rc.iterations - 1);
+			debug(1,"(mm): N: %u/%u\n", n, rc.iterations - 1);
 			/* Generate timestamp */
 			rtc_get_now_str(ts_buff, TS_BUFF_SZ);
 
@@ -497,6 +490,16 @@ static void multimeasure(bool to_sd) {
 			if (sens1.errc) {
 				sensor_deinit();
 			}
+
+			if (rc.debuglevel == 3) {
+				/* Use printf() instead of debug() to prevent 'dbg:' string before every value. */
+				debug(3, "(mm): %s, %u, %lu, [,", ts_buff, sens1.errc, sens1.last_itime);
+				uint32_t *p = (uint32_t *) (sens1.data->wptr - MSPARAM_PIXEL);
+				for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
+					printf("%u,", (uint) *(p++));
+				}
+				printf("]\n");
+			}
 		}
 	}
 	sensor_deinit();
@@ -505,12 +508,11 @@ static void multimeasure(bool to_sd) {
 static void print_config_from_SD(void){
 	runtime_config_t rc = {0,};
 	if (read_config_from_SD(&rc)){
-		debug("(main) read failed\n");
+		errreply("(main) read failed\n");
 		return;
 	}
 	rc.next_alarm.Hours = rc.next_alarm.Minutes = rc.next_alarm.Seconds = 99;
-	reply("config on SD:\n");
-	print_config(&rc);
+	print_config(&rc, "SD-CONFIG");
 }
 
 /* This function is used to test functions

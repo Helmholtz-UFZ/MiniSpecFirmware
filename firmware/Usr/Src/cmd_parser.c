@@ -56,6 +56,10 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 	extcmd.cmd = USR_CMD_UNKNOWN;
 	memset(&extcmd.arg_buffer, 0, ARGBUFFSZ);
 
+	// ============================================
+	// cmds without arguments (terminated by `\r`)
+	// ============================================
+
 	if(_parsecmd(buffer, "measure\r", "m\r")){
 		extcmd.cmd = USR_CMD_SINGLE_MEASURE_START;
 		return;
@@ -71,23 +75,13 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 		return;
 	}
 
-	if(_parsecmd(buffer, "storeconf", "stcf")){
+	if(_parsecmd(buffer, "storeconf\r", "stcf\r")){
 		extcmd.cmd = USR_CMD_STORE_SDCONFIG;
 		return;
 	}
 
-	if(_parsecmd(buffer, "readconf", "rdcf")){
+	if(_parsecmd(buffer, "readconf\r", "rdcf\r")){
 		extcmd.cmd = USR_CMD_READ_SDCONFIG;
-		return;
-	}
-
-	if(_parsecmd(buffer, "printconf", "prcf")){
-		extcmd.cmd = USR_CMD_PRINT_SDCONFIG;
-		return;
-	}
-
-	if(_parsecmd(buffer, "#debug\r", NULL)){
-		extcmd.cmd = USR_CMD_DEBUG;
 		return;
 	}
 
@@ -116,8 +110,23 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 		return;
 	}
 
+	if(_parsecmd(buffer, "configsd?\r", "c?sd\r")){
+		extcmd.cmd = USR_CMD_PRINT_SDCONFIG;
+		return;
+	}
+
 	if(_parsecmd(buffer, "itime?\r", "i?\r")){
 		extcmd.cmd = USR_CMD_GET_ITIME;
+		return;
+	}
+
+	// ============================================
+	// cmds with arguments are split/termiated by `=`
+	// ============================================
+
+	if(_parsecmd(buffer, "debug=", "dbg=")){
+		_set_argbuf(buffer, "debug=");
+		extcmd.cmd = USR_CMD_DEBUG;
 		return;
 	}
 

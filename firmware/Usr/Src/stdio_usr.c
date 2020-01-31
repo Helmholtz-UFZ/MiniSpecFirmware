@@ -46,11 +46,11 @@ int uart_printf(UART_HandleTypeDef *uart_handle, uart_buffer_t *tx_buffer, const
  * Act like printf() but put the string 'dbg: ' upfront the message,
  * so any format strings printf() can eat are possible.
  */
-int debug(const char *__restrict format, ...) {
+int debug(int8_t lvl, const char *__restrict format, ...) {
 	int len;
-	if (rc.use_debugprints) {
+	if (lvl <= rc.debuglevel) {
 		va_list args;
-		printf("dbg: ");
+		printf("DBG-%d:", lvl);
 		va_start(args, format);
 		len = vprintf(format, args);
 		va_end(args);
@@ -104,22 +104,29 @@ void fail(void) {
 	}
 }
 
-void print_config(runtime_config_t *rc){
+void print_config(runtime_config_t *rc, char *name){
 	// todo: mv this away from stdio_usr.c
 	rtc_timestamp_t ts;
-	reply("mode: %u\n", rc->mode);
+
+	reply("%s:\n", name);
+	printf("mode: %u\n", rc->mode);
+	printf("dbglvl: %u\n", rc->debuglevel);
 	for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
+		if (i == rc->itime_index) {
+			printf("itime[%u] = %ld  <---- ii (index)\n", i, rc->itime[i]);
+			continue;
+		}
 		if (rc->itime[i] != 0) {
-			reply("itime[%u] = %ld\n", i, rc->itime[i]);
+			printf("itime[%u] = %ld\n", i, rc->itime[i]);
 		}
 	}
-	reply("ii: %u  ('i=' set itime[%u])\n", rc->itime_index, rc->itime_index);
-	reply("iter. per meas. [N]: %u\n", rc->iterations);
-	reply("start time:      %02i:%02i:%02i\n", rc->start.Hours, rc->start.Minutes, rc->start.Seconds);
-	reply("end time:        %02i:%02i:%02i\n", rc->end.Hours, rc->end.Minutes, rc->end.Seconds);
-	reply("interval:        %02i:%02i:%02i\n", rc->ival.Hours, rc->ival.Minutes, rc->ival.Seconds);
-	reply("next auto-meas.: %02i:%02i:%02i\n", rc->next_alarm.Hours, rc->next_alarm.Minutes, rc->next_alarm.Seconds);
+	printf("ii: %u  (index)\n", rc->itime_index);
+	printf("iter. per meas. [N]: %u\n", rc->iterations);
+	printf("start time:      %02i:%02i:%02i\n", rc->start.Hours, rc->start.Minutes, rc->start.Seconds);
+	printf("end time:        %02i:%02i:%02i\n", rc->end.Hours, rc->end.Minutes, rc->end.Seconds);
+	printf("interval:        %02i:%02i:%02i\n", rc->ival.Hours, rc->ival.Minutes, rc->ival.Seconds);
+	printf("next auto-meas.: %02i:%02i:%02i\n", rc->next_alarm.Hours, rc->next_alarm.Minutes, rc->next_alarm.Seconds);
 	ts = rtc_get_now();
-	reply("now:  20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+	printf("now:  20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
 }

@@ -28,18 +28,18 @@ static void sd_reinit(void){
 	// reinit
 	MX_SDMMC1_SD_Init();
 	MX_FATFS_Init();
-	debug("(sd) reinit sd\n");
+	debug(3, "(sd): reinit sd\n");
 }
 
 FRESULT sd_mount(void) {
 	FRESULT res = f_mount(&SDFatFS, SDPath, 0);
-	debug("(sd) MOUNT: %u\n", res);
+	debug(3, "(sd): MOUNT: %u\n", res);
 	return res;
 }
 
 FRESULT sd_umount(void) {
 	FRESULT res = f_mount(NULL, SDPath, 0);
-	debug("(sd) UMOUNT: %u\n", res);
+	debug(3, "(sd): UMOUNT: %u\n", res);
 	return res;
 }
 
@@ -58,7 +58,7 @@ FRESULT sd_stat(const TCHAR* path, FILINFO* fno) {
 			break;
 		}
 	} while (++i < SD_MAX_REINIT_DRIVER);
-	debug("(sd) STAT: %u\n", res);
+	debug(3, "(sd): STAT: %u\n", res);
 	return res;
 }
 
@@ -73,12 +73,20 @@ FRESULT sd_open(FIL* fp, const TCHAR* path, BYTE mode) {
 			break;
 		}
 	} while (++i < SD_MAX_REINIT_DRIVER);
+
+	if(res == FR_OK){
+		debug(2,"(sd): open file: %s\n", path);
+	}
+	debug(3,"(sd): OPEN: %u\n", res);
 	return res;
 }
 
 FRESULT sd_close(FIL* fp) {
 	FRESULT res = f_close(fp);
-	debug("(sd) CLOSE: %u\n", res);
+	if(res == FR_OK){
+		debug(2,"(sd): close file\n");
+	}
+	debug(3,"(sd): CLOSE: %u\n", res);
 	return res;
 }
 
@@ -164,7 +172,7 @@ uint8_t sd_find_right_filename(uint16_t offset, uint16_t *postfix, char *namebuf
 	if (res > 0) {
 		memset(namebuf, 0, size);
 	}
-	debug("(sd) FIND: %u\n", res);
+	debug(3,"(sd): FIND: %u\n", res);
 	return res;
 }
 
@@ -184,7 +192,6 @@ FRESULT sd_open_file_neworappend(FIL* f, char *fname) {
 	if (res == FR_EXIST) {
 		res = sd_open(f, fname, FA_WRITE | FA_OPEN_APPEND);
 	}
-	debug("(sd) OPEN: %u\n", res);
 	return res;
 }
 

@@ -55,7 +55,7 @@ typedef struct
 
 	/* Flag for enabling /disabling the debug() function
 	 * during runtime with a usr command, namely 'debug'.*/
-	bool use_debugprints;
+	int8_t debuglevel;
 
 	// the format to use for communication can be: DATA_FORMAT_BIN or DATA_FORMAT_ASCII
 	bool format;

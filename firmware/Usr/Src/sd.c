@@ -191,17 +191,7 @@ uint8_t measurement_to_SD(char *timestamp_str) {
 			f_printf(f, "]\n");
 			res = sd_close(f);
 
-			/* Print what we wrote to sd.*/
-			debug("(sd) wrote to File: %s, data:\n", fname.buf);
-			if (rc.use_debugprints) {
-				/* Use printf() instead of debug() to prevent 'dbg:' string before every value. */
-				printf("%s, %u, %lu, [,", timestamp_str, sens1.errc, sens1.last_itime);
-				uint32_t *p = (uint32_t *) (sens1.data->wptr - MSPARAM_PIXEL);
-				for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
-					printf("%u,", (uint) *(p++));
-				}
-				printf("]\n");
-			}
+			debug(1, "(sd) wrote to File: %s, data:\n", fname.buf);
 		}
 	}
 	return res;
