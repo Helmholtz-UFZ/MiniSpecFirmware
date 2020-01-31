@@ -43,7 +43,8 @@ Important HW Pins
 
 Communication with a (already) running System
 ---------------------------------------------
-** direct USART ** 
+
+**direct USART** 
 
 For direct USART communication with the system connect to 
 Rx (`CN7 Pin21 (PB7)`) and Tx (`CN10 Pin17 (PB6)`) 
@@ -51,7 +52,7 @@ to your USB-TTL-Converter or to any device that can send and receive TTL-Rs232 m
 
 Disable the *Deep-Sleep-Function* by setting the *CMDS_EN*(`CN10 Pin18`) high by simply wire *3.3V* (eg.`CN7 Pin16`) to it. 
 
-** USB **
+**USB**
 
 If you want to connect to a already running system, firstly remove both jumper on **CN2**, and the disconnect the NRST (see also next section) otherwise the board is reset on connect.
 
@@ -93,7 +94,9 @@ See also *Differences in usage with HW-Versions-Change 2.0 to 2.1*.
 Usage Cookbook 
 --------------
 
+
 **Light vs. Deep Sleep Mode**: 
+
 If the `CMDS_EN` pin is high the system switch to *light sleep mode* (LSM). 
 Only in LSM the system can receive commands from the user, but the system has a higher power consumption than 
 in *deep sleep mode* (DSM), which is designed for stand-alone, long-term driven usage. 
@@ -103,7 +106,9 @@ In DSM only a reduced set of actions and functions remains active or available:
 * the trigger is functional (if enabled) 
 Of course the switch to LSM is always possible.
 
+
 **Modes**: 
+
 There are 4 Modes, which change the main behavior of the system:
 * `0 - off`: the system do nothing without user-interaction
 * `1 - ival1`: endless interval mode   - the system perform a periodic multi-measurement(MM) 
@@ -111,13 +116,17 @@ There are 4 Modes, which change the main behavior of the system:
 * `3 - triggered`: triggered mode: the system perform a multi-measurement(MM) if the `TRIGGER`Pin becomes high.
 The modes can be swiched by the `mode=` command. 
 
+
 **Single measurement**: 
+
 * As a human use `format=1` make the output readable. 
 * Use `i=` to set integration time and use `m` to measure and receive the data immediately. 
 * Use `gd` to receive the data again. As a machine use `format=0` and make yr admin contact us.
 Note: data is not stored to SD
 
+
 **Multi measurements**
+
 * use `ii=` to set the index to an number
 * use `i=` to set the integration time (at last choosen index position)
 * repeat `ii=` and `i=` as many integration times you want to use (max. 32)
@@ -127,13 +136,16 @@ Note: data is not stored to SD
 * (optionally) use `mm` to make a MM (measurement is not stored to SD)  
 
 **Auto-adjust integration time**
+
 Use `i=-1` (negative value) to make the system automatically adjust the integration time 
 shortly before a measurement is made.
 Bear in mind that this need a bit of time. Normally less then 4 (internally) measurements are needed, 
 to find a acceptable integration time. In dark conditions this would need ~4 seconds. 
 The worst case scenario is ~17sec (see the discussion of the problem in the end of this document).
 
+
 **Automatic time measurements with SD-card**: 
+
 * set up a MM (see *Multi measurements* )
 * set a mode:
   * use `mode=1,IVAL` for example `mode=1,00:15:00` to set the alarm to every 15 minutes or
@@ -142,7 +154,9 @@ The worst case scenario is ~17sec (see the discussion of the problem in the end 
 * optionally disconnect `CMDS_EN` to enter deepsleep
 Note: All measurements are stored to SD
 
+
 **Triggered measurements with SD-Card**: 
+
 * set up a MM (see *Multi Measurements* )
 * use `mode=3` to enable trigger mode.
 * use `stcf` to store the just setup config to the SD card
@@ -151,7 +165,9 @@ Note: All measurements are stored to SD
 Note: All measurements are stored to SD
 Note: The `TRIGGER`-Pin and the `CMDS_EN` Pin are the same !
 
-**SD card **
+
+**SD card**
+
 If you are satisfied with your timing and measurement configuration (check with `c?`), 
 you can store the config on the SD card with `stcf`. 
 These settings are automatically loaded on system-reset or power-loss. 
