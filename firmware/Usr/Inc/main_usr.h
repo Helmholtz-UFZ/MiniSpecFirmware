@@ -56,9 +56,8 @@ typedef struct
 	RTC_TimeTypeDef ival;
 	RTC_TimeTypeDef next_alarm;
 
-	/* Flag for enabling /disabling the debug() function
-	 * during runtime with a usr command, namely 'debug'.*/
-	int8_t debuglevel;
+	/* verbosity of debug messages */
+	uint8_t debuglevel;
 
 	// the format to use for communication can be: DATA_FORMAT_BIN or DATA_FORMAT_ASCII
 	bool format;

@@ -95,9 +95,9 @@ uint8_t write_config_to_SD(runtime_config_t *rc) {
 			 * backwards compatible to older configs.*/
 			f_printf(f, "%U\n",  rc->format);
 			f_printf(f, "%U\n",  rc->itime_index);
-			f_printf(f, "%U\n,", rc->debuglevel);
-			f_printf(f, "%LU\n",  rc->aa_lower);
-			f_printf(f, "%LU\n",  rc->aa_upper);
+			f_printf(f, "%U\n",  rc->debuglevel);
+			f_printf(f, "%LU\n", (uint16_t) rc->aa_lower);
+			f_printf(f, "%LU\n", (uint16_t) rc->aa_upper);
 			res = sd_close(f);
 		}
 		sd_umount();
@@ -120,17 +120,20 @@ uint8_t read_config_from_SD(runtime_config_t *rc) {
 	uint16_t sz = RCCONF_MAX_ITIMES * 6 + 3 * 20 + 20;
 	uint8_t buf[sz];
 	uint8_t res;
-	uint32_t rcconf_max_itimes, natNr;
-	uint32_t sdconf_max_itimes;
-	int32_t anyInt;
+	uint32_t rcconf_max_itimes, sdconf_max_itimes;
+
+	// parsing vars
+	uint32_t u32;
+	int32_t i32;
 	uint8_t u8;
 	int8_t i8;
+	u32 = i32 = u8 = i8 = 0;
+
 	UINT bytesread;
 	char *token, *rest;
 
 	memset(buf, 0, sz * sizeof(uint8_t));
 	rest = (char*) buf;
-	natNr = anyInt = 0;
 
 	res = sd_mount();
 	if(res){
@@ -155,33 +158,33 @@ uint8_t read_config_from_SD(runtime_config_t *rc) {
 	}
 
 	// parse number that indicates how many itimes are written in the config file
-	res = sscanf(token, "%lu", &natNr);
-	if(res <= 0 || natNr <= 0){
+	res = sscanf(token, "%lu", &u32);
+	if(res <= 0 || u32 <= 0){
 		goto l_close;
 	}
-	sdconf_max_itimes = natNr;
+	sdconf_max_itimes = u32;
 	UNUSED(sdconf_max_itimes);
 
-	rcconf_max_itimes = natNr > RCCONF_MAX_ITIMES ? RCCONF_MAX_ITIMES : natNr;
+	rcconf_max_itimes = u32 > RCCONF_MAX_ITIMES ? RCCONF_MAX_ITIMES : u32;
 
 	/*parse itimes[i] from sd
 	 * todo future: parse all even if RCCONF_MAX_ITIMES is smaller*/
 	for (uint i = 0; i < rcconf_max_itimes; ++i) {
 		token = strtok_r(rest, "\n", &rest);
-		res = sscanf(token, "%ld", &anyInt);
+		res = sscanf(token, "%ld", &i32);
 		if (token == NULL || res <= 0) {
 			goto l_close;
 		}
-		rc->itime[i] = anyInt;
+		rc->itime[i] = i32;
 	}
 
 	/* Read iterations aka. N from sd*/
 	token = strtok_r(rest, "\n", &rest);
-	res = sscanf(token, "%lu", &natNr);
+	res = sscanf(token, "%lu", &u32);
 	if(res <= 0 || token == NULL){
 		goto l_close;
 	}
-	rc->iterations = natNr > 0 ? natNr : 1;
+	rc->iterations = u32 > 0 ? u32 : 1;
 
 	/* Read 'mode,ival,start,end' as one string from sd.
 	 * If parse_ival() fails, no times are set. */
@@ -220,16 +223,16 @@ uint8_t read_config_from_SD(runtime_config_t *rc) {
 	rc->debuglevel = i8;
 
 	// aa lower and upper
-	res = sscanf(token, "%lu", &natNr);
+	res = sscanf(token, "%lu", &u32);
 	if (token == NULL || res <= 0){
 		goto l_done;
 	}
-	rc->aa_lower = natNr;
-	res = sscanf(token, "%lu", &natNr);
+	rc->aa_lower = u32;
+	res = sscanf(token, "%lu", &u32);
 	if (token == NULL || res <= 0){
 		goto l_done;
 	}
-	rc->aa_upper = natNr;
+	rc->aa_upper = u32;
 
 	l_done:
 	sd_close(f);
