@@ -3,155 +3,191 @@ Micro Spectrometer Firmware for STM32
 
 This repository provide the firmware for the *Nucleo Board* by ST, 
 which is used by the *Microspectrometer Sensor Board*. This firmware can 
-be used by the hardware version 2.0, and 2.1, so far all HW-versions that use
-the Nucleo Board.
+be used for the hardware version 2.1. The older HW is no longer supported.
 
-The hardware development is done in own repositories, one for each version.
-
-HW_Version 2.0:
-https://git.ufz.de/MET/WG6/Sensornetworks/Micro_Spectrometer/microspecsensorboard_v2_0
-
-HW_Version 2.1:
+The hardware development is done in its own repositories:
 https://git.ufz.de/MET/WG6/Sensornetworks/Micro_Spectrometer/microspecsensorboard_v2_1
 
 
-Differences in usage with HW-Versions-Change 2.0 to 2.1
--------------------------------------
-
-- Default USART-Interface is Uart1. Use PB7 for RX and PB6 for TX
-    Use thes to connect them to CN3 rx to tx and tx to rx for Usb-Virtual-COM-Port communication.
-- NRST (SB12) is not connected by default anymore. For Programming/Debugging connect manually: 
-    connect CN4 Pin5 with CN7 Pin14
-- SD Card is working now. Use a formated Fat32 SD card. CSV-Files are generated.
-- DIP-Switch is connected physically to pins PA2,PA3 and PB15
-- ParallelPort Data D3 is switched from PA2 to PA10
-- ParallelPort Data D2 is switched from PA3 to PA8
-- ADC-RESET signal removed
-- ADC-PD signal removed
-- new Signal CMDS_EN on Pin PB11
-- new *deep sleep mode*
-
-
-Main SW features
+Feature Overview
 ----------------
-* single measurement and stream
-* SD card
-* RTC
-* atomatic measurements with start and end time and periodic interval
-* multi measurements (up to 32 with no pause)
-* deep sleep mode 
+* simple single measurement 
+* multi-measurement (MM) with up to `N` repetitions for each of `M` configurable integration times
+* SD card support for measurements and configuration
+* RTC with possible battery backup (battery not included ;) )
+* configurable integration time, with auto-adjust support
+* alarm-driven MMs in periodic intervals with or without start- and end-time
+* pin-triggered MMs
+* different sleep modes for ultimative power-save
+* simple on-the-fly configuration and communication via UART 
 
 
-Communication with the Board
-----------------------------
-To send commands to the board, a *Virtual COM Port* via USB is used.
+Hardware nomenclature
+---------------------
+* **HW**: Hardware
+* **FW**/**SW**: Firmware/Software (refer here to the same thing, although it is technically not fully correct) 
+* **Microspectrometer Sensor Board** or simply **the System** : the whole thing
+* **Nucleo Board**: the whole upper light bluish board with the *ST* logo
+* **UFZ-PCB**: the whole lower dark green board with the *UFZ* logo
+* **ST-Link**: the cuttable, smaller part of the nucleo board
+* **the Sensor**: the actual micro-spectrometer on the UFZ-PCB
+
+
+Important HW Pins
+-------------------------------------
+- Default USART (Uart1): Rx:`CN7 Pin21 (PB7)`, Tx:`CN10 Pin17 (PB6)` (for using the (USB) Virtual-COM-Port via the ST-Link, connect Rx to `CN3 Pin2 (tx)` and Tx to `CN3 Pin1 (tx)`) 
+- NRST: `CN7 Pin14` (for programming) connect to `CN4 Pin5` 
+- CMDS_EN/TRIGGER: `CN10 Pin18 (PB11)` (switch deep- and light-sleep / used as trigger in trigger-mode)
+- two jumper on `CN2` - needed for programming 
+
+
+Communication with a (already) running System
+---------------------------------------------
+** direct USART ** 
+
+For direct USART communication with the system connect to 
+Rx (`CN7 Pin21 (PB7)`) and Tx (`CN10 Pin17 (PB6)`) 
+to your USB-TTL-Converter or to any device that can send and receive TTL-Rs232 messages.
+
+Disable the *Deep-Sleep-Function* by setting the *CMDS_EN*(`CN10 Pin18`) high by simply wire *3.3V* (eg.`CN7 Pin16`) to it. 
+
+** USB **
+
+If you want to connect to a already running system, firstly remove both jumper on **CN2**, and the disconnect the NRST (see also next section) otherwise the board is reset on connect.
+
+If you want to use the integrated *Virtual COM Port* via USB 
+wire the nucleo USART pins to the ST-Link: `CN7 Pin21 (PB7)` to `CN3 Pin2 (tx)` and `CN10 Pin17 (PB6)` to `CN3 Pin1 (tx)`.
 Connect the USB, and look for the Port `/dev/ttyACMn` (n=0...) under Linux,
 or `COMn` (n=0...) in the Device Manager in Windows. 
 
-Disable *Deep-Sleep-Function* by set Pin *CMDS_EN* aka. **PB11** high. 
-One can simply achieve that by wire *3.3V* to *CMDS_EN*. 
+Disable the *Deep-Sleep-Function* by setting the *CMDS_EN*(`CN10 Pin18`) high by simply wire *3.3V* (eg.`CN7 Pin16`) to it. 
 
-Then open a terminal and send the appropiate *User Commands* (see below).
+Open a terminal and use a serial-commandline-tool (cutecom, minicom, putty...). 
+Use `115200 @ 8-N-1` (115200 baude, 8bit, no parity, 1stopbit).
 
-**Attention:** Check that both jumper on **CN2** are removed, and the 
-NRST is not connected (see also next section) otherwise the board is reset on connect or 
-the communication is corrupted. 
+If you did it right use the implemented *User Commands* (see below) to configure the system and/or do measurements. (May try `help` first to check if your connection works).
 
 
-Program the board
-------------------
+Programming the System / Flashing a new Image
+---------------------------------------------
 
 **Copy-Paste Image**
 
-The simplest method is to flash a binary image to the board. 
-Therefore connect the Usb-Cable to the PC and wait until the board is
-recognized as Device (Mass Storage like an ordinary USB flash drive). Then 
-simply copy the imgage to this drive. During copy the LED (LD1) on the ST-Link 
+The simplest method is, to flash a binary image directly to the System. 
+Therefore connect the Usb-Cable to the PC and wait until the System is
+recognized as *Mass Storage Device* (like an ordinary USB flash drive). Then 
+simply copy the image to this drive. During copy the LED (LD1) on the ST-Link 
 should ficker greenish/yellowish and stop blinking if the flashing is done. 
 Now you can start have fun :)
 
 
-
 **with AC6 Tool**
 
-To programm the MCU on nucleo board use the tool *AC6* aka. *System Workbench for STM32*.
-To successfully connect the board **both jumper on CN2 must be set** and the NRST Signal between
-the upper cuttable Part to the actual Nucleo Board must be wired. See *Differences in usage with HW-Versions-Change 2.0 to 2.1* for the correct Pins.
+To manually program the nucleo-board, use the tool *AC6* aka. *System Workbench for STM32*.
+To successfully connect the board **both jumper** on `CN2` must be **set** and the `NRST` signal between
+the ST-Link and the nucleo board must be wired (connect `CN4 Pin5` with `CN7 Pin14`) also
+make sure that the board is (externally) powered.
+See also *Differences in usage with HW-Versions-Change 2.0 to 2.1*. 
 
 
+Usage Cookbook 
+--------------
 
-Implementet User Comands and Usage
-----------------------------------
-**Light vs. Deep Sleep Mode**: The system only can communicate (Uart) with the user in *light sleep mode*. 
-To enable this, see section *Communication* above.
-In *Deep Sleep Mode* only the RTC is still fuctional, thus very low power consumption is reached. 
-Nevertheless the automatic, periodic measurements still working, as the device will wake up on RTC-alarm, perform the measurement, write them to SD and sleep deep again.
+**Light vs. Deep Sleep Mode**: 
+If the `CMDS_EN` pin is high the system switch to *light sleep mode* (LSM). 
+Only in LSM the system can receive commands from the user, but the system has a higher power consumption than 
+in *deep sleep mode* (DSM), which is designed for stand-alone, long-term driven usage. 
+In DSM only a reduced set of actions and functions remains active or available: 
+* RTC still active
+* alarms still functional (if enabled) 
+* the trigger is functional (if enabled) 
+Of course the switch to LSM is always possible.
 
-**Single Measurement**: As a human use `format=1` make the output readable. Use `i=` to set integration time and use `m` to measure and receive the data immedeatly. Use `gd` to receive the data again. As a machine use `format=0` and make yr admin contact us.
+**Modes**: 
+There are 4 Modes, which change the main behavior of the system:
+* `0 - off`: the system do nothing without user-interaction
+* `1 - ival1`: endless interval mode   - the system perform a periodic multi-measurement(MM) 
+* `2 - ival2`: start-end interval mode - the system perform a periodic multi-measurement(MM) if the current time is between a stored start- and an end-timestamp.
+* `3 - triggered`: triggered mode: the system perform a multi-measurement(MM) if the `TRIGGER`Pin becomes high.
+The modes can be swiched by the `mode=` command. 
 
-**Stream Measurement - Countiniously measure**: Set the format and the intergartion time as in *Single Measurement*. Use `stream` to start the stream and use `end` to end it.
+**Single measurement**: 
+* As a human use `format=1` make the output readable. 
+* Use `i=` to set integration time and use `m` to measure and receive the data immediately. 
+* Use `gd` to receive the data again. As a machine use `format=0` and make yr admin contact us.
+Note: data is not stored to SD
 
-**Automatic Measure by time with SD-Card**: 
-A Alarm is set, different integration times and a iteration N. If then the alarm occur a multi-measurement is performed. 
-For each set integration time, N measurements are made and the results are stored to the SD card. 
-For generating the repeating alarm two modes are possible: *start-end* or *endless*. 
-In *start-end-mode* one can choose the start- and end time and the interval. The alarm occur at start and then every time the interval
-is reached until the end time. Between end and start nothing will happen. The end time needs to be *later* than the start time!
-In the *endless-mode* the alarm occure every time the interval is reached - very simple - start and end are ignored. 
-**This is how you do it...:**
-* Set the iterations per integration time with `N=`.  
-* Set the first integration time with `i=`. 
-* Set the index to **1** by using `ii=1`. 
-* Now you can set the next integration time with `i=` again. 
-* Continue with the last steps (`ii=2`,`i=`,`ii=3`,...) until the number of integration times you want to set is reached, the maximum is 32. 
-* May you want to check the result with `c?`. Also you can enable debug prints with `#debug` and run a test multimeasurement with `mm` (nothing is written to SD with `mm`).
+**Multi measurements**
+* use `ii=` to set the index to an number
+* use `i=` to set the integration time (at last choosen index position)
+* repeat `ii=` and `i=` as many integration times you want to use (max. 32)
+* use `N=` to set the number of repetitions per integration time
+* (optionally) check the config result with `c?`
+* (optionally) store your config to SD with `stcf`
+* (optionally) use `mm` to make a MM (measurement is not stored to SD)  
 
-Now set the **timings**. 
-* First set the RTC with `rtc=`.
-* Now choose your mode..
-  * *endless* mode, use `ival=1,IVAL` for example `ival=1,00:15:00` to set the alarm to every 15 minutes and y're done.
-  * *start-end* mode use `ival=2,IVAL,START,END`. e.g. `ival=2,00:10:00,04:30:00,18:00:00` - this set a alarm to every 10 minutes
-if the time (RTC) is between half-past four and six-O'Clock evening. 
-The times are inclusive so a measurement will happen at 4:30(!), 4:40, ... , 17:50, 18:00(!).
+**Auto-adjust integration time**
+Use `i=-1` (negative value) to make the system automatically adjust the integration time 
+shortly before a measurement is made.
+Bear in mind that this need a bit of time. Normally less then 4 (internally) measurements are needed, 
+to find a acceptable integration time. In dark conditions this would need ~4 seconds. 
+The worst case scenario is ~17sec (see the discussion of the problem in the end of this document).
 
-Further Notes: 
-* To recall the settings to yr mind use `c?`
-* With `ival=0` one can disable the interval - no measurements will occur. 
+**Automatic time measurements with SD-card**: 
+* set up a MM (see *Multi measurements* )
+* set a mode:
+  * use `mode=1,IVAL` for example `mode=1,00:15:00` to set the alarm to every 15 minutes or
+  * use `mode=2,IVAL,START,END`. e.g. `mode=2,00:10:00,04:30:00,18:00:00` - to make a MM every 10 minutes if the time is between half-past four and six-O'Clock evening. The times are inclusive so a measurement will happen at 4:30(!), 4:40, ... , 17:50, 18:00(!).
+* use `stcf` to store the jsut setup config to the SD card
+* optionally disconnect `CMDS_EN` to enter deepsleep
+Note: All measurements are stored to SD
 
-**Store and Recall from SD**:
-If you are satisfied with your timing and measurement configuration (check with `c?`) you can store the config on the SD card.
-Use `stcf` for this. These settings are automatically loaded on system-reset (also power-loss). One also can manually read and 
-apply the config from the sd to the runtime system configuration by using `rdcf`.
+**Triggered measurements with SD-Card**: 
+* set up a MM (see *Multi Measurements* )
+* use `mode=3` to enable trigger mode.
+* use `stcf` to store the just setup config to the SD card
+* disconnect `CMDS_EN` to enter deepsleep
+* (external) set the `TRIGGER` Pin to high for at least `100 ms`. 
+Note: All measurements are stored to SD
+Note: The `TRIGGER`-Pin and the `CMDS_EN` Pin are the same !
 
+**SD card **
+If you are satisfied with your timing and measurement configuration (check with `c?`), 
+you can store the config on the SD card with `stcf`. 
+These settings are automatically loaded on system-reset or power-loss. 
+To see what is stored in the config on the SD use `c?sd`.
+To manually read back the config that is stored on the sd and apply it to the running system (overwrite current config), use `rdcf`.
+
+
+User Commands 
+-------------
 
 Command                        | Short             | Brief description                                                     |
 --------------------           | -----             | ------------------------------------------------------------          |
-**help**                       | **h**             | Print a brief help.                                                   |
-**storeconf**                  | **stcf**          | Store the timing config to the config file on the SD.                 |
-**readconf**                   | **rdcf**          | Read the timing config from the config-file on the SD.                |
+**help**                       | **h**             | Print a even briefer help.                                                   |
+**version**                    |                   | Print the current Firmware vewrsion |
+**storeconf**                  | **stcf**          | Store the system config to the SD.                 |
+**readconf**                   | **rdcf**          | Read and apply the SD-config to the System.                |
 **measure**                    | **m**             | Make a simgle measurement. Return the values or errorcode             |
-**multimeasure**               | **mm**            | Make a multi measurement. For manual testing use with debug on.       | 
-**stream**                     |                   | Stream measurement and data.                                          |
-**end**                        |                   | End stream mode.                                                      |
+**multimeasure**               | **mm**            | Make a multi measurement.        | 
 **getdata**                    | **gd**            | Return the data or errorcode of the very last measurment.             |
+**itime?**                     | **i?**            | Get the intergration time for the current index position. in micro seconds [us]           |
 **rtc?**                       |                   | Get the current Real-Time of the System.                              |
-**ival?**                      |                   | Get the current interval and mode in the format MODE,IVAL,START,END.  |
 **config?**                    | **c?**            | Print current config info. For humans only.                           |
-**itime?**                     | **i?**            | Get the intergration time for index 0 in micro seconds [us]           |
-**itimeindex?**                | **ii?**           | Get the integration time and index, to which the index currently points to. |
-**itime=[54..100000]**         | **i=[54..100000]**| Set the integration time of the sensor in micro seconds [us]          |
+**config?sd**                  | **c?sd**          | Print the config that is currently stored on the SD. |
+**debug=[0..3]**               | **dbg=[0..3]**    | Set the debug level. 0 - off, 1 - some, 2 - many, 3 - all |
+**itime=[54..100000]**         | **i=[54..100000]**| Set the integration time (at the current index position) of the sensor in micro seconds [us]          |
 **itimeindex=[0..31]**         | **ii=[1..31]**    | Set the index for setting the integration time                        |
 **iterations=[0..31]**         | **N=[1..31]**     | Set the repetitions of a measurement.                                 |
 **format={0\|1}**              |                   | Set the output format to 0=Binary, or to 1=ASCII                      |
 **rtc=20YY-MM-DDThh:mm:ss**    |                   | Set the Real-Time-Clock and the Calendar. No Daylightsaving is used. YY > 0 ! (see also Important Notes) |
-**ival=MODE,IVAL,START,END**   |                   | Set the regular automatic measurement.                                | 
-**#debug**                     |                   | Toggle debug prints on or off.                                        |
+**mode=MODE,IVAL,START,END**   |                   | Set the system mode |
 
 where
- * **MODE  ={0\|1\|2}**: 0:off, 1:endless-mode, 2:start-end-mode 
- * **IVAL  =hh:mm:ss**: omit if MODE is 0
- * **START =hh:mm:ss**: omit if MODE is 0 or 1
- * **END   =hh:mm:ss**: omit if MODE is 0 or 1
+ * **MODE  ={0\|1\|2\|3}**: 0:off, 1:ival1, 2:ival2, 3:triggered
+ * **IVAL  =hh:mm:ss**: omit if MODE is 0 or 3
+ * **START =hh:mm:ss**: omit if MODE is 0,1 or 3
+ * **END   =hh:mm:ss**: omit if MODE is 0,1 or 3
 
 
 Important Notes
@@ -168,12 +204,13 @@ On power restore, the device checks if the RTC was initialized, by checking the 
 As the last two digits of the year are 0, these are equal to the default value, 
 which indicates, that the RTC wasn't initialiezed and it is done then, whereby the RTC will set to its default values.
 
-Timing of autoadjust
---------------------
+Timing problems with auto-adjust integration time
+------------------------------------------------
 A short light burst during a auto-adjustment can lead to a very long adjustion cycle. 
-Due the use of a binary search, up to 16 adjustments and therefor measurements are done. Every measurement take
-at least as long as the used interation time (plus a little overhead of a few ms). If a light burst occur 
-while the search just started in the upper half of the search interval [(max. itime)/2, max. itime], the
+Due the use of a binary search, up to 16 adjustments and therefore 16 measurements are done. 
+Every measurement take at least as long as the used interation time (plus a little overhead of a few ms). 
+If a light burst occur while the search just started in the upper half of 
+the search interval [(max. itime)/2, max. itime], the
 algorithm 'thinks' it should search lower. All further corrections are done upwards to compensate the burst.
 In the end one initial measurement (~0.5s) and 17 measurements of nearly one second each, are made. 
  
