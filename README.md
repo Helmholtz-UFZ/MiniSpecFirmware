@@ -178,32 +178,32 @@ To manually read back the config that is stored on the sd and apply it to the ru
 User Commands 
 -------------
 
-Command                        | Short             | Brief description                                                     |
---------------------           | -----             | ------------------------------------------------------------          |
-**help**                       | **h**             | Print a even briefer help.                                                   |
-**version**                    |                   | Print the current Firmware vewrsion |
-**storeconf**                  | **stcf**          | Store the system config to the SD.                 |
-**readconf**                   | **rdcf**          | Read and apply the SD-config to the System.                |
-**measure**                    | **m**             | Make a simgle measurement. Return the values or errorcode             |
-**multimeasure**               | **mm**            | Make a multi measurement.        | 
-**getdata**                    | **gd**            | Return the data or errorcode of the very last measurment.             |
-**itime?**                     | **i?**            | Get the intergration time for the current index position. in micro seconds [us]           |
-**rtc?**                       |                   | Get the current Real-Time of the System.                              |
-**config?**                    | **c?**            | Print current config info. For humans only.                           |
-**config?sd**                  | **c?sd**          | Print the config that is currently stored on the SD. |
-**debug=[0..3]**               | **dbg=[0..3]**    | Set the debug level. 0 - off, 1 - some, 2 - many, 3 - all |
-**itime=[54..100000]**         | **i=[54..100000]**| Set the integration time (at the current index position) of the sensor in micro seconds [us]          |
-**itimeindex=[0..31]**         | **ii=[1..31]**    | Set the index for setting the integration time                        |
-**iterations=[0..31]**         | **N=[1..31]**     | Set the repetitions of a measurement.                                 |
-**format={0\|1}**              |                   | Set the output format to 0=Binary, or to 1=ASCII                      |
-**rtc=20YY-MM-DDThh:mm:ss**    |                   | Set the Real-Time-Clock and the Calendar. No Daylightsaving is used. YY > 0 ! (see also Important Notes) |
-**mode=MODE,IVAL,START,END**   |                   | Set the system mode |
+Command                      | Short           | Brief description                                                     |
+--------------------         | -----           | ------------------------------------------------------------          |
+`help`                       | `h`             | Print a even briefer help.                                                   |
+`version`                    |                 | Print the current Firmware vewrsion |
+`storeconf`                  | `stcf`          | Store the system config to the SD.                 |
+`readconf`                   | `rdcf`          | Read and apply the SD-config to the System.                |
+`measure`                    | `m`             | Make a simgle measurement. Return the values or errorcode             |
+`multimeasure`               | `mm`            | Make a multi measurement.        | 
+`getdata`                    | `gd`            | Return the data or errorcode of the very last measurment.             |
+`itime?`                     | `i?`            | Get the intergration time for the current index position. in micro seconds [us]           |
+`rtc?`                       |                 | Get the current Real-Time of the System.                              |
+`config?`                    | `c?`            | Print current config info. For humans only.                           |
+`config?sd`                  | `c?sd`          | Print the config that is currently stored on the SD. |
+`debug=[0..3]`               | `dbg=[0..3]`    | Set the debug level. 0 - off, 1 - some, 2 - many, 3 - all |
+`itime=[54..100000]`         | `i=[54..100000]`| Set the integration time (at the current index position) of the sensor in micro seconds [us]          |
+`itimeindex=[0..31]`         | `ii=[1..31]`    | Set the index for setting the integration time                        |
+`iterations=[0..31]`         | `N=[1..31]`     | Set the repetitions of a measurement.                                 |
+`format={0\|1}`              |                 | Set the output format to 0=Binary, or to 1=ASCII                      |
+`rtc=20YY-MM-DDThh:mm:ss`    |                 | Set the Real-Time-Clock and the Calendar. No Daylightsaving is used. YY > 0 ! (see also Important Notes) |
+`mode=MODE,IVAL,START,END`   |                 | Set the system mode |
 
 where
- * **MODE  ={0\|1\|2\|3}**: 0:off, 1:ival1, 2:ival2, 3:triggered
- * **IVAL  =hh:mm:ss**: omit if MODE is 0 or 3
- * **START =hh:mm:ss**: omit if MODE is 0,1 or 3
- * **END   =hh:mm:ss**: omit if MODE is 0,1 or 3
+ * `MODE  ={0\|1\|2\|3}`: 0:off, 1:ival1, 2:ival2, 3:triggered
+ * `IVAL  =hh:mm:ss`: omit if MODE is 0 or 3
+ * `START =hh:mm:ss`: omit if MODE is 0,1 or 3
+ * `END   =hh:mm:ss`: omit if MODE is 0,1 or 3
 
 
 Important Notes
