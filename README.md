@@ -131,17 +131,42 @@ Note: data is not stored to SD
 * use `i=` to set the integration time (at last choosen index position)
 * repeat `ii=` and `i=` as many integration times you want to use (max. 32)
 * use `N=` to set the number of repetitions per integration time
-* (optionally) check the config result with `c?`
-* (optionally) store your config to SD with `stcf`
-* (optionally) use `mm` to make a MM (measurement is not stored to SD)  
+* (optional) check the config result with `c?`
+* (optional) store your config to SD with `stcf`
+* (optional) use `mm` to make a MM (measurement is not stored to SD)  
 
 **Auto-adjust integration time**
 
-Use `i=-1` (negative value) to make the system automatically adjust the integration time 
-shortly before a measurement is made.
-Bear in mind that this need a bit of time. Normally less then 4 (internally) measurements are needed, 
+To use auto-adjust:
+* (optional) use `aa=` to set `UPPER` and `LOWER` 
+* (optional) use `aa` to test auto-adjust params
+* (optional) `stcf` to store the params to sd.
+* use `i=-1` (negative value) to make the system automatically adjust the integration time shortly before a measurement is made.
+
+Default values: `LOWER=33'000` and `UPPER=54'000`
+
+Note: Bear in mind that auto-adjusting need a bit of time. Normally less then 4 (internally) measurements are needed, 
 to find a acceptable integration time. In dark conditions this would need ~4 seconds. 
 The worst case scenario is ~17sec (see the discussion of the problem in the end of this document).
+
+*How it works:*
+
+The auto-adjustion uses a *modified binary search* and works like this:
+* a measurement is made (intial itime: ~500'000 us)
+* the maximum value (`maxval`) in the data is searched
+* tree cases can occur
+	1. `maxval < LOWER`, adjust the itime to a higher value
+	2. `LOWER < maxval < UPPER` a suitable itime was found
+	3. `UPPER < maxval`, adjust the itime to a lower value
+* in case 1. or case 3. we start over with the new itime
+* after 16 iterations, we return the itime to prevent a infinite loop (e.g with fast swiching light conditions).
+
+Note: `UPPER` and `LOWER` are both absolut values. The do not handle dark-current, nor saturation. 
+The former normally lies around 6000 the latter around 60'000, but this can vary from sensor to sensor.
+Hence these values should not be exceeded. Also do not set `UPPER` and `LOWER` very close, because this will 
+increase mean search time. Calculate your params as following:
+* `LOWER= darkcurrent + 0.5 (saturation - darkcurrent)`
+* `UPPER= darkcurrent + 0.9 (saturation - darkcurrent)`, but `UPPER= 0.9 saturation` is also sufficient.
 
 
 **Automatic time measurements with SD-card**: 
@@ -162,11 +187,23 @@ Note: All measurements are stored to SD
 * use `stcf` to store the just setup config to the SD card
 * disconnect `CMDS_EN` to enter deepsleep
 * (external) set the `TRIGGER` Pin to high for at least `100 ms`. 
+
 Note: All measurements are stored to SD
+
 Note: The `TRIGGER`-Pin and the `CMDS_EN` Pin are the same !
 
 
 **SD card**
+
+In the config on the SD the following is stored:
+* if format bin or ascii is used
+* the current mode
+* the debug level
+* the `UPPER` and `LOWER` for auto-adjust
+* 32 integration times
+* the current integration time index 
+* measurement repetitions aka. `N`
+* start-time, end-time, interval
 
 If you are satisfied with your timing and measurement configuration (check with `c?`), 
 you can store the config on the SD card with `stcf`. 
