@@ -66,7 +66,7 @@ typedef enum
 	"rtc?    - print current time\n"\
 	"c?      - print system config\n"\
 	"c?sd    - print the config, that is stored on sd\n"\
-	"dbg=    - set debug message verbosity. 0: off, 1: some, 2:many, 3+:all"\
+	"dbg=    - set debug message verbosity. 0: off, 1: some, 2:many, 3+:all\n"\
 	"i=      - set intergration time (negativ values set to auto-adjust)\n"\
 	"ii=     - set index for setting inegration time\n"\
 	"N=      - set iterations per measurement (for mm)\n"\
