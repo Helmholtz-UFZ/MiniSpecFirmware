@@ -45,8 +45,8 @@ typedef struct
 	int32_t itime[RCCONF_MAX_ITIMES];
 	uint8_t itime_index;
 
-	uint32_t aa_upper;
 	uint32_t aa_lower;
+	uint32_t aa_upper;
 
 	// see also ival_mode_t
 	run_mode_t mode;

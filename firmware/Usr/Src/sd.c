@@ -70,10 +70,15 @@ uint8_t write_config_to_SD(runtime_config_t *rc) {
 	if (!res) {
 		res = sd_open(f, SD_CONFIGFILE_NAME, FA_WRITE | FA_CREATE_ALWAYS);
 		if (!res) {
+
+			/* 1. store the number of following itimes
+			 * 2. store all the itimes */
 			f_printf(f, "%U\n", RCCONF_MAX_ITIMES);
 			for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
 				f_printf(f, "%LD\n", rc->itime[i]);
 			}
+
+			/*store N*/
 			f_printf(f, "%U\n", rc->iterations);
 
 			/* We store the ival like the user command format:
@@ -83,6 +88,16 @@ uint8_t write_config_to_SD(runtime_config_t *rc) {
 			f_printf(f, "%02U:%02U:%02U,", rc->ival.Hours, rc->ival.Minutes, rc->ival.Seconds);
 			f_printf(f, "%02U:%02U:%02U,", rc->start.Hours, rc->start.Minutes, rc->start.Seconds);
 			f_printf(f, "%02U:%02U:%02U\n", rc->end.Hours, rc->end.Minutes, rc->end.Seconds);
+
+			/* NEW with version 3.0.1:
+			 * store the other rc params:
+			 * Note: some might be misplaced here but we want to stay
+			 * backwards compatible to older configs.*/
+			f_printf(f, "%U\n",  rc->format);
+			f_printf(f, "%U\n",  rc->itime_index);
+			f_printf(f, "%U\n,", rc->debuglevel);
+			f_printf(f, "%LU\n",  rc->aa_lower);
+			f_printf(f, "%LU\n",  rc->aa_upper);
 			res = sd_close(f);
 		}
 		sd_umount();
@@ -106,64 +121,127 @@ uint8_t read_config_from_SD(runtime_config_t *rc) {
 	uint8_t buf[sz];
 	uint8_t res;
 	uint32_t rcconf_max_itimes, natNr;
+	uint32_t sdconf_max_itimes;
 	int32_t anyInt;
+	uint8_t u8;
+	int8_t i8;
 	UINT bytesread;
 	char *token, *rest;
-	bool fail;
 
 	memset(buf, 0, sz * sizeof(uint8_t));
 	rest = (char*) buf;
 	natNr = anyInt = 0;
-	fail = false;
 
 	res = sd_mount();
-	if (!res) {
-		res = sd_open(f, SD_CONFIGFILE_NAME, FA_READ);
-		if (!res) {
-			f_read(f, buf, sizeof(buf), &bytesread);
+	if(res){
+		goto l_fail;
+	}
+	res = sd_open(f, SD_CONFIGFILE_NAME, FA_READ);
+	if(res){
+		goto l_fail;
+	}
 
-			/* == parsing: == */
+	res = f_read(f, buf, sizeof(buf), &bytesread);
+	if(res){
+		goto l_close;
+	}
 
-			/* Read RCCONF_MAX_ITIMES from sd*/
-			token = strtok_r(rest, "\n", &rest);
-			fail = (token == NULL);
-			res = sscanf(token, "%lu", &natNr);
-			if (!fail && res > 0 && natNr > 0) {
-				rcconf_max_itimes = natNr > RCCONF_MAX_ITIMES ? RCCONF_MAX_ITIMES : natNr;
+	/* == parsing: == */
 
-				/*read itimes[i] from sd*/
-				for (uint i = 0; i < rcconf_max_itimes; ++i) {
-					token = strtok_r(rest, "\n", &rest);
-					res = sscanf(token, "%ld", &anyInt);
-					if (token == NULL || res <= 0) {
-						fail = true;
-						break;
-					}
-					rc->itime[i] = anyInt;
-				}
-			}
+	/* Read RCCONF_MAX_ITIMES from sd*/
+	token = strtok_r(rest, "\n", &rest);
+	if(token == NULL){
+		goto l_close;
+	}
 
-			/* Read iterations aka. N from sd*/
-			if (!fail) {
-				token = strtok_r(rest, "\n", &rest);
-				res = sscanf(token, "%lu", &natNr);
-				if (token != NULL && res > 0 && natNr > 0) {
-					rc->iterations = natNr;
-					/* Read 'mode,ival,start,end' as one string from sd.
-					 * If parse_ival() fails, no times are set. */
-					token = rest;
-					fail = parse_ival(token, rc);
-					res = 0;
-				}
-			}
-			sd_close(f);
+	// parse number that indicates how many itimes are written in the config file
+	res = sscanf(token, "%lu", &natNr);
+	if(res <= 0 || natNr <= 0){
+		goto l_close;
+	}
+	sdconf_max_itimes = natNr;
+	UNUSED(sdconf_max_itimes);
+
+	rcconf_max_itimes = natNr > RCCONF_MAX_ITIMES ? RCCONF_MAX_ITIMES : natNr;
+
+	/*parse itimes[i] from sd
+	 * todo future: parse all even if RCCONF_MAX_ITIMES is smaller*/
+	for (uint i = 0; i < rcconf_max_itimes; ++i) {
+		token = strtok_r(rest, "\n", &rest);
+		res = sscanf(token, "%ld", &anyInt);
+		if (token == NULL || res <= 0) {
+			goto l_close;
 		}
-		sd_umount();
+		rc->itime[i] = anyInt;
 	}
-	if (res){
-		return res;
+
+	/* Read iterations aka. N from sd*/
+	token = strtok_r(rest, "\n", &rest);
+	res = sscanf(token, "%lu", &natNr);
+	if(res <= 0 || token == NULL){
+		goto l_close;
 	}
-	return fail;
+	rc->iterations = natNr > 0 ? natNr : 1;
+
+	/* Read 'mode,ival,start,end' as one string from sd.
+	 * If parse_ival() fails, no times are set. */
+	token = strtok_r(rest, "\n", &rest);
+	if (token == NULL){
+		goto l_close;
+	}
+	res = parse_ival(token, rc);
+
+	/* NEW with version 3.0.1:
+	 * read the other rc-params:
+	 * Note: some might be misplaced here but we want to stay
+	 * backwards compatible to older configs.*/
+
+	// format
+	token = strtok_r(rest, "\n", &rest);
+	res = sscanf(token, "%hhu", &u8);
+	if (token == NULL || res <= 0){
+		goto l_done;
+	}
+	rc->format = u8 > 0;
+
+	// itime index
+	token = strtok_r(rest, "\n", &rest);
+	res = sscanf(token, "%hhu", &u8);
+	if (token == NULL || res <= 0){
+		goto l_done;
+	}
+	rc->itime_index = u8 < RCCONF_MAX_ITIMES ? u8 : 0;
+
+	// debuglevel
+	res = sscanf(token, "%c", &i8);
+	if (token == NULL || res <= 0){
+		goto l_done;
+	}
+	rc->debuglevel = i8;
+
+	// aa lower and upper
+	res = sscanf(token, "%lu", &natNr);
+	if (token == NULL || res <= 0){
+		goto l_done;
+	}
+	rc->aa_lower = natNr;
+	res = sscanf(token, "%lu", &natNr);
+	if (token == NULL || res <= 0){
+		goto l_done;
+	}
+	rc->aa_upper = natNr;
+
+	l_done:
+	sd_close(f);
+	sd_umount();
+	return 0;
+
+	l_close:
+	sd_close(f);
+	l_fail:
+	sd_umount();
+	return 1;
+
 #else
 	return NO_SD;
 #endif

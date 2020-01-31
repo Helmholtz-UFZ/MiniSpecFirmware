@@ -111,6 +111,7 @@ void print_config(runtime_config_t *rc, char *name){
 	reply("%s:\n", name);
 	printf("mode: %u\n", rc->mode);
 	printf("dbglvl: %u\n", rc->debuglevel);
+	printf("aa-lower, aa-upper: %lu, %lu\n", rc->aa_lower, rc->aa_upper);
 	for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
 		if (i == rc->itime_index) {
 			printf("itime[%u] = %ld  <---- ii (index)\n", i, rc->itime[i]);
@@ -127,6 +128,6 @@ void print_config(runtime_config_t *rc, char *name){
 	printf("interval:        %02i:%02i:%02i\n", rc->ival.Hours, rc->ival.Minutes, rc->ival.Seconds);
 	printf("next auto-meas.: %02i:%02i:%02i\n", rc->next_alarm.Hours, rc->next_alarm.Minutes, rc->next_alarm.Seconds);
 	ts = rtc_get_now();
-	printf("now:  20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+	debug(1,"now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
 }
