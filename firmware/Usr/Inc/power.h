@@ -2,7 +2,7 @@
  * power.h
  *
  *  Created on: Jun 16, 2019
- *      Author: rg
+ *      Author: Bert Palm
  */
 
 #ifndef INC_POWER_H_

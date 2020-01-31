@@ -2,7 +2,7 @@
  * rtc_usr.h
  *
  *  Created on: Mar 6, 2019
- *      Author: palmb_ubu
+ *      Author: Bert Palm
  */
 
 #ifndef INC_LIB_RTC_H_

@@ -2,7 +2,7 @@
  * lib_stdio.c
  *
  *  Created on: Dec 23, 2019
- *      Author: rg
+ *      Author: Bert Palm
  */
 
 

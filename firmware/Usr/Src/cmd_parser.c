@@ -2,7 +2,7 @@
  * cmd_parser.c
  *
  *  Created on: Apr 18, 2019
- *      Author: rg
+ *      Author: Bert Palm
  */
 
 #include "cmd_parser.h"

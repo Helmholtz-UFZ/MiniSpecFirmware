@@ -2,7 +2,7 @@
  * sd.h
  *
  *  Created on: Jul 5, 2019
- *      Author: palmb_ubu
+ *      Author: Bert Palm
  */
 
 #ifndef INC_SD_H_

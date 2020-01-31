@@ -2,7 +2,7 @@
  * lib_stdio.h
  *
  *  Created on: Dec 23, 2019
- *      Author: rg
+ *      Author: Bert Palm
  */
 
 #ifndef INC_STDIO_USR_H_

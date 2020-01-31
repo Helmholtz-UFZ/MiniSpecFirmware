@@ -2,7 +2,7 @@
  * sd_card.c
  *
  *  Created on: Feb 19, 2019
- *      Author: palmb_ubu
+ *      Author: Bert Palm
  */
 
 #include <lib_sd.h>

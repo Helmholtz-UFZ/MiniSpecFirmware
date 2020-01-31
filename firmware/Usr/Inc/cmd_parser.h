@@ -2,7 +2,7 @@
  * cmd_parser.h
  *
  *  Created on: Apr 18, 2019
- *      Author: rg
+ *      Author: Bert Palm
  */
 
 #ifndef INC_CMD_PARSER_H_

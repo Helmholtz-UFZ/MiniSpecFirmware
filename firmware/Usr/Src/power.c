@@ -2,7 +2,7 @@
  * power.c
  *
  *  Created on: Jun 16, 2019
- *      Author: rg
+ *      Author: Bert Palm
  */
 #include <lib_rtc.h>
 #include <lib_timer.h>

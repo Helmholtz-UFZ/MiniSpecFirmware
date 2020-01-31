@@ -2,7 +2,7 @@
  * autoadjust_itime.h
  *
  *  Created on: Jan 26, 2020
- *      Author: rg
+ *      Author: Bert Palm
  */
 
 #ifndef INC_AUTOADJUST_ITIME_H_

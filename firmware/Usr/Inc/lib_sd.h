@@ -2,7 +2,7 @@
  * sd_card.h
  *
  *  Created on: Feb 19, 2019
- *      Author: palmb_ubu
+ *      Author: Bert Palm
  */
 
 #ifndef INC_LIB_SD_H_

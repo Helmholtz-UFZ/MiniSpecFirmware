@@ -2,7 +2,7 @@
  * lib_cpu.h
  *
  *  Created on: Jul 5, 2019
- *      Author: palmb_ubu
+ *      Author: Bert Palm
  */
 
 #ifndef INC_LIB_CPU_H_

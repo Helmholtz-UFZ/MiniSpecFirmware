@@ -2,7 +2,7 @@
  * alarm.c
  *
  *  Created on: Jul 5, 2019
- *      Author: palmb_ubu
+ *      Author: Bert Palm
  */
 
 #include "alarm.h"

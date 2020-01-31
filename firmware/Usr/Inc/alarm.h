@@ -2,7 +2,7 @@
  * alarm.h
  *
  *  Created on: Jul 5, 2019
- *      Author: palmb_ubu
+ *      Author: Bert Palm
  */
 
 #ifndef INC_ALARM_H_
