@@ -2,7 +2,7 @@
  * sd.c
  *
  *  Created on: Jul 5, 2019
- *      Author: palmb_ubu
+ *      Author: Bert Palm
  */
 
 #include <lib_sd.h>
@@ -108,8 +108,21 @@ uint8_t write_config_to_SD(runtime_config_t *rc) {
 #endif
 }
 
+/**
+ * Reads the config from the sd and fill the rc (runtime-config) by its content.
+ *
+ * Return 0 on success, non-zero otherwise. If the parsing fails the rc may already be changed in
+ * some parts.
+ *
+ * Note: This also works for any config files, nevertheless it was generated under linux (LF),
+ * windows (CRLF) or mac (CR). The lineend is auto-determined.
+ *
+ * Note: This is also backwards compatible and works with config files created for any
+ * version before 3.0.1
+ *
+ * Note: The actual filename can be set in globalconfig.h
+ */
 uint8_t read_config_from_SD(runtime_config_t *rc) {
-	// todo save whole rc to SD (debugprints, format ...)
 #if HAS_SD
 # if RCCONF_MAX_ITIMES > 32
 # error "Attention buffer gets big.. Improve implementation :)"
@@ -119,18 +132,19 @@ uint8_t read_config_from_SD(runtime_config_t *rc) {
 	 * three other number good will aprox. -> 20 BYTES*/
 	uint16_t sz = RCCONF_MAX_ITIMES * 6 + 3 * 20 + 20;
 	uint8_t buf[sz];
-	uint8_t res;
+	int8_t res;
 	uint32_t rcconf_max_itimes, sdconf_max_itimes;
 
 	// parsing vars
-	uint32_t u32;
-	int32_t i32;
-	uint8_t u8;
-	int8_t i8;
-	u32 = i32 = u8 = i8 = 0;
+	uint32_t lu32 = 0;
+	uint32_t lu32_2 = 0;
+	int32_t ld32 = 0;
+	uint u = 0;
+	int d = 0;
 
 	UINT bytesread;
 	char *token, *rest;
+	char *delim = "\n";
 
 	memset(buf, 0, sz * sizeof(uint8_t));
 	rest = (char*) buf;
@@ -149,50 +163,54 @@ uint8_t read_config_from_SD(runtime_config_t *rc) {
 		goto l_close;
 	}
 
+	// determine line end
+	// linux:    \n   use: \n
+	// windows:  \r\n use: \n  (/r is ignored during sscanf)
+	// mac:      \r   use: \r
+	token = strchr(rest, '\n');
+	if (token == NULL){
+		delim = "\r";
+		token = strchr(rest, '\r');
+		if (token == NULL){
+			goto l_close;
+		}
+	}
+
 	/* == parsing: == */
 
 	/* Read RCCONF_MAX_ITIMES from sd*/
-	token = strtok_r(rest, "\n", &rest);
-	if(token == NULL){
-		goto l_close;
-	}
+	token = strtok_r(rest, delim, &rest);
+	if(token == NULL){ goto l_close; }
 
 	// parse number that indicates how many itimes are written in the config file
-	res = sscanf(token, "%lu", &u32);
-	if(res <= 0 || u32 <= 0){
-		goto l_close;
-	}
-	sdconf_max_itimes = u32;
+	res = sscanf(token, "%lu", &lu32);
+	if(res <= 0 || lu32 <= 0){ goto l_close; }
+	sdconf_max_itimes = lu32;
 	UNUSED(sdconf_max_itimes);
 
-	rcconf_max_itimes = u32 > RCCONF_MAX_ITIMES ? RCCONF_MAX_ITIMES : u32;
+	rcconf_max_itimes = lu32 > RCCONF_MAX_ITIMES ? RCCONF_MAX_ITIMES : lu32;
 
 	/*parse itimes[i] from sd
 	 * todo future: parse all even if RCCONF_MAX_ITIMES is smaller*/
 	for (uint i = 0; i < rcconf_max_itimes; ++i) {
-		token = strtok_r(rest, "\n", &rest);
-		res = sscanf(token, "%ld", &i32);
-		if (token == NULL || res <= 0) {
-			goto l_close;
-		}
-		rc->itime[i] = i32;
+		token = strtok_r(rest, delim, &rest);
+		res = sscanf(token, "%ld", &ld32);
+		if (token == NULL || res <= 0) { goto l_close; }
+		rc->itime[i] = ld32;
 	}
 
 	/* Read iterations aka. N from sd*/
-	token = strtok_r(rest, "\n", &rest);
-	res = sscanf(token, "%lu", &u32);
-	if(res <= 0 || token == NULL){
-		goto l_close;
-	}
-	rc->iterations = u32 > 0 ? u32 : 1;
+	token = strtok_r(rest, delim, &rest);
+	res = sscanf(token, "%lu", &lu32);
+	if(res <= 0 || token == NULL){ goto l_close; }
+	rc->iterations = lu32 > 0 ? lu32 : 1;
 
 	/* Read 'mode,ival,start,end' as one string from sd.
 	 * If parse_ival() fails, no times are set. */
-	token = strtok_r(rest, "\n", &rest);
-	if (token == NULL){
-		goto l_close;
-	}
+	token = strtok_r(rest, delim, &rest);
+	if (token == NULL){ goto l_close; }
 	res = parse_ival(token, rc);
+	if(res != 0){ goto l_close; }
 
 	/* NEW with version 3.0.1:
 	 * read the other rc-params:
@@ -200,39 +218,32 @@ uint8_t read_config_from_SD(runtime_config_t *rc) {
 	 * backwards compatible to older configs.*/
 
 	// format
-	token = strtok_r(rest, "\n", &rest);
-	res = sscanf(token, "%hhu", &u8);
-	if (token == NULL || res <= 0){
-		goto l_done;
-	}
-	rc->format = u8 > 0;
+	token = strtok_r(rest, delim, &rest);
+	res = sscanf(token, "%u", &u);
+	if (token == NULL || res <= 0){ goto l_done; }
+	rc->format = u > 0;
 
 	// itime index
-	token = strtok_r(rest, "\n", &rest);
-	res = sscanf(token, "%hhu", &u8);
-	if (token == NULL || res <= 0){
-		goto l_done;
-	}
-	rc->itime_index = u8 < RCCONF_MAX_ITIMES ? u8 : 0;
+	token = strtok_r(rest, delim, &rest);
+	res = sscanf(token, "%u", &u);
+	if (token == NULL || res <= 0){ goto l_done; }
+	rc->itime_index = u < RCCONF_MAX_ITIMES ? u : 0;
 
 	// debuglevel
-	res = sscanf(token, "%c", &i8);
-	if (token == NULL || res <= 0){
-		goto l_done;
-	}
-	rc->debuglevel = i8;
+	token = strtok_r(rest, delim, &rest);
+	res = sscanf(token, "%d", &d);
+	if (token == NULL || res <= 0){ goto l_done; }
+	rc->debuglevel = d;
 
 	// aa lower and upper
-	res = sscanf(token, "%lu", &u32);
-	if (token == NULL || res <= 0){
-		goto l_done;
-	}
-	rc->aa_lower = u32;
-	res = sscanf(token, "%lu", &u32);
-	if (token == NULL || res <= 0){
-		goto l_done;
-	}
-	rc->aa_upper = u32;
+	token = strtok_r(rest, delim, &rest);
+	res = sscanf(token, "%lu", &lu32);
+	if (token == NULL || res <= 0){ goto l_done; }
+	token = strtok_r(rest, delim, &rest);
+	res = sscanf(token, "%lu", &lu32_2);
+	if (token == NULL || res <= 0){ goto l_done; }
+	rc->aa_lower = lu32;
+	rc->aa_upper = lu32_2;
 
 	l_done:
 	sd_close(f);

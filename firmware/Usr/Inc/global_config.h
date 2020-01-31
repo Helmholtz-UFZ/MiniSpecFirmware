@@ -128,8 +128,8 @@
 
 #define SD_CONFIGFILE_NAME		"CONFIG.TXT"
 
-/*Maximum file size in Byte (default 100MB)*/
-#define SD_MAX_FILESIZE			(100 * 1024 * 1024)
+/*Maximum file size in Byte (default 10MB)*/
+#define SD_MAX_FILESIZE			(10 * 1024 * 1024)
 
 /* If defined: HW detection (Pin high/low) is done
  * by BSP_PlatformIsDetected() in fatfs_platform.c
