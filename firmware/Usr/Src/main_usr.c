@@ -68,6 +68,8 @@ void run_init(void) {
 	rc.itime[0] = DEFAULT_INTEGRATION_TIME;
 	rc.mode = MODE_OFF;
 	rc.trigger = false;
+	rc.aa_lower = 33000; // ~50%
+	rc.aa_upper = 54000; // ~66%
 	init_timetype(&rc.start);
 	init_timetype(&rc.end);
 	init_timetype(&rc.ival);
@@ -139,13 +141,13 @@ void run(void) {
 
 uint32_t get_itime(uint8_t idx){
 	if (rc.itime[idx] < 0) {
-		return autoadjust_itime(33000, 54000);
+		return autoadjust_itime(rc.aa_lower, rc.aa_upper);
 	}
 	return rc.itime[idx];
 }
 
 static void extcmd_handler(void) {
-	int32_t nr = 0;
+	int32_t nr = 0, nr1 = 0;
 	char *str = NULL;
 
 	switch (extcmd.cmd) {
@@ -182,7 +184,7 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_GET_ITIME:
 		if (rc.format == DATA_FORMAT_BIN) {
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &rc.itime[rc.itime_index], 4, 1000);
+			HAL_UART_Transmit(&hrxtx, (uint8_t *) &(rc.itime[rc.itime_index]), 4, 1000);
 		} else {
 			reply("integration time [%u] = %ld us\n", rc.itime_index, rc.itime[rc.itime_index]);
 		}
@@ -295,6 +297,26 @@ static void extcmd_handler(void) {
 		}
 		init_mode(&rc);
 		ok();
+		break;
+
+	case USR_CMD_SET_AUTOADJUST_PARAMS:
+		if (argparse_nrs(&nr, &nr1)) {
+			fail();
+			break;
+		}
+		// constrains
+		if (nr > UINT16_MAX || nr1 > UINT16_MAX || nr < 0 || nr1 < 0 || nr > nr1){
+			fail();
+			break;
+		}
+		rc.aa_lower = nr;
+		rc.aa_upper = nr1;
+		// no break
+
+	case USR_CMD_TEST_AUTOADJUST:
+		nr = autoadjust_itime(rc.aa_lower, rc.aa_upper);
+		reply("upper, lower:  %ld, %ld\n", rc.aa_lower, rc.aa_upper);
+		reply("test aa-itime: %ld us\n", nr);
 		break;
 
 		/* OTHER ============================================================ */

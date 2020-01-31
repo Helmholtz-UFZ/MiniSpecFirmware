@@ -34,6 +34,7 @@ typedef enum
 	USR_CMD_SET_SENSOR, // UNUSED (for future use) - choose if sens 1 or sens 2
 	USR_CMD_SET_ITIME,
 	USR_CMD_SET_ITIME_INDEX,
+	USR_CMD_SET_AUTOADJUST_PARAMS,
 	USR_CMD_SET_MULTI_MEASURE_ITERATIONS,
 	USR_CMD_SET_RTC_TIME,
 	USR_CMD_SET_MODE,
@@ -44,6 +45,7 @@ typedef enum
 	USR_CMD_STORE_SDCONFIG,
 	USR_CMD_READ_SDCONFIG,
 	USR_CMD_PRINT_SDCONFIG,
+	USR_CMD_TEST_AUTOADJUST,
 
 	//debug
 	USR_CMD_DEBUG,
@@ -62,11 +64,13 @@ typedef enum
 	"m       - measure\n"\
 	"mm      - multimeasure\n"\
 	"gd      - print (last) data or error\n"\
+	"aa      - test auto-adjust\n"\
 	"i?      - print intergration time\n"\
 	"rtc?    - print current time\n"\
 	"c?      - print system config\n"\
 	"c?sd    - print the config, that is stored on sd\n"\
 	"dbg=    - set debug message verbosity. 0: off, 1: some, 2:many, 3+:all\n"\
+	"aa=     - set auto-adjust params\n"\
 	"i=      - set intergration time (negativ values set to auto-adjust)\n"\
 	"ii=     - set index for setting inegration time\n"\
 	"N=      - set iterations per measurement (for mm)\n"\
@@ -99,6 +103,7 @@ extern usr_cmd_typedef extcmd;
 
 void parse_extcmd(uint8_t *buffer, uint16_t size);
 int8_t argparse_nr(int32_t *nr);
+int8_t argparse_nrs(int32_t *nr1, int32_t *nr2);
 int8_t argparse_str(char **str);
 int8_t parse_ival(char *str, runtime_config_t* rc);
 

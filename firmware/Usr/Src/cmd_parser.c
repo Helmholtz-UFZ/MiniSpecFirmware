@@ -120,6 +120,10 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 		return;
 	}
 
+	if(_parsecmd(buffer, "auto-adjust\r", "aa\r")){
+		extcmd.cmd = USR_CMD_TEST_AUTOADJUST;
+		return;
+	}
 	// ============================================
 	// cmds with arguments are split/termiated by `=`
 	// ============================================
@@ -139,6 +143,12 @@ void parse_extcmd(uint8_t *buffer, uint16_t size) {
 	if(_parsecmd(buffer, "itimeindex=", "ii=")){
 		_set_argbuf(buffer, "itimeindex=");
 		extcmd.cmd = USR_CMD_SET_ITIME_INDEX;
+		return;
+	}
+
+	if(_parsecmd(buffer, "auto-adjust=", "aa=")){
+		_set_argbuf(buffer, "auto-adjust=");
+		extcmd.cmd = USR_CMD_SET_AUTOADJUST_PARAMS;
 		return;
 	}
 
@@ -178,6 +188,23 @@ int8_t argparse_nr(int32_t *nr) {
 	res = sscanf(extcmd.arg_buffer, "%ld", nr);
 	if (res <= 0) {
 		nr = 0;
+		return res;
+	}
+	return 0;
+}
+
+/** Parse any two comma separated +- integers from arg_buffer to arg.
+ *  Return 0 on success, otherwise non-zero */
+int8_t argparse_nrs(int32_t *nr1, int32_t *nr2) {
+	int res;
+	char *str = extcmd.arg_buffer;
+	if (extcmd.arg_buffer[0] == 0) {
+		/* buffer empty */
+		return -1;
+	}
+	res = sscanf(str, "%ld,%ld", nr1, nr2);
+	if (res != 2) {
+		nr1 = nr2 = 0;
 		return res;
 	}
 	return 0;
