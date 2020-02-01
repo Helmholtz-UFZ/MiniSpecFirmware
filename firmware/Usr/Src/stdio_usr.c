@@ -109,25 +109,26 @@ void print_config(runtime_config_t *rc, char *name){
 	rtc_timestamp_t ts;
 
 	reply("%s:\n", name);
-	printf("mode: %u\n", rc->mode);
-	printf("dbglvl: %u\n", rc->debuglevel);
-	printf("aa-lower, aa-upper: %lu, %lu\n", rc->aa_lower, rc->aa_upper);
+	printf("mode:        %u\n", rc->mode);
+	printf("format:      %u\n", rc->format);
+	printf("dbglvl:      %u\n", rc->debuglevel);
+	printf("lower/upper: %lu, %lu\n", rc->aa_lower, rc->aa_upper);
 	for (int i = 0; i < RCCONF_MAX_ITIMES; ++i) {
 		if (i == rc->itime_index) {
-			printf("itime[%u] = %ld  <---- ii (index)\n", i, rc->itime[i]);
+			printf("itime[%u] =   %ld  <---- ii (index)\n", i, rc->itime[i]);
 			continue;
 		}
 		if (rc->itime[i] != 0) {
-			printf("itime[%u] = %ld\n", i, rc->itime[i]);
+			printf("itime[%u] =   %ld\n", i, rc->itime[i]);
 		}
 	}
-	printf("ii: %u  (index)\n", rc->itime_index);
-	printf("iter. per meas. [N]: %u\n", rc->iterations);
-	printf("start time:      %02i:%02i:%02i\n", rc->start.Hours, rc->start.Minutes, rc->start.Seconds);
-	printf("end time:        %02i:%02i:%02i\n", rc->end.Hours, rc->end.Minutes, rc->end.Seconds);
-	printf("interval:        %02i:%02i:%02i\n", rc->ival.Hours, rc->ival.Minutes, rc->ival.Seconds);
-	printf("next auto-meas.: %02i:%02i:%02i\n", rc->next_alarm.Hours, rc->next_alarm.Minutes, rc->next_alarm.Seconds);
+	printf("ii(index):   %u\n", rc->itime_index);
+	printf("N:           %u\n", rc->iterations);
+	printf("start time:  %02i:%02i:%02i\n", rc->start.Hours, rc->start.Minutes, rc->start.Seconds);
+	printf("end time:    %02i:%02i:%02i\n", rc->end.Hours, rc->end.Minutes, rc->end.Seconds);
+	printf("interval:    %02i:%02i:%02i\n", rc->ival.Hours, rc->ival.Minutes, rc->ival.Seconds);
+	printf("next alarm:  %02i:%02i:%02i\n", rc->next_alarm.Hours, rc->next_alarm.Minutes, rc->next_alarm.Seconds);
 	ts = rtc_get_now();
-	debug(1,"now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+	debug(1," now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
 }

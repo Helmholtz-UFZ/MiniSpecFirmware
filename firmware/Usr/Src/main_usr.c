@@ -115,11 +115,6 @@ void run(void) {
 
 	if (rc.trigger) {
 		rc.trigger = false;
-		// We got an edge on the CMDS_EN_Pin pin.
-		//
-		// This is a pre-release hack for the `triggered mode` feature,
-		// which allow the user to send a rising edge (trigger) on the
-		// CMDS_EN_Pin, which will then start an immediate (multi-)measurement.
 		if (rc.mode == MODE_TRIGGERED){
 			multimeasure(true);
 		}
@@ -127,7 +122,9 @@ void run(void) {
 
 	if (rtc.alarmA_wakeup) {
 		rtc.alarmA_wakeup = false;
-		periodic_alarm_handler();
+		if(rc.mode == MODE_ENDLESS || rc.mode == MODE_STARTEND){
+			periodic_alarm_handler();
+		}
 	}
 
 	if (rxtx.wakeup) {
@@ -441,16 +438,12 @@ static void send_data(void) {
 }
 
 static void periodic_alarm_handler(void) {
-	debug(1,"(palarm): Periodic alarm \n");
+	debug(1,"(alarm): Periodic alarm \n");
 	RTC_TimeTypeDef new;
 	rtc_timestamp_t ts;
 	ts = rtc_get_now();
-	debug(2,"(palarm): now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+	debug(2,"(alarm): now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
-
-	if (rc.mode == MODE_OFF) {
-		return;
-	}
 
 	/* set new alarm */
 	new = rtc_time_add(&rc.next_alarm, &rc.ival);
@@ -470,7 +463,7 @@ static void periodic_alarm_handler(void) {
 	/* Do the measurement */
 	multimeasure(true);
 
-	debug(2,"(palarm): next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
+	debug(2,"(alarm): next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 }
 
 static void multimeasure(bool to_sd) {
