@@ -25,7 +25,7 @@ uint8_t	BSP_PlatformIsDetected(void) {
         status = SD_NOT_PRESENT;
     }
     /* USER CODE BEGIN 1 */
-#include "global_config.h"
+#include "globalconfig.h"
 #if USE_SD_HW_DETECTION
     return status;
 #else

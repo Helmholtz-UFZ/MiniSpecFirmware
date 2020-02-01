@@ -7,6 +7,7 @@
 
 #include <rxtx.h>
 #include "string.h"
+#include <stdbool.h>
 
 rxtx_config_t rxtx = {
 		.wakeup = false,

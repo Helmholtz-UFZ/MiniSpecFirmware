@@ -9,6 +9,7 @@
 #define INC_ALARM_H_
 
 #include <mainloop.h>
+#include <globalconfig.h>
 
 
 void init_mode(runtime_config_t *rc);

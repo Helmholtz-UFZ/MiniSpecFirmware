@@ -320,6 +320,7 @@ RTC_TimeTypeDef rtc_seconds2time(uint32_t s) {
 /**
  * Note: Overwrite __weak function in stm32l4xx_hal_rtc.c
  * Note: This is called from within a interrupt.
+ * FIXME mv IRQ Handler
  */
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc) {
 	UNUSED(hrtc);
