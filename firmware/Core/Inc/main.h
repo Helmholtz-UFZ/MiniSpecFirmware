@@ -33,7 +33,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "global_config.h"
+#include <globalconfig.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

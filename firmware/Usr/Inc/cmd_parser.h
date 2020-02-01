@@ -8,9 +8,9 @@
 #ifndef INC_CMD_PARSER_H_
 #define INC_CMD_PARSER_H_
 
-#include <lib_uart.h>
-#include "global_config.h"
-#include "main_usr.h"
+#include <globalconfig.h>
+#include <mainloop.h>
+#include <rxtx.h>
 
 /**
  * enum for the defined commands

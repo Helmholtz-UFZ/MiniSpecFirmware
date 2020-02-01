@@ -5,10 +5,10 @@
  *      Author: Bert Palm
  */
 
-#include <lib_rtc.h>
-#include "lib_cpu.h"
-#include "global_config.h"
-#include "main_usr.h"
+#include <cpu.h>
+#include <globalconfig.h>
+#include <mainloop.h>
+#include <rtc_dt.h>
 #include "string.h"
 #include "stdio.h"
 #include "power.h"

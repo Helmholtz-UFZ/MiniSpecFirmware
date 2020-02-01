@@ -11,9 +11,9 @@
 #define __MAIN_USR_H__
 
 /* Includes ------------------------------------------------------------------*/
-#include <lib_rtc.h>
+#include <globalconfig.h>
+#include <rtc_dt.h>
 #include "main.h"
-#include "global_config.h"
 
 /** the data format specifies the datatype of the
  * arguments and the data to/from external system.*/

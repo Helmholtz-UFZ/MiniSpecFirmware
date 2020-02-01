@@ -6,9 +6,10 @@
  */
 
 
-#include "main_usr.h"
-#include "lib_uart.h"
-#include "stdio_usr.h"
+#include <logging.h>
+#include <mainloop.h>
+#include <rxtx.h>
+
 #include <stdarg.h>
 #include <stdio.h>
 

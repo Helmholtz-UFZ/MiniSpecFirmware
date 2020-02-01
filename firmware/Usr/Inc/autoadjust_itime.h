@@ -8,7 +8,7 @@
 #ifndef INC_AUTOADJUST_ITIME_H_
 #define INC_AUTOADJUST_ITIME_H_
 
-#include "global_config.h"
+#include <globalconfig.h>
 
 #define UP 1
 #define DOWN -1

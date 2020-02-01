@@ -4,13 +4,14 @@
  *  Created on: Jun 16, 2019
  *      Author: Bert Palm
  */
-#include <lib_rtc.h>
-#include <lib_timer.h>
-#include <lib_uart.h>
+#include <cpu.h>
+#include <logging.h>
+#include <mainloop.h>
+#include <rtc_dt.h>
+#include <rxtx.h>
+#include <timer.h>
 #include "power.h"
 #include "main.h"
-#include "main_usr.h"
-#include "lib_cpu.h"
 #include "stdio.h"
 #include "dma.h"
 #include "sdmmc.h"
@@ -18,7 +19,6 @@
 #include "usart.h"
 #include "fatfs.h"
 #include "gpio.h"
-#include "stdio_usr.h"
 
 /* Borrowed from main.c */
 extern void SystemClock_Config(void);

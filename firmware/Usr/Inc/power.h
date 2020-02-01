@@ -8,7 +8,7 @@
 #ifndef INC_POWER_H_
 #define INC_POWER_H_
 
-#include "global_config.h"
+#include <globalconfig.h>
 
 typedef enum
 {

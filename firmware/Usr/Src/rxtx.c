@@ -5,7 +5,7 @@
  *      Author: Bert Palm
  */
 
-#include <lib_uart.h>
+#include <rxtx.h>
 #include "string.h"
 
 rxtx_config_t rxtx = {

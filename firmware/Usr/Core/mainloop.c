@@ -5,23 +5,23 @@
  *      Author: Bert Palm
  */
 
-#include <lib_rtc.h>
-#include <lib_sd.h>
-#include <lib_spectrometer.h>
-#include <lib_timer.h>
-#include <lib_uart.h>
-#include "main_usr.h"
+#include <globalconfig.h>
+#include <sensor.h>
+#include <logging.h>
+#include <mainloop.h>
+#include <pprint.h>
+#include <rtc_dt.h>
+#include <rxtx.h>
+#include <sdfs.h>
 #include "power.h"
 #include "rtc.h"
-#include "global_config.h"
 #include "cmd_parser.h"
 #include "string.h"
 #include "fatfs.h"
 #include "alarm.h"
 #include "sd.h"
 #include <stdio.h>
-#include "stdio_usr.h"
-#include "pretty_print.h"
+#include <timer.h>
 #include "autoadjust_itime.h"
 
 static void multimeasure(bool to_sd);

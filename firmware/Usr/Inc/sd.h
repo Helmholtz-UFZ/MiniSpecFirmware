@@ -9,8 +9,8 @@
 #define INC_SD_H_
 
 
-#include "global_config.h"
-#include "main_usr.h"
+#include <globalconfig.h>
+#include <mainloop.h>
 
 #define NO_SD	100
 

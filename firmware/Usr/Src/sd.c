@@ -5,15 +5,15 @@
  *      Author: Bert Palm
  */
 
-#include <lib_sd.h>
-#include <lib_spectrometer.h>
+#include <logging.h>
+#include <mainloop.h>
+#include <sdfs.h>
+#include <sensor.h>
 #include "sd.h"
 #include "fatfs.h"
 #include "string.h"
 #include "stdio.h"
 #include "cmd_parser.h"
-#include "main_usr.h"
-#include "stdio_usr.h"
 
 static filename_t fname = { .buf = { 0 }, .postfix = 0 };
 FIL *f = &SDFile;

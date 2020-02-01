@@ -34,7 +34,7 @@
  * (2): search the lower half [MIN   ...... MAX/2] start in the middle
  */
 
-#include "lib_spectrometer.h"
+#include <sensor.h>
 #include "autoadjust_itime.h"
 
 

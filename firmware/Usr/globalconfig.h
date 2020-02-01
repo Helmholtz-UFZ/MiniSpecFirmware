@@ -14,7 +14,7 @@
  * Avoid including high level stuff here.
  * Otherwise conflicts arise, as the HAL
  * isn't initialized yet. **/
-#include <lib_usr.h>
+#include <defines.h>
 #include "stdbool.h"
 #include "stdint.h"
 

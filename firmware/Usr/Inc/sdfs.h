@@ -5,10 +5,10 @@
  *      Author: Bert Palm
  */
 
-#ifndef INC_LIB_SD_H_
-#define INC_LIB_SD_H_
+#ifndef INC_SDFS_H_
+#define INC_SDFS_H_
 
-#include "global_config.h"
+#include <globalconfig.h>
 #include "fatfs.h"
 
 /* Extend FRESULT */
@@ -25,4 +25,4 @@ FRESULT sd_open_file_neworappend(FIL* f, char *fname);
 uint8_t sd_find_right_filename(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size);
 
 
-#endif /* INC_LIB_SD_H_ */
+#endif /* INC_SDFS_H_ */

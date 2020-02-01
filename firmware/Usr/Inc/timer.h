@@ -10,8 +10,8 @@
 #define __tim_usr_H
 
 /* Includes ------------------------------------------------------------------*/
+#include <globalconfig.h>
 #include "tim.h"
-#include "global_config.h"
 
 /* Prototypes ----------------------------------------------------------------*/
 void tim1_Init( void );

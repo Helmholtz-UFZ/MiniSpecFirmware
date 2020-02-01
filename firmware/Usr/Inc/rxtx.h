@@ -10,8 +10,8 @@
 #define __usart_usr_H
 
 /* Includes ------------------------------------------------------------------*/
+#include <globalconfig.h>
 #include "usart.h"
-#include "global_config.h"
 
 /* Defines for printf support. @sa _write() */
 #define STDOUT_FILENO   1

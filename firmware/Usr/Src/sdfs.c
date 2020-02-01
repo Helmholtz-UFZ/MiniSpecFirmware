@@ -5,12 +5,12 @@
  *      Author: Bert Palm
  */
 
-#include <lib_sd.h>
-#include <lib_uart.h>
+#include <logging.h>
+#include <rxtx.h>
+#include <sdfs.h>
 #include "string.h"
 #include "stdio.h"
 #include "sdmmc.h"
-#include "stdio_usr.h"
 
 
 uint8_t workBuffer[_MAX_SS];

@@ -19,6 +19,7 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
+#include <mainloop.h>
 #include "main.h"
 #include "dma.h"
 #include "fatfs.h"
@@ -33,7 +34,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
-#include "main_usr.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

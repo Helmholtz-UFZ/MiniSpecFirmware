@@ -4,11 +4,11 @@
  *      Author: Bert Palm
  */
 
-#ifndef INC_PRETTY_PRINT_H_
-#define INC_PRETTY_PRINT_H_
+#ifndef INC_PPRINT_H_
+#define INC_PPRINT_H_
 
-#include "global_config.h"
-#include "main_usr.h"
+#include <globalconfig.h>
+#include <mainloop.h>
 
 void ok(void);
 void argerr(void);
@@ -18,4 +18,4 @@ void send_itime(void);
 void send_rtc_time(void);
 
 
-#endif /* INC_PRETTY_PRINT_H_ */
+#endif /* INC_PPRINT_H_ */

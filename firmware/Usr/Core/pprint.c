@@ -6,10 +6,10 @@
  */
 
 
-#include "pretty_print.h"
-#include "stdio_usr.h"
+#include <sensor.h>
+#include <logging.h>
+#include <pprint.h>
 #include "stdio.h"
-#include "lib_spectrometer.h"
 
 
 /** print 'ok' */

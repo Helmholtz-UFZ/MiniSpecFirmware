@@ -55,11 +55,12 @@
  *      4. sens_deinit()                                    \n
  */
 
-#include <lib_spectrometer.h>
-#include <lib_timer.h>
+#include <globalconfig.h>
+#include <sensor.h>
+
+#include <logging.h>
 #include <string.h>
-#include "global_config.h"
-#include "stdio_usr.h"
+#include <timer.h>
 
 //static uint16_t mem_block1[SENSOR_DATA_BUFFER_MAX_WORDS + 1];
 static canary_memblock_t secure_memblock1;

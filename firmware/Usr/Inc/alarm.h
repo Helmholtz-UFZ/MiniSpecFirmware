@@ -8,7 +8,7 @@
 #ifndef INC_ALARM_H_
 #define INC_ALARM_H_
 
-#include "main_usr.h"
+#include <mainloop.h>
 
 
 void init_mode(runtime_config_t *rc);
