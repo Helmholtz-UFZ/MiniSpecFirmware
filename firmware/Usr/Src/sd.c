@@ -209,7 +209,7 @@ uint8_t read_config_from_SD(runtime_config_t *rc) {
 	 * If parse_ival() fails, no times are set. */
 	token = strtok_r(rest, delim, &rest);
 	if (token == NULL){ goto l_close; }
-	res = parse_ival(token, rc);
+	res = parse_mode(token, rc);
 	if(res != 0){ goto l_close; }
 
 	/* NEW with version 3.0.1:

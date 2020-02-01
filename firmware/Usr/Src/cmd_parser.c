@@ -10,8 +10,10 @@
 #include "string.h"
 #include "stdio.h"
 
-usr_cmd_typedef extcmd;
-
+usr_cmd_typedef extcmd = {
+		.cmd = USR_CMD_UNKNOWN,
+		.arg_buffer = {0,}
+};
 
 static bool _parsecmd(uint8_t *buf, char *cmd, char *alias){
 	uint8_t sz = strlen(cmd);
@@ -234,7 +236,7 @@ int8_t argparse_str(char **str) {
  *
  * Note: Start time needs to be smaller than end time
  */
-int8_t parse_ival(char *str, runtime_config_t* rc) {
+int8_t parse_mode(char *str, runtime_config_t* rc) {
 
 	uint c = 99;
 	RTC_TimeTypeDef iv, st, en, off;

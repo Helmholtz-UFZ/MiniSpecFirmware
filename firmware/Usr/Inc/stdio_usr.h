@@ -17,9 +17,4 @@ int debug(int8_t lvl, const char *__restrict format, ...)__attribute__( (__forma
 int reply(const char *__restrict format, ...)__attribute__( (__format__ (__printf__, 1, 2)) );
 int errreply(const char *__restrict format, ...)__attribute__( (__format__ (__printf__, 1, 2)) );
 
-void ok(void);
-void fail(void);
-void print_config(runtime_config_t *rc, char *name);
-
-
 #endif /* INC_STDIO_USR_H_ */

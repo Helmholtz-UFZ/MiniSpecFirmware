@@ -105,7 +105,7 @@ void parse_extcmd(uint8_t *buffer, uint16_t size);
 int8_t argparse_nr(int32_t *nr);
 int8_t argparse_nrs(int32_t *nr1, int32_t *nr2);
 int8_t argparse_str(char **str);
-int8_t parse_ival(char *str, runtime_config_t* rc);
+int8_t parse_mode(char *str, runtime_config_t* rc);
 
 
 

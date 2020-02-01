@@ -21,27 +21,39 @@
 #include "sd.h"
 #include <stdio.h>
 #include "stdio_usr.h"
+#include "pretty_print.h"
 #include "autoadjust_itime.h"
 
-static void send_data(void);
 static void multimeasure(bool to_sd);
 static void periodic_alarm_handler(void);
 static void extcmd_handler(void);
 static void dbg_test(void);
-static void print_config_from_SD(void);
 
-runtime_config_t rc;
+// helper
+static uint32_t _get_full_itime(uint8_t idx);
+static void _print_sd_config(void);
 
-static rtc_timestamp_t ts;
+runtime_config_t rc = {
+		.iterations = 1,
+		.itime = {DEFAULT_INTEGRATION_TIME, 0,},
+		.itime_index = 0,
+		.aa_lower = 33000,
+		.aa_upper = 54000,
+		.mode = START_MODE,
+		.start = {.Hours = 99, .Minutes = 99, .Seconds = 99},
+		.end = {.Hours = 99, .Minutes = 99, .Seconds = 99},
+		.ival = {.Hours = 99, .Minutes = 99, .Seconds = 99},
+		.next_alarm = {.Hours = 99, .Minutes = 99, .Seconds = 99},
+		.debuglevel = DEBUG_DEFAULT_LVL,
+		.format = DATA_FORMAT_ASCII,
+		.sleeping = false,
+		.trigger = false,
+};
+
+static rtc_timestamp_t ts = {0,};
 
 #define TS_BUFF_SZ	32
-char ts_buff[TS_BUFF_SZ];
-
-void init_timetype(RTC_TimeTypeDef *time) {
-	time->Hours = 99;
-	time->Minutes = 99;
-	time->Seconds = 99;
-}
+char ts_buff[TS_BUFF_SZ] = {0, };
 
 void usr_hw_init(void) {
 	/* sa. Errata 2.1.3. or Arm ID number 838869 */
@@ -49,7 +61,6 @@ void usr_hw_init(void) {
 	*ACTLR |= SCnSCB_ACTLR_DISDEFWBUF_Msk;
 
 	sensor_deinit();
-
 	rxtx_init();
 	rxtx_restart_listening();
 }
@@ -57,23 +68,6 @@ void usr_hw_init(void) {
 void run_init(void) {
 	power_switch_EN(ON);
 	usr_hw_init();
-
-	memset(&ts, 0, sizeof(ts));
-	memset(&rc, 0, sizeof(rc));
-
-	// init runtime config
-	rc.debuglevel = DEFAULT_DEBUG_LVL;
-	rc.format = DATA_FORMAT_ASCII;
-	rc.iterations = 1;
-	rc.itime[0] = DEFAULT_INTEGRATION_TIME;
-	rc.mode = MODE_OFF;
-	rc.trigger = false;
-	rc.aa_lower = 33000; // ~50%
-	rc.aa_upper = 54000; // ~66%
-	init_timetype(&rc.start);
-	init_timetype(&rc.end);
-	init_timetype(&rc.ival);
-	init_timetype(&rc.next_alarm);
 
 	// inform user
 	if (rc.format == DATA_FORMAT_ASCII) {
@@ -112,7 +106,6 @@ void run(void) {
 
 	debug(3,"(main): rxtx,alarm,trigger: %i %i %i\n", rxtx.wakeup, rtc.alarmA_wakeup, rc.trigger);
 
-
 	if (rc.trigger) {
 		rc.trigger = false;
 		if (rc.mode == MODE_TRIGGERED){
@@ -136,13 +129,6 @@ void run(void) {
 	}
 }
 
-uint32_t get_itime(uint8_t idx){
-	if (rc.itime[idx] < 0) {
-		return autoadjust_itime(rc.aa_lower, rc.aa_upper);
-	}
-	return rc.itime[idx];
-}
-
 static void extcmd_handler(void) {
 	int32_t nr = 0, nr1 = 0;
 	char *str = NULL;
@@ -152,13 +138,14 @@ static void extcmd_handler(void) {
 	/* RUN ============================================================ */
 
 	case USR_CMD_SINGLE_MEASURE_START:
-		if (get_itime(rc.itime_index) <= 0) {
+		nr = _get_full_itime(rc.itime_index);
+		if ( nr == 0) {
 			errreply("intergration time not set\n");
 			break;
 		}
 		ok();
 		sensor_init();
-		sensor_measure(rc.itime[rc.itime_index]);
+		sensor_measure(nr);
 		sensor_deinit();
 		send_data();
 		break;
@@ -210,101 +197,75 @@ static void extcmd_handler(void) {
 
 	case USR_CMD_SET_FORMAT:
 		if (argparse_nr(&nr)) {
-			fail();
-			break;
+			argerr(); break;
 		}
-		/* check and set argument */
 		rc.format = (nr > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
-		if(rc.format == DATA_FORMAT_BIN){
-			rc.debuglevel = false;
-		}
-		ok();
-		break;
+		ok(); break;
 
 	case USR_CMD_SET_ITIME:
 		if (argparse_nr(&nr)) {
-			fail();
-			break;
+			argerr(); break;
 		}
-
-		// itime <  0: auto measure
-		// itime == 0: disable index
-		// itime >  0: check min/max
-		if(nr < 0){
-			nr = -1;
-		} else if ( nr > 0){
-			nr = MAX(MIN_INTERGATION_TIME, nr);
-			nr = MIN(MAX_INTERGATION_TIME, nr);
-		}
+		// itime <  0: auto measure, itime == 0: disable index, itime >  0: check min/max
+		nr = nr < 0 ? -1 : nr > 0 ? MIN(MAX_INTERGATION_TIME, MAX(MIN_INTERGATION_TIME, nr)) : 0;
 		rc.itime[rc.itime_index] = nr;
-		ok();
-		break;
+		ok(); break;
 
 	case USR_CMD_SET_ITIME_INDEX:
 		if (argparse_nr(&nr)) {
-			fail();
-			break;
+			argerr(); break;
 		}
 		if (0 <= nr && nr < RCCONF_MAX_ITIMES) {
 			rc.itime_index = nr;
 			ok();
 		}else{
-			fail();
+			argerr();
 		}
 		break;
 
 	case USR_CMD_SET_MULTI_MEASURE_ITERATIONS:
 		if (argparse_nr(&nr)) {
-			fail();
-			break;
+			argerr(); break;
 		}
 		if (0 < nr && nr < RCCONF_MAX_ITERATIONS) {
 			rc.iterations = nr;
 			ok();
 		}else{
-			fail();
+			argerr();
 		}
 		break;
 
 	case USR_CMD_SET_RTC_TIME:
 		if (argparse_str(&str)) {
-			fail();
-			break;
+			argerr(); break;
 		}
 		if (rtc_parsecheck_datetime(str, &ts.time, &ts.date)) {
-			fail();
-			break;
+			argerr(); break;
 		}
 		/* store the current time */
 		rtc_get_now_str(ts_buff, TS_BUFF_SZ);
 		HAL_RTC_SetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
 		HAL_RTC_SetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
 		inform_SD_rtc(ts_buff);
-		ok();
-		break;
+		ok(); break;
 
 	case USR_CMD_SET_MODE:
 		if (argparse_str(&str)) {
-			fail();
-			break;
+			argerr(); break;
 		}
-		if (parse_ival(str, &rc)) {
-			fail();
-			break;
+		if (parse_mode(str, &rc)) {
+			argerr(); break;
 		}
 		init_mode(&rc);
-		ok();
-		break;
+		ok(); break;
 
 	case USR_CMD_SET_AUTOADJUST_PARAMS:
 		if (argparse_nrs(&nr, &nr1)) {
-			fail();
-			break;
+			argerr(); break;
 		}
 		// constrains
 		if (nr > UINT16_MAX || nr1 > UINT16_MAX || nr < 0 || nr1 < 0 || nr > nr1){
-			fail();
-			break;
+			argerr(); break;
 		}
 		rc.aa_lower = nr;
 		rc.aa_upper = nr1;
@@ -316,7 +277,7 @@ static void extcmd_handler(void) {
 		reply("test aa-itime: %ld us\n", nr);
 		break;
 
-		/* OTHER ============================================================ */
+	/* OTHER ============================================================ */
 
 	case USR_CMD_HELP:
 		reply(HELPSTR);
@@ -332,7 +293,7 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_PRINT_SDCONFIG:
-			print_config_from_SD();
+			_print_sd_config();
 			break;
 
 	case USR_CMD_READ_SDCONFIG:
@@ -345,11 +306,11 @@ static void extcmd_handler(void) {
 		}
 		break;
 
-		/* DEBUG ============================================================ */
+	/* DEBUG ============================================================ */
 
 	case USR_CMD_DEBUG:
 		if (argparse_nr(&nr)) {
-			fail();
+			argerr();
 			break;
 		}
 		rc.debuglevel = nr;
@@ -368,73 +329,11 @@ static void extcmd_handler(void) {
 	}
 }
 
-/** Local helper for sending data via the uart interface. */
-static void send_data(void) {
-	char *errstr;
-	uint32_t *rptr;
-	uint16_t i = 0;
-	uint8_t errcode = sens1.errc;
-
-	switch (errcode) {
-	case ERRC_NO_ERROR:
-		errstr = "";
-		break;
-	case ERRC_TIMEOUT:
-		errstr = "ERR: TIMEOUT. Is sensor plugged in ?\n";
-		/* otehr reasons: "ADC/sensor not powered, physical connections bad\n"; */
-		break;
-	case ERRC_NO_EOS:
-		errstr = "ERR: NO EOS. Something went wrong, please debug manually.\n";
-		break;
-	case ERRC_EOS_EARLY:
-		errstr = "ERR: EOS EARLY. Something went wrong, please debug manually.\n";
-		break;
-	case ERRC_UNKNOWN:
-		errstr = "ERR: UNKNOWN. Unknown error occurred.\n";
-		break;
-	default:
-		errstr = "ERR: Not implemented.\n";
-		break;
+static uint32_t _get_full_itime(uint8_t idx){
+	if (rc.itime[idx] < 0) {
+		return autoadjust_itime(rc.aa_lower, rc.aa_upper);
 	}
-
-	if (rc.format == DATA_FORMAT_BIN) {
-		/*Send the errorcode nevertheless an error occurred or not.*/
-		HAL_UART_Transmit(&hrxtx, (uint8_t *) &errcode, 2, 200);
-		if (!errcode) {
-			/* send data */
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL),
-			MSPARAM_PIXEL * 4,
-			MSPARAM_PIXEL * 4 * 100);
-		}
-	} else { /* DATA_FORMAT_ASCII */
-		if (errcode) {
-			printf(errstr);
-		} else {
-#if DBG_SEND_ALL
-			rptr = sens1.data->base;
-#else
-			rptr = (uint32_t *) (sens1.data->wptr - MSPARAM_PIXEL);
-#endif
-			while (rptr < sens1.data->wptr) {
-				if (rptr == (sens1.data->wptr - MSPARAM_PIXEL)) {
-					/* Pretty print some lines..*/
-					printf("\n"DELIMITER_STR);
-					printf("\n"HEADER_STR);
-					i = 0;
-				}
-
-				/* Break and enumerate line after 10 values.*/
-				if (i % 10 == 0) {
-					printf("\n%03d   %05d ", i, (int) *rptr);
-				} else {
-					printf("%05d ", (int) *rptr);
-				}
-				rptr++;
-				i++;
-			}
-			printf("\n"DELIMITER_STR"\n\n");
-		}
-	}
+	return rc.itime[idx];
 }
 
 static void periodic_alarm_handler(void) {
@@ -472,7 +371,7 @@ static void multimeasure(bool to_sd) {
 
 	for (uint8_t i = 0; i < RCCONF_MAX_ITIMES; ++i) {
 
-		itime = get_itime(i);
+		itime = _get_full_itime(i);
 
 		/* current itime is disabled */
 		if (itime == 0) {
@@ -520,14 +419,14 @@ static void multimeasure(bool to_sd) {
 	sensor_deinit();
 }
 
-static void print_config_from_SD(void){
-	runtime_config_t rc = {0,};
-	if (read_config_from_SD(&rc)){
+static void _print_sd_config(void){
+	runtime_config_t rc_ = {0,};
+	if (read_config_from_SD(&rc_)){
 		errreply("(main) read failed\n");
 		return;
 	}
-	rc.next_alarm.Hours = rc.next_alarm.Minutes = rc.next_alarm.Seconds = 99;
-	print_config(&rc, "SD-CONFIG");
+	init_timetype(&rc_.next_alarm);
+	print_config(&rc_, "SD-CONFIG");
 }
 
 /* This function is used to test functions

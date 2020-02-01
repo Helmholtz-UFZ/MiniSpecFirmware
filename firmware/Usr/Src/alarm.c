@@ -63,4 +63,8 @@ void init_mode(runtime_config_t *rc) {
 	}
 }
 
-
+void init_timetype(RTC_TimeTypeDef *time) {
+	time->Hours = 99;
+	time->Minutes = 99;
+	time->Seconds = 99;
+}

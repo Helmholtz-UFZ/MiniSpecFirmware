@@ -12,5 +12,6 @@
 
 
 void init_mode(runtime_config_t *rc);
+void init_timetype(RTC_TimeTypeDef *time);
 
 #endif /* INC_ALARM_H_ */
