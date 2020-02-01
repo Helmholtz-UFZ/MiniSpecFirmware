@@ -130,9 +130,7 @@ int main(void)
   */
 
   run_init();
-  while (1){
-	  run();
-  }
+  run();
   /* USER CODE END 2 */
 
   /* Infinite loop */

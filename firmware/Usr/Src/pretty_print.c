@@ -124,3 +124,26 @@ void send_data(void) {
 		}
 	}
 }
+
+void send_itime(void){
+	if (rc.format == DATA_FORMAT_BIN) {
+		HAL_UART_Transmit(&hrxtx, (uint8_t *) &(rc.itime[rc.itime_index]), 4, 1000);
+	} else {
+		reply("integration time [%u] = %ld us\n", rc.itime_index, rc.itime[rc.itime_index]);
+	}
+}
+
+void send_rtc_time(void){
+	rtc_timestamp_t ts = rtc_get_now();
+	if (rc.format == DATA_FORMAT_ASCII) {
+		reply("20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+				ts.time.Minutes, ts.time.Seconds);
+	} else {
+		HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Year, 1, 1000);
+		HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Month, 1, 1000);
+		HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Date, 1, 1000);
+		HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Hours, 1, 1000);
+		HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Minutes, 1, 1000);
+		HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Seconds, 1, 1000);
+	}
+}

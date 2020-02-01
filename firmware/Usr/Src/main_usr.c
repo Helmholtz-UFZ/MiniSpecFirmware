@@ -31,7 +31,11 @@ static void dbg_test(void);
 
 // helper
 static uint32_t _get_full_itime(uint8_t idx);
+static void _single_measurement(void);
+static void _set_rtc_time(void);
 static void _print_sd_config(void);
+static void _sleep(void);
+
 
 runtime_config_t rc = {
 		.iterations = 1,
@@ -50,10 +54,6 @@ runtime_config_t rc = {
 		.trigger = false,
 };
 
-static rtc_timestamp_t ts = {0,};
-
-#define TS_BUFF_SZ	32
-char ts_buff[TS_BUFF_SZ] = {0, };
 
 void usr_hw_init(void) {
 	/* sa. Errata 2.1.3. or Arm ID number 838869 */
@@ -65,15 +65,14 @@ void usr_hw_init(void) {
 	rxtx_restart_listening();
 }
 
+
 void run_init(void) {
 	power_switch_EN(ON);
 	usr_hw_init();
 
 	// inform user
-	if (rc.format == DATA_FORMAT_ASCII) {
-		reply("\nstart\n");
-		reply("firmware: %s\n", __FIRMWARE_VERSION);
-	}
+	reply("\nstart\n");
+	reply("firmware: %s\n", __FIRMWARE_VERSION);
 
 	// read/write info from/to sd
 	inform_SD_reset();
@@ -82,52 +81,59 @@ void run_init(void) {
 	init_mode(&rc);
 }
 
-void run(void) {
-	// this is called in a endless loop (!)
 
+static void _sleep(void){
 	/* Uart IR is enabled only during (light) sleep phases.
 	 * If a uart IR occur during the IR is disabled, it will
 	 * come up, immediately after enabling it agian.
 	 * (see next line) */
-	//=================================================================
-	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM); //
-	if (!rxtx.wakeup && !rtc.alarmA_wakeup) {        //
+	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);
+	if (!rxtx.wakeup && !rtc.alarmA_wakeup) {
 		cpu_enter_LPM();
-	}                                                                 //
-	__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);                        //
-	//=================================================================
-
-	if (hrxtx.ErrorCode) {
-		/* See stm32l4xx_hal_uart.h for ErrorCodes.
-		 * Handle Uart Errors immediately because every further
-		 * send (e.g. printf) would overwrite the Error Code.*/
-		rxtx_restart_listening();
 	}
+	__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);
+}
 
-	debug(3,"(main): rxtx,alarm,trigger: %i %i %i\n", rxtx.wakeup, rtc.alarmA_wakeup, rc.trigger);
 
-	if (rc.trigger) {
-		rc.trigger = false;
-		if (rc.mode == MODE_TRIGGERED){
-			multimeasure(true);
+void run(void) {
+
+	while(true) {
+
+		_sleep();
+
+		if (hrxtx.ErrorCode) {
+			/* See stm32l4xx_hal_uart.h for ErrorCodes.
+			 * Handle Uart Errors immediately because every further
+			 * send (e.g. printf) would overwrite the Error Code.*/
+			rxtx_restart_listening();
 		}
-	}
 
-	if (rtc.alarmA_wakeup) {
-		rtc.alarmA_wakeup = false;
-		if(rc.mode == MODE_ENDLESS || rc.mode == MODE_STARTEND){
-			periodic_alarm_handler();
+		debug(3,"(main): rxtx,alarm,trigger: %i %i %i\n", rxtx.wakeup, rtc.alarmA_wakeup, rc.trigger);
+
+		if (rc.trigger) {
+			rc.trigger = false;
+			if (rc.mode == MODE_TRIGGERED){
+				multimeasure(true);
+			}
 		}
-	}
 
-	if (rxtx.wakeup) {
-		parse_extcmd(rxtx_rxbuffer.base, rxtx_rxbuffer.size);
-		rxtx.wakeup = false;
-		rxtx.cmd_bytes = 0;
-		rxtx_restart_listening();
-		extcmd_handler();
+		if (rtc.alarmA_wakeup) {
+			rtc.alarmA_wakeup = false;
+			if(rc.mode == MODE_ENDLESS || rc.mode == MODE_STARTEND){
+				periodic_alarm_handler();
+			}
+		}
+
+		if (rxtx.wakeup) {
+			parse_extcmd(rxtx_rxbuffer.base, rxtx_rxbuffer.size);
+			rxtx.wakeup = false;
+			rxtx.cmd_bytes = 0;
+			rxtx_restart_listening();
+			extcmd_handler();
+		}
 	}
 }
+
 
 static void extcmd_handler(void) {
 	int32_t nr = 0, nr1 = 0;
@@ -135,28 +141,14 @@ static void extcmd_handler(void) {
 
 	switch (extcmd.cmd) {
 
-	/* RUN ============================================================ */
-
 	case USR_CMD_SINGLE_MEASURE_START:
-		nr = _get_full_itime(rc.itime_index);
-		if ( nr == 0) {
-			errreply("intergration time not set\n");
-			break;
-		}
-		ok();
-		sensor_init();
-		sensor_measure(nr);
-		sensor_deinit();
-		send_data();
+		_single_measurement();
 		break;
 
 	case USR_CMD_MULTI_MEASURE_START:
 		ok();
 		multimeasure(false);
 		break;
-
-
-	/* GETTER ============================================================ */
 
 	case USR_CMD_VERSION:
 		reply("firmware: %s\n", __FIRMWARE_VERSION);
@@ -167,54 +159,31 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_GET_ITIME:
-		if (rc.format == DATA_FORMAT_BIN) {
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &(rc.itime[rc.itime_index]), 4, 1000);
-		} else {
-			reply("integration time [%u] = %ld us\n", rc.itime_index, rc.itime[rc.itime_index]);
-		}
+		send_itime();
 		break;
 
 	case USR_CMD_GET_RTC_TIME:
-		ts = rtc_get_now();
-		if (rc.format == DATA_FORMAT_ASCII) {
-			reply("20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
-					ts.time.Minutes, ts.time.Seconds);
-		} else {
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Year, 1, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Month, 1, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.date.Date, 1, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Hours, 1, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Minutes, 1, 1000);
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) &ts.time.Seconds, 1, 1000);
-		}
+		send_rtc_time();
 		break;
 
 	case USR_CMD_GET_CONFIG:
 		print_config(&rc, "SYSTEM CONFIG");
 		break;
 
-		/* SETTER ============================================================ */
-
 	case USR_CMD_SET_FORMAT:
-		if (argparse_nr(&nr)) {
-			argerr(); break;
-		}
+		if (argparse_nr(&nr)) { argerr(); break; }
 		rc.format = (nr > 0) ? DATA_FORMAT_ASCII : DATA_FORMAT_BIN;
 		ok(); break;
 
 	case USR_CMD_SET_ITIME:
-		if (argparse_nr(&nr)) {
-			argerr(); break;
-		}
+		if (argparse_nr(&nr)) { argerr(); break; }
 		// itime <  0: auto measure, itime == 0: disable index, itime >  0: check min/max
 		nr = nr < 0 ? -1 : nr > 0 ? MIN(MAX_INTERGATION_TIME, MAX(MIN_INTERGATION_TIME, nr)) : 0;
 		rc.itime[rc.itime_index] = nr;
 		ok(); break;
 
 	case USR_CMD_SET_ITIME_INDEX:
-		if (argparse_nr(&nr)) {
-			argerr(); break;
-		}
+		if (argparse_nr(&nr)) { argerr(); break; }
 		if (0 <= nr && nr < RCCONF_MAX_ITIMES) {
 			rc.itime_index = nr;
 			ok();
@@ -224,9 +193,7 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_SET_MULTI_MEASURE_ITERATIONS:
-		if (argparse_nr(&nr)) {
-			argerr(); break;
-		}
+		if (argparse_nr(&nr)) { argerr(); break; }
 		if (0 < nr && nr < RCCONF_MAX_ITERATIONS) {
 			rc.iterations = nr;
 			ok();
@@ -236,60 +203,35 @@ static void extcmd_handler(void) {
 		break;
 
 	case USR_CMD_SET_RTC_TIME:
-		if (argparse_str(&str)) {
-			argerr(); break;
-		}
-		if (rtc_parsecheck_datetime(str, &ts.time, &ts.date)) {
-			argerr(); break;
-		}
-		/* store the current time */
-		rtc_get_now_str(ts_buff, TS_BUFF_SZ);
-		HAL_RTC_SetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
-		HAL_RTC_SetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
-		inform_SD_rtc(ts_buff);
-		ok(); break;
+		_set_rtc_time();
+		break;
 
 	case USR_CMD_SET_MODE:
-		if (argparse_str(&str)) {
-			argerr(); break;
-		}
-		if (parse_mode(str, &rc)) {
-			argerr(); break;
-		}
+		if (argparse_str(&str)) { argerr(); break; }
+		if (parse_mode(str, &rc)) { argerr(); break; }
 		init_mode(&rc);
 		ok(); break;
 
 	case USR_CMD_SET_AUTOADJUST_PARAMS:
-		if (argparse_nrs(&nr, &nr1)) {
-			argerr(); break;
-		}
+		if (argparse_nrs(&nr, &nr1)) { argerr(); break; }
 		// constrains
-		if (nr > UINT16_MAX || nr1 > UINT16_MAX || nr < 0 || nr1 < 0 || nr > nr1){
-			argerr(); break;
-		}
+		if (nr > UINT16_MAX || nr1 > UINT16_MAX || nr < 0 || nr1 < 0 || nr > nr1) { argerr(); break; }
 		rc.aa_lower = nr;
 		rc.aa_upper = nr1;
 		// no break
-
 	case USR_CMD_TEST_AUTOADJUST:
 		nr = autoadjust_itime(rc.aa_lower, rc.aa_upper);
 		reply("upper, lower:  %ld, %ld\n", rc.aa_lower, rc.aa_upper);
 		reply("test aa-itime: %ld us\n", nr);
 		break;
 
-	/* OTHER ============================================================ */
-
 	case USR_CMD_HELP:
 		reply(HELPSTR);
 		break;
 
 	case USR_CMD_STORE_SDCONFIG:
-		nr = write_config_to_SD(&rc);
-		if (!nr){
-			ok();
-		} else {
-			errreply("write to SD faild\n");
-		}
+		if (write_config_to_SD(&rc)){ errreply("write to SD faild\n"); break; }
+		ok();
 		break;
 
 	case USR_CMD_PRINT_SDCONFIG:
@@ -297,22 +239,13 @@ static void extcmd_handler(void) {
 			break;
 
 	case USR_CMD_READ_SDCONFIG:
-		nr = read_config_from_SD(&rc);
-		if (!nr){
-			init_mode(&rc);
-			ok();
-		} else {
-			errreply("read from SD faild\n");
-		}
+		if (read_config_from_SD(&rc)){ errreply("read from SD faild\n"); break; }
+		init_mode(&rc);
+		ok();
 		break;
 
-	/* DEBUG ============================================================ */
-
 	case USR_CMD_DEBUG:
-		if (argparse_nr(&nr)) {
-			argerr();
-			break;
-		}
+		if (argparse_nr(&nr)) { argerr(); break; }
 		rc.debuglevel = nr;
 		debug(rc.debuglevel, "(main): level set to %u\n", rc.debuglevel);
 		break;
@@ -329,17 +262,11 @@ static void extcmd_handler(void) {
 	}
 }
 
-static uint32_t _get_full_itime(uint8_t idx){
-	if (rc.itime[idx] < 0) {
-		return autoadjust_itime(rc.aa_lower, rc.aa_upper);
-	}
-	return rc.itime[idx];
-}
 
 static void periodic_alarm_handler(void) {
 	debug(1,"(alarm): Periodic alarm \n");
 	RTC_TimeTypeDef new;
-	rtc_timestamp_t ts;
+	rtc_timestamp_t ts = {0,};
 	ts = rtc_get_now();
 	debug(2,"(alarm): now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
@@ -365,9 +292,11 @@ static void periodic_alarm_handler(void) {
 	debug(2,"(alarm): next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 }
 
+
 static void multimeasure(bool to_sd) {
 	int8_t res = 0;
 	uint32_t itime = 0;
+	char ts_buff[TS_BUFF_SZ] = {0, };
 
 	for (uint8_t i = 0; i < RCCONF_MAX_ITIMES; ++i) {
 
@@ -419,15 +348,6 @@ static void multimeasure(bool to_sd) {
 	sensor_deinit();
 }
 
-static void _print_sd_config(void){
-	runtime_config_t rc_ = {0,};
-	if (read_config_from_SD(&rc_)){
-		errreply("(main) read failed\n");
-		return;
-	}
-	init_timetype(&rc_.next_alarm);
-	print_config(&rc_, "SD-CONFIG");
-}
 
 /* This function is used to test functions
  * or functionality under development.
@@ -436,4 +356,60 @@ static void _print_sd_config(void){
  * code is executed by timer. */
 static void dbg_test(void) {
 	return;
+}
+
+
+static uint32_t _get_full_itime(uint8_t idx){
+	if (rc.itime[idx] < 0) {
+		return autoadjust_itime(rc.aa_lower, rc.aa_upper);
+	}
+	return rc.itime[idx];
+}
+
+
+static void _single_measurement(void) {
+	uint32_t itime = _get_full_itime(rc.itime_index);
+	if (itime == 0) {
+		errreply("intergration time not set\n");
+		return;
+	}
+	ok();
+	sensor_init();
+	sensor_measure(itime);
+	sensor_deinit();
+	send_data();
+}
+
+
+static void _set_rtc_time(void){
+	char *str = NULL;
+	rtc_timestamp_t ts = {0,};
+	char ts_buff[TS_BUFF_SZ] = {0, };
+
+	if (argparse_str(&str)) {
+		argerr();
+		return;
+	}
+	if (rtc_parsecheck_datetime(str, &ts.time, &ts.date)) {
+		argerr();
+		return;
+	}
+	/* store the current time to later inform the sd
+	 * with old and new time*/
+	rtc_get_now_str(ts_buff, TS_BUFF_SZ);
+	HAL_RTC_SetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
+	HAL_RTC_SetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
+	inform_SD_rtc(ts_buff);
+	ok();
+}
+
+
+static void _print_sd_config(void){
+	runtime_config_t rc_ = {0,};
+	if (read_config_from_SD(&rc_)){
+		errreply("(main) read failed\n");
+		return;
+	}
+	init_timetype(&rc_.next_alarm);
+	print_config(&rc_, "SD-CONFIG");
 }

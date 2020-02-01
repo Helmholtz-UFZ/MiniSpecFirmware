@@ -10,6 +10,10 @@
 
 #include "rtc.h"
 
+// used to create a buffer that can hold a timestamp string
+// see also rtc_get_now_str()
+#define TS_BUFF_SZ	32
+
 typedef struct
 {
 	RTC_TimeTypeDef time;

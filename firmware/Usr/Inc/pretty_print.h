@@ -14,6 +14,8 @@ void ok(void);
 void argerr(void);
 void print_config(runtime_config_t *rc, char *name);
 void send_data(void);
+void send_itime(void);
+void send_rtc_time(void);
 
 
 #endif /* INC_PRETTY_PRINT_H_ */
