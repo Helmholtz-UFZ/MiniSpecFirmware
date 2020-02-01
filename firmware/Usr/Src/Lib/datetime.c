@@ -317,15 +317,10 @@ RTC_TimeTypeDef rtc_seconds2time(uint32_t s) {
 	return t;
 }
 
-/**
- * Note: Overwrite __weak function in stm32l4xx_hal_rtc.c
- * Note: This is called from within a interrupt.
- * FIXME mv IRQ Handler
- */
-void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc) {
-	UNUSED(hrtc);
 
-	rtc.alarmA_wakeup = true;
-
-	leave_LPM_from_ISR();
+void init_timetype(RTC_TimeTypeDef *time) {
+	time->Hours = 99;
+	time->Minutes = 99;
+	time->Seconds = 99;
 }
+

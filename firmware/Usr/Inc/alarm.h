@@ -10,9 +10,10 @@
 
 #include <mainloop.h>
 #include <globalconfig.h>
+#include "rtc.h"
 
 
-void init_mode(runtime_config_t *rc);
-void init_timetype(RTC_TimeTypeDef *time);
+RTC_TimeTypeDef get_closest_next_alarm(runtime_config_t *rc);
+void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc);
 
 #endif /* INC_ALARM_H_ */
