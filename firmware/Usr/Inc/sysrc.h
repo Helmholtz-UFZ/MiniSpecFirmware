@@ -9,6 +9,7 @@
 #define INC_SYSRC_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "stm32l4xx_hal_rtc.h"
 
 typedef enum
@@ -50,5 +51,7 @@ typedef struct
 
 
 extern runtime_config_t rc;
+
+void init_mode(runtime_config_t *rc);
 
 #endif /* INC_SYSRC_H_ */

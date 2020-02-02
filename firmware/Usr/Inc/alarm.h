@@ -10,6 +10,7 @@
 
 #include <mainloop.h>
 #include <globalconfig.h>
+#include "sysrc.h"
 #include "rtc.h"
 
 

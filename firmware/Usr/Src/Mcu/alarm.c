@@ -7,7 +7,7 @@
 
 #include "alarm.h"
 #include "cpu.h"
-
+#include "datetime.h"
 
 /**
  * Calculate and return the next alarm closest to now.

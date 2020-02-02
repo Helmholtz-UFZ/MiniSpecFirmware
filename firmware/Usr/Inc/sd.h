@@ -11,6 +11,7 @@
 
 #include <globalconfig.h>
 #include <mainloop.h>
+#include "sysrc.h"
 
 #define NO_SD	100
 

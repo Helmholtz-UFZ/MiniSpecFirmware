@@ -7,8 +7,7 @@
 #ifndef INC_PPRINT_H_
 #define INC_PPRINT_H_
 
-#include <globalconfig.h>
-#include <mainloop.h>
+#include "sysrc.h"
 
 void ok(void);
 void argerr(void);

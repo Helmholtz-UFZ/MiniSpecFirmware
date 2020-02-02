@@ -6,8 +6,11 @@
  */
 
 #include "measurements.h"
+#include "sensor.h"
+#include "autoadjust_itime.h"
 #include "datetime.h"
 #include "sysrc.h"
+#include <stdio.h>
 
 static uint32_t _get_full_itime(uint8_t idx);
 static uint32_t _get_full_itime(uint8_t idx){

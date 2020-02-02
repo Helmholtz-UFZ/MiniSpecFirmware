@@ -5,26 +5,11 @@
  *      Author: Bert Palm
  */
 
-#include <datetime.h>
-#include <globalconfig.h>
-#include <sensor.h>
-#include <logging.h>
-#include <mainloop.h>
-#include <pprint.h>
-#include <rxtx.h>
-#include <sdfs.h>
-#include "power.h"
-#include "rtc.h"
-#include "cmd_parser.h"
-#include "string.h"
-#include "fatfs.h"
-#include "alarm.h"
-#include "sd.h"
-#include <stdio.h>
-#include <timer.h>
-#include "autoadjust_itime.h"
+
+#include "mainloop.h"
 #include "wakeup.h"
 #include "sysrc.h"
+#include "rxtx.h"
 
 
 static void _sleep(void);

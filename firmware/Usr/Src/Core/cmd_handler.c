@@ -9,9 +9,11 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include "cmd_handler.h"
+#include "cmd_parser.h"
 #include "sysrc.h"
 #include "sensor.h"
 #include "pprint.h"
+#include "measurements.h"
 
 
 static void _dbg_test(void);

@@ -5,11 +5,11 @@
  *      Author: Bert Palm
  */
 
-#include <modes.h>
+#include "sysrc.h"
 #include "alarm.h"
 
 /*
- * Set the alarm if the user was submitting a new value.
+ * Switch the mode
  */
 void init_mode(runtime_config_t *rc) {
 	RTC_TimeTypeDef t;

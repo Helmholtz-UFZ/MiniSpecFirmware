@@ -11,6 +11,7 @@
 #include <globalconfig.h>
 #include <mainloop.h>
 #include <rxtx.h>
+#include "sysrc.h"
 
 /**
  * enum for the defined commands

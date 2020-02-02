@@ -9,6 +9,7 @@
 #include <logging.h>
 #include <mainloop.h>
 #include <rxtx.h>
+#include "sysrc.h"
 
 #include <stdarg.h>
 #include <stdio.h>
