@@ -8,15 +8,6 @@
 #ifndef INC_CMD_HANDLER_H_
 #define INC_CMD_HANDLER_H_
 
-/**
- * the data format specifies the datatype of the
- * arguments and the data to/from external system.
- **/
-typedef enum {
-	DATA_FORMAT_BIN = 0,
-	DATA_FORMAT_ASCII = 1,
-
-} dataformat_t;
 
 // todo future: store COMAND_NR, comandString, alias, help-txt in one
 // dictionary-like structure

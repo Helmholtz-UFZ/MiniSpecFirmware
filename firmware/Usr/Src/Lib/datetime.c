@@ -21,6 +21,7 @@ rtc_t rtc = { .alarmA_wakeup = false };
  * Return 0 on success, non-zero otherwise
  */
 uint8_t rtc_parsecheck_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate) {
+	// todo change to take a timestamp instead of time and date
 
 	char *p = str;
 	uint c;
@@ -139,30 +140,11 @@ uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime) {
 	return 1;
 }
 
-
-/*
- * Return a string representation of the current RTC time.
- * In the ISO 8601 Format 20YY-MM-DDTHH:mm:ss.
- *
- * The param buffer must hold enough space to store the
- * 20 bytes string including the null terminator.
- * */
-void rtc_get_now_str(char *buffer, uint32_t sz) {
-	RTC_TimeTypeDef t;
-	RTC_DateTypeDef d;
-
-	if (sz < 20) {
-		return;
-	}
-
-	HAL_RTC_GetTime(&hrtc, &t, RTC_FORMAT_BIN);
-	HAL_RTC_GetDate(&hrtc, &d, RTC_FORMAT_BIN);
-
-	sprintf(buffer, "20%02i-%02i-%02iT%02i:%02i:%02i", d.Year, d.Month, d.Date, t.Hours, t.Minutes, t.Seconds);
-}
-
 /**
  * Fill the given timestamp with today and now values.
+ *
+ * Note: use this for conversion to string:
+ * sprintf(buffer, "20%02i-%02i-%02iT%02i:%02i:%02i", d.Year, d.Month, d.Date, t.Hours, t.Minutes, t.Seconds);
  */
 rtc_timestamp_t rtc_get_now(void) {
 	rtc_timestamp_t ts;

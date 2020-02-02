@@ -2,19 +2,20 @@
  * cmd_handler.c
  *
  *  Created on: Feb 2, 2020
- *      Author: rg
+ *      Author: Bert Palm
  */
 
 
+#include "cmd_handler.h"
+
+#include "sysrc.h"
+#include "pprint.h"
+#include "logging.h"
+#include "measurements.h"
+#include "cmd_parser.h"
+
 #include <stddef.h>
 #include <stdbool.h>
-#include "cmd_handler.h"
-#include "cmd_parser.h"
-#include "sysrc.h"
-#include "sensor.h"
-#include "pprint.h"
-#include "measurements.h"
-
 
 static void _dbg_test(void);
 static void _set_rtc_time(void);
@@ -154,7 +155,7 @@ void extcmd_handler(void) {
 static void _set_rtc_time(void){
 	char *str = NULL;
 	rtc_timestamp_t ts = {0,};
-	char ts_buff[TS_BUFF_SZ] = {0, };
+	rtc_timestamp_t now = {0,};
 
 	if (argparse_str(&str)) {
 		argerr();
@@ -166,10 +167,11 @@ static void _set_rtc_time(void){
 	}
 	/* store the current time to later inform the sd
 	 * with old and new time*/
-	rtc_get_now_str(ts_buff, TS_BUFF_SZ);
+	now = rtc_get_now();
+	// todo new func dt_set_timestamp()
 	HAL_RTC_SetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
 	HAL_RTC_SetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
-	inform_SD_rtc(ts_buff);
+//	inform_SD_rtc(&now); // fixme / testme
 	ok();
 }
 

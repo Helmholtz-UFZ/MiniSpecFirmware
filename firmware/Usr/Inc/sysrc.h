@@ -12,6 +12,17 @@
 #include <stdint.h>
 #include "stm32l4xx_hal_rtc.h"
 
+/**
+ * the data format specifies the datatype of the
+ * arguments and the data to/from external system.
+ **/
+typedef enum {
+	DATA_FORMAT_BIN = 0,
+	DATA_FORMAT_ASCII = 1,
+
+} dataformat_t;
+
+
 typedef enum
 {
 	MODE_OFF = 0,

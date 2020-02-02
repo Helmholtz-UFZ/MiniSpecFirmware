@@ -11,9 +11,6 @@
 #include "rtc.h"
 #include <stdbool.h>
 
-// used to create a buffer that can hold a timestamp string
-// see also rtc_get_now_str()
-#define TS_BUFF_SZ	32
 
 typedef struct
 {
@@ -36,7 +33,6 @@ uint32_t rtc_time2seconds(RTC_TimeTypeDef *t);
 RTC_TimeTypeDef rtc_seconds2time(uint32_t s);
 uint8_t rtc_parsecheck_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
 uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime);
-void rtc_get_now_str(char *buffer, uint32_t sz);
 rtc_timestamp_t rtc_get_now(void);
 void init_timetype(RTC_TimeTypeDef *time);
 
