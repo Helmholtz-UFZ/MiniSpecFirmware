@@ -10,6 +10,8 @@
 
 /*
  * Switch the mode
+ *
+ * todo rename to switch mode
  */
 void init_mode(runtime_config_t *rc) {
 	RTC_TimeTypeDef t;
@@ -24,12 +26,12 @@ void init_mode(runtime_config_t *rc) {
 		t = get_closest_next_alarm(rc);
 		rtc_set_alarmA(&t);
 		rc->next_alarm = rtc_get_alermAtime();
-		rc->trigger = false;
+		wakeup.triggerPin = false;
 
 	} else if (rc->mode == MODE_ENDLESS) {
 		ts = rtc_get_now();
 		rtc_set_alarmA_by_offset(&ts.time, &rc->ival);
 		rc->next_alarm = rtc_get_alermAtime();
-		rc->trigger = false;
+		wakeup.triggerPin = false;
 	}
 }

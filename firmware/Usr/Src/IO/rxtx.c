@@ -10,7 +10,6 @@
 #include <stdbool.h>
 
 rxtx_config_t rxtx = {
-		.wakeup = false,
 		.cmd_bytes = 0,
 };
 

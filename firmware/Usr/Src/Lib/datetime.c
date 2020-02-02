@@ -10,8 +10,6 @@
 #include "string.h"
 #include "stdio.h"
 
-rtc_t rtc = { .alarmA_wakeup = false };
-
 /**
  * Parse a string to a date and time object.
  * The datetime string should be in ISO 8601 format and should look like this:

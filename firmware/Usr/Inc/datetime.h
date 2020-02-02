@@ -20,12 +20,6 @@ typedef struct
 	RTC_DateTypeDef date;
 } rtc_timestamp_t;
 
-typedef struct
-{
-	volatile bool alarmA_wakeup;
-}rtc_t;
-
-extern rtc_t rtc;
 
 bool rtc_time_leq(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b);
 bool rtc_time_eq(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b);

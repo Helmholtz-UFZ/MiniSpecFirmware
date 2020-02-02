@@ -2,15 +2,16 @@
  * sysrc.h
  *
  *  Created on: Feb 2, 2020
- *      Author: rg
+ *      Author: Bert Palm
  */
 
 #ifndef INC_SYSRC_H_
 #define INC_SYSRC_H_
 
+#include "rtc.h"
+
 #include <stdbool.h>
 #include <stdint.h>
-#include "stm32l4xx_hal_rtc.h"
 
 /**
  * the data format specifies the datatype of the
@@ -56,7 +57,6 @@ typedef struct
 	// the format to use for communication can be: DATA_FORMAT_BIN or DATA_FORMAT_ASCII
 	bool format;
 	bool sleeping;
-	volatile bool trigger;
 
 } runtime_config_t;
 

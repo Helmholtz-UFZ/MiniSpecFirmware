@@ -48,10 +48,6 @@ typedef struct {
 } uart_buffer_t;
 
 typedef struct {
-	/* Flag for signal that a carriage return
-	 * from a usr command was received */
-	volatile bool wakeup;
-
 	/* The number of bytes received */
 	volatile uint16_t cmd_bytes;
 
