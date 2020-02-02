@@ -6,9 +6,9 @@
  */
 
 
-#include <logging.h>
-#include <mainloop.h>
-#include <rxtx.h>
+
+#include "logging.h"
+
 #include "sysrc.h"
 
 #include <stdarg.h>
