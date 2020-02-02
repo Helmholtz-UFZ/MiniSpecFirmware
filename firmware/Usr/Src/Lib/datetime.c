@@ -6,9 +6,9 @@
  */
 
 #include <cpu.h>
+#include <datetime.h>
 #include <globalconfig.h>
 #include <mainloop.h>
-#include <rtc_dt.h>
 #include "string.h"
 #include "stdio.h"
 #include "power.h"

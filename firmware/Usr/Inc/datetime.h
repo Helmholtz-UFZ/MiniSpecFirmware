@@ -5,8 +5,8 @@
  *      Author: Bert Palm
  */
 
-#ifndef INC_RTC_DT_H_
-#define INC_RTC_DT_H_
+#ifndef INC_DATETIME_H_
+#define INC_DATETIME_H_
 
 #include "rtc.h"
 
@@ -42,4 +42,4 @@ rtc_timestamp_t rtc_get_now(void);
 RTC_TimeTypeDef rtc_get_alermAtime(void);
 void init_timetype(RTC_TimeTypeDef *time);
 
-#endif /* INC_RTC_DT_H_ */
+#endif /* INC_DATETIME_H_ */

@@ -5,9 +5,9 @@
  *      Author: Bert Palm
  */
 #include <cpu.h>
+#include <datetime.h>
 #include <logging.h>
 #include <mainloop.h>
-#include <rtc_dt.h>
 #include <rxtx.h>
 #include <timer.h>
 #include "power.h"
