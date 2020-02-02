@@ -14,13 +14,25 @@
 #include "string.h"
 #include "stdio.h"
 #include "cmd_parser.h"
+#include "datetime.h"
 
 static filename_t fname = { .buf = { 0 }, .postfix = 0 };
 FIL *f = &SDFile;
 
-// todo rename sd_...()
+FRESULT sd_mount(void) {
+	FRESULT res = f_mount(&SDFatFS, SDPath, 0);
+	debug(3, "(sd): MOUNT: %u\n", res);
+	return res;
+}
 
-void inform_SD_reset(void) {
+FRESULT sd_umount(void) {
+	FRESULT res = f_mount(NULL, SDPath, 0);
+	debug(3, "(sd): UMOUNT: %u\n", res);
+	return res;
+}
+
+
+void sd_write_reset_info(void) {
 #if HAS_SD
 	uint8_t res = 0;
 	/* Inform the File that an reset occurred */
@@ -41,10 +53,10 @@ void inform_SD_reset(void) {
 #endif
 }
 
-void inform_SD_rtc(char *oldtimestamp_str) {
+
+void sd_write_timechange_info(rtc_timestamp_t old) {
 #if HAS_SD
-	uint16_t sz = 32;
-	char buf[sz];
+	rtc_timestamp_t new;
 	uint8_t res = 0;
 	res = sd_mount();
 	if (!res) {
@@ -52,9 +64,15 @@ void inform_SD_rtc(char *oldtimestamp_str) {
 		if (!res) {
 			res = sd_open_file_neworappend(f, fname.buf);
 			if (!res) {
-				f_printf(f, "The RTC was set. Old time: %S\n", oldtimestamp_str);
-				rtc_get_now_str(buf, sz);
-				f_printf(f, "                 New time: %S\n", buf);
+
+				f_printf(f, "The RTC was set. Old time: ");
+				f_printf(f, TS_TO_PRINTCALL(old));
+				f_printf(f, "\n");
+
+				new = rtc_get_now();
+				f_printf(f, "The RTC was set. New time: ");
+				f_printf(f, TS_TO_PRINTCALL(new));
+				f_printf(f, "\n");
 				sd_close(f);
 			}
 		}
@@ -265,7 +283,7 @@ uint8_t read_config_from_SD(runtime_config_t *rc) {
 
 /** Store the measurment data to SD card.
  * Requires a mounted SD card. */
-uint8_t measurement_to_SD(char *timestamp_str) {
+uint8_t sd_write_measurement(rtc_timestamp_t ts){
 #if HAS_SD
 	int8_t res = 0;
 	res = sd_find_right_filename(fname.postfix, &fname.postfix, fname.buf, FNAME_BUF_SZ);
@@ -273,7 +291,8 @@ uint8_t measurement_to_SD(char *timestamp_str) {
 		res = sd_open_file_neworappend(f, fname.buf);
 		if (!res) {
 			/* Write metadata (timestamp, errorcode, intergartion time) */
-			f_printf(f, "%S, %U, %LU, [,", timestamp_str, sens1.errc, sens1.last_itime);
+			f_printf(f, TS_TO_PRINTCALL(ts));
+			f_printf(f, ", %U, %LU, [,", sens1.errc, sens1.last_itime);
 			/* Write data */
 			if (!sens1.errc) {
 				/* Lopp through measurement results and store to file */
@@ -294,3 +313,10 @@ uint8_t measurement_to_SD(char *timestamp_str) {
 #endif
 }
 
+
+#ifdef USE_FORMAT_SD_CARD
+uint8_t workBuffer[_MAX_SS];
+FRESULT sd_format(void) {
+	return f_mkfs(SDPath, FM_ANY, 0, workBuffer, sizeof(workBuffer));
+}
+#endif

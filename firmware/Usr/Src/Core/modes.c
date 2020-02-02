@@ -13,9 +13,8 @@
 /*
  * Switch the mode
  *
- * todo rename to switch mode
  */
-void init_mode(runtime_config_t *rc) {
+void mode_switch(runtime_config_t *rc) {
 	RTC_TimeTypeDef t;
 	rtc_timestamp_t ts;
 

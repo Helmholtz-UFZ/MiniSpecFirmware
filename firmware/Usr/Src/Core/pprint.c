@@ -67,7 +67,9 @@ void send_data(void) {
 	char *errstr;
 	uint32_t *rptr;
 	uint16_t i = 0;
-	uint8_t errcode = sens1.errc;
+
+	//keep it 16bit
+	uint16_t errcode = sens1.errc;
 
 	switch (errcode) {
 	case ERRC_NO_ERROR:

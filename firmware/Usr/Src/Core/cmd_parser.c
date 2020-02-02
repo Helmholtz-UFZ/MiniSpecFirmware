@@ -7,6 +7,8 @@
 
 #include "cmd_parser.h"
 
+#include "datetime.h"
+
 #include <string.h>
 #include <stdio.h>
 

@@ -13,7 +13,6 @@
 #include "sdmmc.h"
 
 
-uint8_t workBuffer[_MAX_SS];
 static void sd_reinit(void);
 static uint8_t sd_find_highest_postfix(uint16_t offset, uint16_t *postfix, char *namebuf, uint16_t size);
 
@@ -29,22 +28,6 @@ static void sd_reinit(void){
 	MX_SDMMC1_SD_Init();
 	MX_FATFS_Init();
 	debug(3, "(sd): reinit sd\n");
-}
-
-FRESULT sd_mount(void) {
-	FRESULT res = f_mount(&SDFatFS, SDPath, 0);
-	debug(3, "(sd): MOUNT: %u\n", res);
-	return res;
-}
-
-FRESULT sd_umount(void) {
-	FRESULT res = f_mount(NULL, SDPath, 0);
-	debug(3, "(sd): UMOUNT: %u\n", res);
-	return res;
-}
-
-FRESULT sd_format(void) {
-	return f_mkfs(SDPath, FM_ANY, 0, workBuffer, sizeof(workBuffer));
 }
 
 FRESULT sd_stat(const TCHAR* path, FILINFO* fno) {

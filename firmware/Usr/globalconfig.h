@@ -8,14 +8,6 @@
 #ifndef GLOBAL_CONFIG_H_
 #define GLOBAL_CONFIG_H_
 
-/**
- * XXX: ATTENTION
- * This header is included by main.h.
- * Avoid including high level stuff here.
- * Otherwise conflicts arise, as the HAL
- * isn't initialized yet. **/
-//#incluede NOTHING_HERE
-
 /** The minimal possible integration time is limited by the sensor and the
  *  clock frequency.
  *  The minimal high period of ST-pulse:   6 * CLK_freq
@@ -31,8 +23,8 @@
  */
 #define MIN_INTERGATION_TIME		(54)
 
-/** max 1 sec, even this is optimistic to get correct data. */
-#define MAX_INTERGATION_TIME		(1000000)
+/** max 2 sec, even this is optimistic to get correct data. */
+#define MAX_INTERGATION_TIME		(2000000)
 #define DEFAULT_INTEGRATION_TIME	(1100)
 
 /** The number of Sensor-CLK-periods which
@@ -169,6 +161,12 @@
  * uart4 is default in new HW-Version 2.1
  */
 #define UART_INSTANCE_NR			1
+
+
+#include "stdint.h"
+#if MAX_INTERGATION_TIME > INT32_MAX
+#error "MAX_INTERGATION_TIME: the absolut maximum value is reached"
+#endif
 
 #ifndef __FIRMWARE_VERSION
 #error "firmware version undefined."

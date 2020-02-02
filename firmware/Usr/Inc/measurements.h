@@ -11,7 +11,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-void measurement(uint32_t itime);
+void measure(uint32_t itime);
 void multimeasure(bool to_sd);
 
 #endif /* INC_MEASUREMENTS_H_ */

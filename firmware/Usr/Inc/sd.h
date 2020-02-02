@@ -12,6 +12,8 @@
 #include <globalconfig.h>
 #include <mainloop.h>
 #include "sysrc.h"
+#include "fatfs.h"
+#include "datetime.h"
 
 #define FNAME_BUF_SZ 	128
 typedef struct
@@ -22,9 +24,16 @@ typedef struct
 
 #define NO_SD	100
 
-uint8_t measurement_to_SD(char *timestamp_str);
-void inform_SD_reset(void);
-void inform_SD_rtc(char *oldtimestamp_str);
+#ifdef USE_FORMAT_SD_CARD
+FRESULT sd_format(void);
+#endif
+
+FRESULT sd_mount(void);
+FRESULT sd_umount(void);
+
+uint8_t sd_write_measurement(rtc_timestamp_t ts);
+void sd_write_timechange_info(rtc_timestamp_t old);
+void sd_write_reset_info(void);
 uint8_t write_config_to_SD(runtime_config_t *rc);
 uint8_t read_config_from_SD(runtime_config_t *rc);
 

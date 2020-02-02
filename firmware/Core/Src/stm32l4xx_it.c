@@ -84,7 +84,7 @@ void EXTI2_IRQHandler(void)
 	 * [1] TIM1_CC_IRQHandler()
 	 * [2] TIM1_CC_IRQHandler() or TIM5_IRQHandler().
 	 *
-	 * TODO (future release) use DMA instead of manually save values.
+	 * TODO future: use DMA instead of manually save values.
 	 */
 
 	uint_fast16_t value0, value1;

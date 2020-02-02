@@ -17,6 +17,8 @@
 #include "sd.h"
 #include "sensor.h"
 #include "rxtx.h"
+#include "cpu.h"
+#include "power.h"
 
 #include <stdbool.h>
 
@@ -62,10 +64,10 @@ void run_init(void) {
 	reply("firmware: %s\n", __FIRMWARE_VERSION);
 
 	// read/write info from/to sd
-	inform_SD_reset();
+	sd_write_reset_info();
 	read_config_from_SD(&rc);
 
-	init_mode(&rc);
+	mode_switch(&rc);
 }
 
 
@@ -124,11 +126,10 @@ void _run(void) {
 }
 
 
-
-
-
-
-
-
-
-
+// if this is run by anyone we check if the
+// necessary changes was made in the STM32_HAL
+//
+// this is at the end to make the upper includes
+// be more explicit and does not get `disturbed`
+// by the includes that are needed for the checks
+#include "cube_checks.h"

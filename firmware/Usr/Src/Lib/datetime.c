@@ -166,27 +166,31 @@ bool rtc_time_lt(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b) {
 	return (rtc_time_leq(a, b) && !rtc_time_eq(a, b));
 }
 
-RTC_TimeTypeDef rtc_time_add(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b) {
 	RTC_TimeTypeDef c;
-	uint carry = 0; // this is += or ++ do not work, because of optimization (?)
+RTC_TimeTypeDef rtc_time_add(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b) {
+	uint _carry = 0; // this is += or ++ do not work, because of optimization (?)
 	c.Hours = 0;
 	c.Minutes = 0;
 	c.Seconds = 0;
 	c.Seconds = a->Seconds + b->Seconds;
 	if (c.Seconds > 59) {
 		c.Seconds -= 60;
-		carry = 1;
+		_carry = 1;
 	}
-	c.Minutes = a->Minutes + b->Minutes + carry;
-	carry = 0;
+	c.Minutes = a->Minutes + b->Minutes + _carry;
+	_carry = 0;
 	if (c.Minutes > 59) {
 		c.Minutes -= 60;
-		carry = 1;
+		_carry = 1;
 	}
-	c.Hours = a->Hours + b->Hours + carry;
+	c.Hours = a->Hours + b->Hours + _carry;
+	_carry = 0;
 	if (c.Hours > 24) {
 		c.Hours -= 24;
+		_carry = 1;
 	}
+	// may return in future need
+	UNUSED(_carry);
 	return c;
 }
 

@@ -27,8 +27,7 @@ static void _print_sd_config(void);
 static void _single_measurement(void);
 
 
-// todo rename cmdHandler()
-void extcmd_handler(void) {
+void cmd_handler(void) {
 	int32_t nr = 0, nr1 = 0;
 	char *str = NULL;
 
@@ -103,7 +102,7 @@ void extcmd_handler(void) {
 	case USR_CMD_SET_MODE:
 		if (argparse_str(&str)) { argerr(); break; }
 		if (parse_mode(str, &rc)) { argerr(); break; }
-		init_mode(&rc);
+		mode_switch(&rc);
 		ok(); break;
 
 	case USR_CMD_SET_AUTOADJUST_PARAMS:
@@ -134,7 +133,7 @@ void extcmd_handler(void) {
 
 	case USR_CMD_READ_SDCONFIG:
 		if (read_config_from_SD(&rc)){ errreply("read from SD faild\n"); break; }
-		init_mode(&rc);
+		mode_switch(&rc);
 		ok();
 		break;
 
@@ -170,7 +169,7 @@ static void _single_measurement(void) {
 		itime = autoadjust_itime(rc.aa_lower, rc.aa_upper);
 	}
 
-	measurement(itime);
+	measure(itime);
 }
 
 
@@ -191,10 +190,9 @@ static void _set_rtc_time(void){
 	/* store the current time to later inform the sd
 	 * with old and new time*/
 	now = rtc_get_now();
-	// todo new func dt_set_timestamp()
 	HAL_RTC_SetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
 	HAL_RTC_SetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
-//	inform_SD_rtc(&now); // fixme / testme
+	sd_write_timechange_info(now);
 	ok();
 }
 

@@ -63,6 +63,6 @@ typedef struct
 
 extern runtime_config_t rc;
 
-void init_mode(runtime_config_t *rc);
+void mode_switch(runtime_config_t *rc);
 
 #endif /* INC_SYSRC_H_ */

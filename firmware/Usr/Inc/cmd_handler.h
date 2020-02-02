@@ -37,6 +37,6 @@
     "        - set the mode with IVAL,STRT,STOP format: 'HH:MM:SS' \n"\
 	"\n"
 
-void extcmd_handler(void);
+void cmd_handler(void);
 
 #endif /* INC_CMD_HANDLER_H_ */

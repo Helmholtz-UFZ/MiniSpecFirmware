@@ -15,7 +15,7 @@
 #define HELPER_DEFINES_H_
 
 /**
- * XXX: ATTENTION
+ * XXX: ATTENTION do not include stuff here
  * This header is included by main.h.
  * Avoid including high level stuff here.
  * Otherwise conflicts arise, as the HAL

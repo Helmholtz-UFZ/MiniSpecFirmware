@@ -20,4 +20,8 @@ typedef struct {
 
 extern wakeup_t wakeup;
 
+void wakeup_alarm_handler(void);
+void wakeup_pintrigger_handler(void);
+void wakeup_cmd_handler(void);
+
 #endif /* INC_WAKEUP_H_ */

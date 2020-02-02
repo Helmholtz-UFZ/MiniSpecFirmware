@@ -40,6 +40,7 @@ void MX_RTC_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 void rtc_reinit_after_wakup(void);
+#define RTC_REINIT_CODE_OK
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

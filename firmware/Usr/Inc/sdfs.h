@@ -15,9 +15,6 @@
 #define ERR_NODATA 			20
 #define BUF_TOOSMALL 		21
 
-FRESULT sd_format(void);
-FRESULT sd_mount(void);
-FRESULT sd_umount(void);
 FRESULT sd_stat(const TCHAR* path, FILINFO* fno);
 FRESULT sd_open(FIL* fp, const TCHAR* path, BYTE mode);
 FRESULT sd_close(FIL* fp);

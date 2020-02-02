@@ -33,6 +33,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
+#include "mainloop.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -93,11 +94,9 @@ int main(void)
   /* Configure the system clock */
   SystemClock_Config();
 
-#if 0
   /* USER CODE BEGIN SysInit */
-#error "CUBE_MX fucked it up"
+
   /* USER CODE END SysInit */
-#endif
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
@@ -271,7 +270,7 @@ void assert_failed(char *file, uint32_t line)
   /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
 	printf("Assert failed: file %s on line %u\n", file, (uint) line);
-	/* todo: write to error sd file */
+	/* todo: future write to error sd file */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

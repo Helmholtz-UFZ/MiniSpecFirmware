@@ -24,3 +24,8 @@
 #define SD_DETECT_GPIO_PORT   GPIOC
 /* Prototypes ---------------------------------------------------------------*/
 uint8_t	BSP_PlatformIsDetected(void);
+
+#include "globalconfig.h"
+#ifdef USE_SD_HW_DETECTION
+#define FATFS_PLATFORM_OK
+#endif

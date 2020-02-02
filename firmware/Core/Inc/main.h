@@ -32,9 +32,10 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-// todo do this directly in the needed place, Pincheck SD
-#include <globalconfig.h>
+#include "defines.h"
 /* USER CODE END Includes */
+
+#define MAIN_CODE_OK
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
