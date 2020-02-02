@@ -2,7 +2,7 @@
  * measurements.c
  *
  *  Created on: Feb 2, 2020
- *      Author: rg
+ *      Author: Bert Palm
  */
 
 #include "measurements.h"
@@ -13,32 +13,19 @@
 #include <stdio.h>
 
 static uint32_t _get_full_itime(uint8_t idx);
-static uint32_t _get_full_itime(uint8_t idx){
-	if (rc.itime[idx] < 0) {
-		return autoadjust_itime(rc.aa_lower, rc.aa_upper);
-	}
-	return rc.itime[idx];
-}
 
 
-void single_measurement(void) {
-	uint32_t itime = _get_full_itime(rc.itime_index);
-	if (itime == 0) {
-		errreply("intergration time not set\n");
-		return;
-	}
-	ok();
+void measurement(uint32_t itime){
+	// todo determine if init is neccesary
 	sensor_init();
 	sensor_measure(itime);
 	sensor_deinit();
 }
 
-
-
 void multimeasure(bool to_sd) {
 	int8_t res = 0;
 	uint32_t itime = 0;
-	char ts_buff[TS_BUFF_SZ] = {0, };
+	rtc_timestamp_t now;
 
 	for (uint8_t i = 0; i < RCCONF_MAX_ITIMES; ++i) {
 
@@ -55,10 +42,12 @@ void multimeasure(bool to_sd) {
 		for (int n = 0; n < rc.iterations; ++n) {
 
 			debug(1,"(mm): N: %u/%u\n", n, rc.iterations - 1);
+
 			/* Generate timestamp */
-			rtc_get_now_str(ts_buff, TS_BUFF_SZ);
+			now = rtc_get_now();
 
 			/* Make a measurement */
+			// todo use measurement()
 			sensor_init();
 			sensor_measure(itime);
 
@@ -67,8 +56,8 @@ void multimeasure(bool to_sd) {
 				/* TODO One time mount and open per wakeup... */
 				res = sd_mount();
 				if (!res) {
-					/* Store the measurement on SD */
-					res = measurement_to_SD(ts_buff);
+					/* Store the measurement with a timestamp on SD */
+//					res = measurement_to_SD(&now); // fixme / testme
 					sd_umount();
 				}
 			}
@@ -78,7 +67,9 @@ void multimeasure(bool to_sd) {
 
 			if (rc.debuglevel == 3) {
 				/* Use printf() instead of debug() to prevent 'dbg:' string before every value. */
-				debug(3, "(mm): %s, %u, %lu, [,", ts_buff, sens1.errc, sens1.last_itime);
+				debug(3, "(mm): ");
+				printf TS_TO_PRINTCALL(now);
+				printf(", %u, %lu, [,", sens1.errc, sens1.last_itime);
 				uint32_t *p = (uint32_t *) (sens1.data->wptr - MSPARAM_PIXEL);
 				for (uint16_t i = 0; i < MSPARAM_PIXEL; ++i) {
 					printf("%u,", (uint) *(p++));
@@ -90,3 +81,9 @@ void multimeasure(bool to_sd) {
 	sensor_deinit();
 }
 
+uint32_t _get_full_itime(uint8_t idx){
+	if (rc.itime[idx] < 0) {
+		return autoadjust_itime(rc.aa_lower, rc.aa_upper);
+	}
+	return rc.itime[idx];
+}

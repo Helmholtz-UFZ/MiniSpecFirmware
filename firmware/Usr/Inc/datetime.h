@@ -11,6 +11,8 @@
 #include "rtc.h"
 #include <stdbool.h>
 
+#define TS_TO_PRINTCALL(x) ("20%02i-%02i-%02iT%02i:%02i:%02i", x.date.Year, x.date.Month, x.date.Date, x.time.Hours, x.time.Minutes, x.time.Seconds)
+
 
 typedef struct
 {

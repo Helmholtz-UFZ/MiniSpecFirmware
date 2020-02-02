@@ -20,6 +20,7 @@
 static void _dbg_test(void);
 static void _set_rtc_time(void);
 static void _print_sd_config(void);
+static void _single_measurement(void);
 
 
 // todo rename cmdHandler()
@@ -30,7 +31,7 @@ void extcmd_handler(void) {
 	switch (extcmd.cmd) {
 
 	case USR_CMD_SINGLE_MEASURE_START:
-		single_measurement();
+		_single_measurement();
 		send_data();
 		break;
 
@@ -150,6 +151,24 @@ void extcmd_handler(void) {
 		break;
 	}
 }
+
+
+static void _single_measurement(void) {
+	uint32_t itime;
+
+	if (rc.itime[rc.itime_index] == 0) {
+		errreply("intergration time not set\n");
+		return;
+	}
+
+	ok();
+	if (rc.itime[rc.itime_index] < 0) {
+		itime = autoadjust_itime(rc.aa_lower, rc.aa_upper);
+	}
+
+	measurement(itime);
+}
+
 
 
 static void _set_rtc_time(void){
