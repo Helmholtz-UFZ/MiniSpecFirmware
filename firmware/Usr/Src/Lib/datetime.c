@@ -19,7 +19,6 @@
  * Return 0 on success, non-zero otherwise
  */
 uint8_t rtc_parsecheck_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate) {
-	// todo change to take a timestamp instead of time and date
 
 	char *p = str;
 	uint c;

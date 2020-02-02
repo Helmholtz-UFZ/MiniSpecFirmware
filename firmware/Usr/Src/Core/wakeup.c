@@ -2,6 +2,9 @@
 #include "wakeup.h"
 #include "cmd_handler.h"
 #include "cmd_parser.h"
+#include "datetime.h"
+#include "alarm.h"
+#include "measurements.h"
 
 wakeup_t wakeup = { .alarmA = false, .triggerPin = false, .cmd = false, };
 
@@ -31,6 +34,10 @@ void wakeup_alarm_handler(void) {
 
 	/* Do the measurement */
 	multimeasure(true);
+
+	// TODO: as measurements now can take quite long re-check the set alarm,
+	// also we may should disable it and enable it after the measurement?
+	// OR: 1st measure, 2nd set new alarm
 
 	debug(2, "(alarm): next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 }
