@@ -6,10 +6,16 @@
  */
 
 
-#include <sensor.h>
-#include <logging.h>
-#include <pprint.h>
-#include "stdio.h"
+// for hal
+#include "main.h"
+
+#include "pprint.h"
+
+#include "logging.h"
+#include "sensor.h"
+#include "datetime.h"
+
+#include <stdio.h>
 
 
 /** print 'ok' */
