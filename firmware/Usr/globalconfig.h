@@ -1,5 +1,5 @@
 /*
- * global_config.h
+ * globalconfig.h
  *
  *  Created on: May 16, 2017
  *      Author: Bert Palm
@@ -14,9 +14,7 @@
  * Avoid including high level stuff here.
  * Otherwise conflicts arise, as the HAL
  * isn't initialized yet. **/
-#include <defines.h>
-#include "stdbool.h"
-#include "stdint.h"
+//#incluede NOTHING_HERE
 
 /** The minimal possible integration time is limited by the sensor and the
  *  clock frequency.

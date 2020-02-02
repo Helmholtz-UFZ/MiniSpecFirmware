@@ -8,11 +8,11 @@
 #ifndef INC_AUTOADJUST_ITIME_H_
 #define INC_AUTOADJUST_ITIME_H_
 
-#include <globalconfig.h>
+#include <stdint.h>
 
-#define UP 1
-#define DOWN -1
-#define FOUND 0
+#define SEARCH_DIR_UP 		1
+#define SEARCH_DIR_DOWN 	(-1)
+#define SEARCH_DIR_FOUND 	0
 
 uint32_t autoadjust_itime(uint32_t lower, uint32_t upper);
 

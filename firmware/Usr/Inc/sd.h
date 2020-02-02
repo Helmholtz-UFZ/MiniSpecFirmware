@@ -13,6 +13,13 @@
 #include <mainloop.h>
 #include "sysrc.h"
 
+#define FNAME_BUF_SZ 	128
+typedef struct
+{
+	char buf[FNAME_BUF_SZ];
+	uint16_t postfix;
+} filename_t;
+
 #define NO_SD	100
 
 uint8_t measurement_to_SD(char *timestamp_str);

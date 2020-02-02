@@ -13,15 +13,16 @@
  * Otherwise conflicts arise, as the HAL
  * isn't initialized yet. **/
 
-#include "stdbool.h"
+// for uint_16_t - cast
+#include <stdint.h>
 
 #undef __weak
 #undef __packed
 #define __weak   __attribute__((weak))
 #define __packed __attribute__((__packed__))
 
-#define ON	true
-#define OFF	false
+#define ON	1
+#define OFF	0
 
 #ifndef HELPER_DEFINES_H_
 #define HELPER_DEFINES_H_

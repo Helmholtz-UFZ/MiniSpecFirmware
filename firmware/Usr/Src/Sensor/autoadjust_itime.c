@@ -34,8 +34,9 @@
  * (2): search the lower half [MIN   ...... MAX/2] start in the middle
  */
 
-#include <sensor.h>
 #include "autoadjust_itime.h"
+#include "defines.h"
+#include "sensor.h"
 
 
 static int8_t get_direction(uint32_t maxval, uint32_t lower, uint32_t upper);
@@ -63,11 +64,11 @@ static uint32_t get_max_pixel_value(void) {
  */
 static int8_t get_direction(uint32_t maxval, uint32_t lower, uint32_t upper) {
 	if (maxval > upper) {
-		return DOWN;
+		return SEARCH_DIR_DOWN;
 	} else if (maxval < lower) {
-		return UP;
+		return SEARCH_DIR_UP;
 	}
-	return FOUND;
+	return SEARCH_DIR_FOUND;
 }
 
 /**
@@ -90,17 +91,17 @@ static uint32_t binary_search_itime( uint32_t min_itime, uint32_t max_itime, uin
 
 		correction /= 2;
 
-		if (dir == UP){
+		if (dir == SEARCH_DIR_UP){
 			itime += correction;
 		}
 
-		if (dir == DOWN){
+		if (dir == SEARCH_DIR_DOWN){
 			itime -= correction;
 		}
 
 		// We found the usable itime or something
 		// went wrong. In either case, we are good.
-		if (dir == FOUND){
+		if (dir == SEARCH_DIR_FOUND){
 			break;
 		}
 		// Safety condition
@@ -148,26 +149,26 @@ uint32_t autoadjust_itime(uint32_t lower, uint32_t upper){
 	maxval = get_max_pixel_value();
 	dir = get_direction(maxval, lower, upper);
 
-	if (dir == UP) {
+	if (dir == SEARCH_DIR_UP) {
 		// we have a to low itime, so we try the maximum
 		itime = MAX_INTERGATION_TIME;
 		sensor_measure(itime);
 		maxval = get_max_pixel_value();
 		dir = get_direction(maxval, lower, upper);
-		if (dir == DOWN) {
+		if (dir == SEARCH_DIR_DOWN) {
 			itime = binary_search_itime(MAX_INTERGATION_TIME/2, MAX_INTERGATION_TIME, lower, upper);
 		}
 		// else:
 		// either we already have a useful itime, or we still have
 		// a too low itime, but we already are at the very possible maximum
 
-	} else if (dir == DOWN) {
+	} else if (dir == SEARCH_DIR_DOWN) {
 		// we have a to high itime, so we try the maximum
 		itime = MIN_INTERGATION_TIME;
 		sensor_measure(itime);
 		maxval = get_max_pixel_value();
 		dir = get_direction(maxval, lower, upper);
-		if (dir == UP) {
+		if (dir == SEARCH_DIR_UP) {
 			itime = binary_search_itime(MIN_INTERGATION_TIME, MAX_INTERGATION_TIME/2, lower, upper);
 		}
 		// else:

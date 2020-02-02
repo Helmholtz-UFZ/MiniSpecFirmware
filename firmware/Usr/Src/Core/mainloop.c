@@ -1,15 +1,24 @@
 /*
- * main_usr.c
+ * mainloop.c
  *
  *  Created on: Aug 7, 2017
  *      Author: Bert Palm
  */
 
+#include "main.h"
 
 #include "mainloop.h"
+
+#include "globalconfig.h"
+#include "defines.h"
 #include "wakeup.h"
 #include "sysrc.h"
+#include "logging.h"
+#include "sd.h"
+#include "sensor.h"
 #include "rxtx.h"
+
+#include <stdbool.h>
 
 
 static void _sleep(void);
@@ -77,7 +86,7 @@ static void _sleep(void){
 	 * come up, immediately after enabling it agian.
 	 * (see next line) */
 	__HAL_UART_ENABLE_IT(&hrxtx, UART_IT_CM);
-	if (!rxtx.wakeup && !rtc.alarmA_wakeup) {
+	if (!wakeup.alarmA && !wakeup.triggerPin && !wakeup.cmd) {
 		cpu_enter_LPM();
 	}
 	__HAL_UART_DISABLE_IT(&hrxtx, UART_IT_CM);
@@ -93,7 +102,7 @@ void _run(void) {
 		rxtx_restart_listening();
 	}
 
-	debug(3, "(main): rxtx,alarm,trigger: %i %i %i\n", rxtx.wakeup, rtc.alarmA_wakeup, rc.trigger);
+	debug(3, "(main): alarm/trigger/cmd: %i %i %i\n", wakeup.alarmA, wakeup.triggerPin, wakeup.cmd);
 
 	if (wakeup.triggerPin) {
 		wakeup.triggerPin = false;

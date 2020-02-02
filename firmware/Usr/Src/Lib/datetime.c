@@ -5,13 +5,10 @@
  *      Author: Bert Palm
  */
 
-#include <cpu.h>
-#include <datetime.h>
-#include <globalconfig.h>
-#include <mainloop.h>
+#include "datetime.h"
+
 #include "string.h"
 #include "stdio.h"
-#include "power.h"
 
 rtc_t rtc = { .alarmA_wakeup = false };
 
@@ -142,88 +139,6 @@ uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime) {
 	return 1;
 }
 
-/**
- * Set or deactivate AlarmA, based on a given time.
- *
- * param time: The base time. The interval is set relative to that.
- * So next alarm = base time + interval
- *
- * param ival: the interval.
- *
- * Note: Only Hours, Minutes and Seconds from both parameter are taken in
- * account, other fields are ignored.
- *
- * Note: If Hours, Minutes and Seconds of ival is set to zero, the alarm is
- * set to 24h aka. every day.
- *
- */
-uint8_t rtc_set_alarmA_by_offset(RTC_TimeTypeDef *time, RTC_TimeTypeDef *offset) {
-
-	uint8_t sum, carry;
-	RTC_AlarmTypeDef a;
-
-	/*First deactivate alarm, to write alarm register.*/
-	HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
-
-	a.Alarm = RTC_ALARM_A;
-	a.AlarmDateWeekDaySel = RTC_ALARMDATEWEEKDAYSEL_DATE;
-	a.AlarmDateWeekDay = 1; // is masked anyway
-	a.AlarmMask = RTC_ALARMMASK_DATEWEEKDAY;
-	a.AlarmSubSecondMask = RTC_ALARMSUBSECONDMASK_ALL;
-
-	/* For Futur Use...
-	 * Set all fields that are not overwritten to original struct,
-	 * e.g. subseconds are taken from time struct. */
-//	memcpy(&a.AlarmTime, time, sizeof(RTC_TimeTypeDef));
-	a.AlarmTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
-	a.AlarmTime.SecondFraction = 0;
-	a.AlarmTime.SubSeconds = 0;
-	a.AlarmTime.StoreOperation = RTC_STOREOPERATION_RESET;
-	a.AlarmTime.TimeFormat = RTC_HOURFORMAT_24;
-
-	sum = time->Seconds + offset->Seconds;
-	if (sum < 60) {
-		a.AlarmTime.Seconds = sum;
-		carry = 0;
-	} else {
-		a.AlarmTime.Seconds = sum - 60;
-		carry = 1;
-	}
-
-	sum = time->Minutes + offset->Minutes + carry;
-	if (sum < 60) {
-		a.AlarmTime.Minutes = sum;
-		carry = 0;
-	} else {
-		a.AlarmTime.Minutes = sum - 60;
-		carry = 1;
-	}
-
-	sum = time->Hours + offset->Hours + carry;
-	if (sum < 24) {
-		a.AlarmTime.Hours = sum;
-	} else {
-		a.AlarmTime.Hours = sum - 24;
-	}
-
-	return HAL_RTC_SetAlarm_IT(&hrtc, &a, RTC_FORMAT_BIN);
-}
-
-/**
- * Set AlarmA
- *
- * param time: time to set the alarm
- *
- * Note: Only Hours, Minutes and Seconds time are taken in
- * account, other fields are ignored.
- */
-uint8_t rtc_set_alarmA(RTC_TimeTypeDef *time) {
-	RTC_TimeTypeDef zero;
-	zero.Hours = 0;
-	zero.Minutes = 0;
-	zero.Seconds = 0;
-	return rtc_set_alarmA_by_offset(time, &zero);
-}
 
 /*
  * Return a string representation of the current RTC time.
@@ -254,12 +169,6 @@ rtc_timestamp_t rtc_get_now(void) {
 	HAL_RTC_GetTime(&hrtc, &ts.time, RTC_FORMAT_BIN);
 	HAL_RTC_GetDate(&hrtc, &ts.date, RTC_FORMAT_BIN);
 	return ts;
-}
-
-RTC_TimeTypeDef rtc_get_alermAtime(void) {
-	RTC_AlarmTypeDef a;
-	HAL_RTC_GetAlarm(&hrtc, &a, RTC_ALARM_A, RTC_FORMAT_BIN);
-	return a.AlarmTime;
 }
 
 /** time '<=' time */

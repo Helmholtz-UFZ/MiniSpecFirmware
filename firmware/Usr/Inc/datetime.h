@@ -9,6 +9,7 @@
 #define INC_DATETIME_H_
 
 #include "rtc.h"
+#include <stdbool.h>
 
 // used to create a buffer that can hold a timestamp string
 // see also rtc_get_now_str()
@@ -35,11 +36,8 @@ uint32_t rtc_time2seconds(RTC_TimeTypeDef *t);
 RTC_TimeTypeDef rtc_seconds2time(uint32_t s);
 uint8_t rtc_parsecheck_datetime(char* str, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
 uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime);
-uint8_t rtc_set_alarmA(RTC_TimeTypeDef *time);
-uint8_t rtc_set_alarmA_by_offset(RTC_TimeTypeDef *time, RTC_TimeTypeDef *ival);
 void rtc_get_now_str(char *buffer, uint32_t sz);
 rtc_timestamp_t rtc_get_now(void);
-RTC_TimeTypeDef rtc_get_alermAtime(void);
 void init_timetype(RTC_TimeTypeDef *time);
 
 #endif /* INC_DATETIME_H_ */

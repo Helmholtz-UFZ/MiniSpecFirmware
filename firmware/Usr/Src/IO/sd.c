@@ -18,6 +18,8 @@
 static filename_t fname = { .buf = { 0 }, .postfix = 0 };
 FIL *f = &SDFile;
 
+// todo rename sd_...()
+
 void inform_SD_reset(void) {
 #if HAS_SD
 	uint8_t res = 0;
