@@ -39,7 +39,6 @@ runtime_config_t rc = {
 		.debuglevel = DEBUG_DEFAULT_LVL,
 		.format = DATA_FORMAT_ASCII,
 		.sleeping = false,
-		.trigger = false,
 };
 
 

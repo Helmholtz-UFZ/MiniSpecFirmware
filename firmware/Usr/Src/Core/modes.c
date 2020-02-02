@@ -7,6 +7,8 @@
 
 #include "sysrc.h"
 #include "alarm.h"
+#include "wakeup.h"
+#include "datetime.h"
 
 /*
  * Switch the mode

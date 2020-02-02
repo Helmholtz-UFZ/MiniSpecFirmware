@@ -8,7 +8,8 @@
 #ifndef MICRO_SPEC_H_
 #define MICRO_SPEC_H_
 
-#include <globalconfig.h>
+#include "globalconfig.h"
+#include "stdint.h"
 
 /** desired size in words */
 #define SENSOR_DATA_BUFFER_MAX_WORDS		(350)

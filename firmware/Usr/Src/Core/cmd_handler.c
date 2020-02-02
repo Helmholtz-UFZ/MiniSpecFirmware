@@ -13,6 +13,10 @@
 #include "logging.h"
 #include "measurements.h"
 #include "cmd_parser.h"
+#include "datetime.h"
+#include "defines.h"
+#include "autoadjust_itime.h"
+#include "sd.h"
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -154,15 +158,15 @@ void extcmd_handler(void) {
 
 
 static void _single_measurement(void) {
-	uint32_t itime;
+	int32_t itime = rc.itime[rc.itime_index];
 
-	if (rc.itime[rc.itime_index] == 0) {
-		errreply("intergration time not set\n");
+	if (itime == 0) {
+		errreply("integration time not set\n");
 		return;
 	}
-
 	ok();
-	if (rc.itime[rc.itime_index] < 0) {
+
+	if (itime < 0) {
 		itime = autoadjust_itime(rc.aa_lower, rc.aa_upper);
 	}
 

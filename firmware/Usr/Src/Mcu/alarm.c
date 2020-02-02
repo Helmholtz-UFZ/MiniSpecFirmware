@@ -6,8 +6,10 @@
  */
 
 #include "alarm.h"
+
 #include "datetime.h"
 #include "cpu.h"
+#include "wakeup.h"
 
 
 /**
@@ -136,7 +138,7 @@ RTC_TimeTypeDef get_closest_next_alarm(runtime_config_t *rc) {
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc) {
 	UNUSED(hrtc);
 
-	rtc.alarmA_wakeup = true;
+	wakeup.alarmA = true;
 
 	leave_LPM_from_ISR();
 }

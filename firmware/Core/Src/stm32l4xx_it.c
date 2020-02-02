@@ -19,18 +19,14 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include <cpu.h>
-#include <globalconfig.h>
-#include <mainloop.h>
-#include <rxtx.h>
-#include <sensor.h>
 #include "main.h"
 #include "stm32l4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "power.h"
-#include "usart.h"
-
+#include "wakeup.h"
+#include "sensor.h"
+#include "rxtx.h"
+#include "cpu.h"
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -231,13 +227,13 @@ void USART1_IRQHandler(void)
 		__HAL_UART_CLEAR_IT( &hrxtx, USART_ISR_CMF );
 		__HAL_UART_DISABLE_IT( &hrxtx, UART_IT_CM );
 		rxtx.cmd_bytes = hrxtx.RxXferSize - hrxtx.hdmarx->Instance->CNDTR;
-		rxtx.wakeup = true;
+		wakeup.cmd = true;
 	}
 
   /* USER CODE END USART1_IRQn 0 */
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
-  if(rxtx.wakeup || hrxtx.ErrorCode){
+  if(wakeup.cmd || hrxtx.ErrorCode){
 		leave_LPM_from_ISR();
   }
 #define RXTX_IRQHandler__OK

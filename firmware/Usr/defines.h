@@ -4,7 +4,15 @@
  *  Created on: May 16, 2017
  *      Author: Bert Palm
  */
+// KEEP THIS ON TOP //
+#undef __weak
+#undef __packed
+#define __weak   __attribute__((weak))
+#define __packed __attribute__((__packed__))
+// KEEP THIS ON TOP //
 
+#ifndef HELPER_DEFINES_H_
+#define HELPER_DEFINES_H_
 
 /**
  * XXX: ATTENTION
@@ -16,16 +24,8 @@
 // for uint_16_t - cast
 #include <stdint.h>
 
-#undef __weak
-#undef __packed
-#define __weak   __attribute__((weak))
-#define __packed __attribute__((__packed__))
-
 #define ON	1
 #define OFF	0
-
-#ifndef HELPER_DEFINES_H_
-#define HELPER_DEFINES_H_
 
 #define MAX(A,B)	((A) > (B) ? (A) : (B) )
 #define MIN(A,B)	((A) < (B) ? (A) : (B) )

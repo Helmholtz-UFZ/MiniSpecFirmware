@@ -55,12 +55,14 @@
  *      4. sens_deinit()                                    \n
  */
 
-#include <globalconfig.h>
-#include <sensor.h>
+#include "globalconfig.h"
+#include "sensor.h"
 
-#include <logging.h>
+#include "logging.h"
+#include "timer.h"
+#include "defines.h"
+
 #include <string.h>
-#include <timer.h>
 
 //static uint16_t mem_block1[SENSOR_DATA_BUFFER_MAX_WORDS + 1];
 static canary_memblock_t secure_memblock1;
