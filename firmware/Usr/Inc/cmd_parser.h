@@ -8,10 +8,8 @@
 #ifndef INC_CMD_PARSER_H_
 #define INC_CMD_PARSER_H_
 
-#include <globalconfig.h>
-#include <mainloop.h>
-#include <rxtx.h>
 #include "sysrc.h"
+#include "rxtx.h"
 
 /**
  * enum for the defined commands

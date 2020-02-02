@@ -6,9 +6,9 @@
  */
 
 #include "cmd_parser.h"
-#include "main.h"
-#include "string.h"
-#include "stdio.h"
+
+#include <string.h>
+#include <stdio.h>
 
 
 usr_cmd_typedef extcmd = {
@@ -238,6 +238,7 @@ int8_t argparse_str(char **str) {
  * Note: Start time needs to be smaller than end time
  */
 int8_t parse_mode(char *str, runtime_config_t* rc) {
+	//todo split to parseMode + parseIVAL (one ival)
 
 	uint c = 99;
 	RTC_TimeTypeDef iv, st, en, off;

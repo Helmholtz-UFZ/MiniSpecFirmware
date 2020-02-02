@@ -2,7 +2,7 @@
  * cmd_handler.h
  *
  *  Created on: Feb 2, 2020
- *      Author: rg
+ *      Author: Bert Palm
  */
 
 #ifndef INC_CMD_HANDLER_H_
