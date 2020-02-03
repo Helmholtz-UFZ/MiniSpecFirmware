@@ -24,7 +24,7 @@
 #define MIN_INTERGATION_TIME		(54)
 
 /** max 2 sec, even this is optimistic to get correct data. */
-#define MAX_INTERGATION_TIME		(2000000)
+#define MAX_INTERGATION_TIME		(1000000)
 #define DEFAULT_INTEGRATION_TIME	(1100)
 
 /** The number of Sensor-CLK-periods which
