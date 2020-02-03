@@ -224,12 +224,14 @@ Command                      | Short           | Brief description              
 `measure`                    | `m`             | Make a simgle measurement. Return the values or errorcode             |
 `multimeasure`               | `mm`            | Make a multi measurement.        | 
 `getdata`                    | `gd`            | Return the data or errorcode of the very last measurment.             |
+`auto-adjust`                | `aa`            | Test the automatic adjustion of the integration time             |
 `itime?`                     | `i?`            | Get the intergration time for the current index position. in micro seconds [us]           |
 `rtc?`                       |                 | Get the current Real-Time of the System.                              |
 `config?`                    | `c?`            | Print current config info. For humans only.                           |
 `config?sd`                  | `c?sd`          | Print the config that is currently stored on the SD. |
 `debug=[0..3]`               | `dbg=[0..3]`    | Set the debug level. 0 - off, 1 - some, 2 - many, 3 - all |
-`itime=[54..100000]`         | `i=[54..100000]`| Set the integration time (at the current index position) of the sensor in micro seconds [us]          |
+`itime=[54..100000]`         | `i=[54..100000]`| Set the integration time (at the current index position) of the sensor in micro seconds [us], negative values set to auto-adjust.          |
+`auto-adjust=L,U`            | `aa=L,U`        | Set the automatic adjustion parameters.             |
 `itimeindex=[0..31]`         | `ii=[1..31]`    | Set the index for setting the integration time                        |
 `iterations=[0..31]`         | `N=[1..31]`     | Set the repetitions of a measurement.                                 |
 `format={0\|1}`              |                 | Set the output format to 0=Binary, or to 1=ASCII                      |
@@ -241,6 +243,7 @@ where
  * `IVAL`  =`hh:mm:ss`: omit if MODE is `0` or `3`
  * `START` =`hh:mm:ss`: omit if MODE is `0`,`1` or `3`
  * `END`   =`hh:mm:ss`: omit if MODE is `0`,`1` or `3`
+ * `0 < dark-current < L < U < saturation < (2^16)-1`
 
 
 Important Notes
