@@ -187,6 +187,12 @@ static void _set_rtc_time(void){
 		argerr();
 		return;
 	}
+
+	if(ts.date.Year == 0){
+		errreply("year not in [2001, 2099]/n");
+		return;
+	}
+
 	/* store the current time to later inform the sd
 	 * with old and new time*/
 	now = rtc_get_now();

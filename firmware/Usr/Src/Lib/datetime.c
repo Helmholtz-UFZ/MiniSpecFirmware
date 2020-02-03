@@ -142,6 +142,7 @@ uint8_t rtc_parse_time(char *str, RTC_TimeTypeDef *sTime) {
  *
  * Note: use this for conversion to string:
  * sprintf(buffer, "20%02i-%02i-%02iT%02i:%02i:%02i", d.Year, d.Month, d.Date, t.Hours, t.Minutes, t.Seconds);
+ * or the macro: printf(TS_TO_PRINTCALL(ts))
  */
 rtc_timestamp_t rtc_get_now(void) {
 	rtc_timestamp_t ts;
@@ -166,9 +167,9 @@ bool rtc_time_lt(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b) {
 	return (rtc_time_leq(a, b) && !rtc_time_eq(a, b));
 }
 
-	RTC_TimeTypeDef c;
 RTC_TimeTypeDef rtc_time_add(RTC_TimeTypeDef *a, RTC_TimeTypeDef *b) {
 	uint _carry = 0; // this is += or ++ do not work, because of optimization (?)
+	RTC_TimeTypeDef c;
 	c.Hours = 0;
 	c.Minutes = 0;
 	c.Seconds = 0;

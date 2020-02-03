@@ -27,12 +27,12 @@ void wakeup_alarm_handler(void) {
 	}
 
 	if (rc.mode == MODE_ENDLESS) {
-		// mini-algo: while( alarm < now ) alarm += ival
+		// mini-algo: while( alarm <= now ) alarm += ival
 		now = rtc_get_now();
 		a = rtc_time2seconds(&rc.next_alarm);
 		i = rtc_time2seconds(&rc.ival);
 		n = rtc_time2seconds(&now.time);
-		while (a < n){ a += i; }
+		while (a <= n){ a += i; }
 		new = rtc_seconds2time(a);
 		new.Hours -= new.Hours > 24 ? 24 : 0;
 	}
