@@ -2,7 +2,7 @@
  * cube_checks.h
  *
  *  Created on: Feb 2, 2020
- *      Author: rg
+ *      Author: Bert Palm
  */
 
 #ifndef CUBE_CHECKS_H_

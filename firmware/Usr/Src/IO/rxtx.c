@@ -9,9 +9,7 @@
 #include "string.h"
 #include <stdbool.h>
 
-rxtx_config_t rxtx = {
-		.cmd_bytes = 0,
-};
+rxtx_t rxtx = { .cmd_bytes = 0, };
 
 /* Memory blocks and buffer for transmitting and receiving
  * via uart interface.*/
@@ -26,11 +24,11 @@ uart_buffer_t rxtx_txbuffer = { .size = UART_TX_BUFFER_SZ, .base = tx_mem_block3
 int _write(int file, char *ptr, int len) {
 	switch (file) {
 	case STDOUT_FILENO: /*stdout*/
-		HAL_UART_Transmit(&hprintf, (uint8_t *) ptr, len, 0xFFFF);
+		HAL_UART_Transmit(&hprintf, (uint8_t *) ptr, len, len * 1000);
 		break;
 	case STDERR_FILENO: /* stderr */
-		HAL_UART_Transmit(&hprintf, (uint8_t *) "error: ", 7, 0xFFFF);
-		HAL_UART_Transmit(&hprintf, (uint8_t *) ptr, len, 0xFFFF);
+		HAL_UART_Transmit(&hprintf, (uint8_t *) "error: ", 7, 7000);
+		HAL_UART_Transmit(&hprintf, (uint8_t *) ptr, len, len * 1000);
 		break;
 	default:
 		return -1;

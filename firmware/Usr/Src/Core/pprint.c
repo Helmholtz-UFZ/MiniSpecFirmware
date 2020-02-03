@@ -5,7 +5,6 @@
  *      Author: Bert Palm
  */
 
-
 // for hal
 #include "main.h"
 
@@ -16,7 +15,6 @@
 #include "datetime.h"
 
 #include <stdio.h>
-
 
 /** print 'ok' */
 void ok(void) {
@@ -32,8 +30,7 @@ void argerr(void) {
 	}
 }
 
-
-void print_config(runtime_config_t *rc, char *name){
+void print_config(runtime_config_t *rc, char *name) {
 	rtc_timestamp_t ts;
 
 	reply("%s:\n", name);
@@ -57,10 +54,9 @@ void print_config(runtime_config_t *rc, char *name){
 	printf("interval:    %02i:%02i:%02i\n", rc->ival.Hours, rc->ival.Minutes, rc->ival.Seconds);
 	printf("next alarm:  %02i:%02i:%02i\n", rc->next_alarm.Hours, rc->next_alarm.Minutes, rc->next_alarm.Seconds);
 	ts = rtc_get_now();
-	debug(1," now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
+	debug(1, " now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,
 			ts.time.Minutes, ts.time.Seconds);
 }
-
 
 /** helper for sending data via the uart interface. */
 void send_data(void) {
@@ -95,12 +91,13 @@ void send_data(void) {
 
 	if (rc.format == DATA_FORMAT_BIN) {
 		/*Send the errorcode nevertheless an error occurred or not.*/
-		HAL_UART_Transmit(&hrxtx, (uint8_t *) &errcode, 2, 200);
+		HAL_UART_Transmit(&hrxtx, (uint8_t *) &errcode, 2, 2000);
 		if (!errcode) {
 			/* send data */
-			HAL_UART_Transmit(&hrxtx, (uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL),
-			MSPARAM_PIXEL * 4,
-			MSPARAM_PIXEL * 4 * 100);
+			HAL_UART_Transmit(&hrxtx,
+					(uint8_t *) (sens1.data->wptr - MSPARAM_PIXEL),
+					MSPARAM_PIXEL * 4,
+					MSPARAM_PIXEL * 4 * 100);
 		}
 	} else { /* DATA_FORMAT_ASCII */
 		if (errcode) {
@@ -133,7 +130,7 @@ void send_data(void) {
 	}
 }
 
-void send_itime(void){
+void send_itime(void) {
 	if (rc.format == DATA_FORMAT_BIN) {
 		HAL_UART_Transmit(&hrxtx, (uint8_t *) &(rc.itime[rc.itime_index]), 4, 1000);
 	} else {
@@ -141,7 +138,7 @@ void send_itime(void){
 	}
 }
 
-void send_rtc_time(void){
+void send_rtc_time(void) {
 	rtc_timestamp_t ts = rtc_get_now();
 	if (rc.format == DATA_FORMAT_ASCII) {
 		reply("20%02i-%02i-%02iT%02i:%02i:%02i\n", ts.date.Year, ts.date.Month, ts.date.Date, ts.time.Hours,

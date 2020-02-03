@@ -51,9 +51,9 @@ typedef struct {
 	/* The number of bytes received */
 	volatile uint16_t cmd_bytes;
 
-} rxtx_config_t;
+} rxtx_t;
 
-extern rxtx_config_t rxtx;
+extern rxtx_t rxtx;
 
 /* used with HAL_UART_Receive() */
 extern uart_buffer_t rxtx_rxbuffer;

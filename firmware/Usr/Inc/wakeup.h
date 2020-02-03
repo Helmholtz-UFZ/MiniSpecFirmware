@@ -2,7 +2,7 @@
  * wakeup.h
  *
  *  Created on: Feb 2, 2020
- *      Author: rg
+ *      Author: Bert Palm
  */
 
 #ifndef INC_WAKEUP_H_
