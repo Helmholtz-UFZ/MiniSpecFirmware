@@ -199,13 +199,12 @@ uint32_t rtc_time2seconds(RTC_TimeTypeDef *t) {
 }
 
 RTC_TimeTypeDef rtc_seconds2time(uint32_t s) {
-	uint32_t x = s;
 	RTC_TimeTypeDef t;
-	t.Hours = x / 3600;
-	x -= t.Hours * 3600;
-	t.Minutes = x / 60;
-	x -= t.Minutes * 60;
-	t.Seconds = x;
+	t.Hours = s / 3600;
+	s -= t.Hours * 3600;
+	t.Minutes = s / 60;
+	s -= t.Minutes * 60;
+	t.Seconds = s;
 	return t;
 }
 

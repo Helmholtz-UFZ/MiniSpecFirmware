@@ -110,8 +110,9 @@ uint8_t rtc_set_alarmA(RTC_TimeTypeDef *time) {
  */
 RTC_TimeTypeDef get_closest_next_alarm(runtime_config_t *rc) {
 	uint32_t start, end, now, ival, N, x;
-	rtc_timestamp_t t;
-	t = rtc_get_now();
+
+	rtc_timestamp_t t = rtc_get_now();
+
 	now = rtc_time2seconds(&t.time);
 	ival = rtc_time2seconds(&rc->ival);
 	start = rtc_time2seconds(&rc->start);

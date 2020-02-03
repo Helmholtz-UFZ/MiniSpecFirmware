@@ -13,32 +13,31 @@ void wakeup_alarm_handler(void) {
 
 	RTC_TimeTypeDef new;
 	rtc_timestamp_t now = rtc_get_now();
+	uint32_t n, i, a;
 
 	debug(1, "(alarm): alarm \n");
 	debug(2, "(alarm): now: 20%02i-%02i-%02iT%02i:%02i:%02i\n", now.date.Year, now.date.Month, now.date.Date,
 			now.time.Hours, now.time.Minutes, now.time.Seconds);
 
-	/* set new alarm */
-	new = rtc_time_add(&rc.next_alarm, &rc.ival);
-	if (rc.mode == MODE_ENDLESS) {
-		rtc_set_alarmA(&new);
-
-	} else { /* rc.mode == IVAL_STARTEND */
-		/* if new <= end */
-		if (rtc_time_leq(&new, &rc.end)) {
-			rtc_set_alarmA(&new);
-		} else {
-			rtc_set_alarmA(&rc.start);
-		}
-	}
-	rc.next_alarm = rtc_get_alermAtime();
-
 	/* Do the measurement */
 	multimeasure(true);
 
-	// TODO: as measurements now can take quite long re-check the set alarm,
-	// also we may should disable it and enable it after the measurement?
-	// OR: 1st measure, 2nd set new alarm
+	if (rc.mode == MODE_STARTEND){
+		new = get_closest_next_alarm(&rc);
+	}
+
+	if (rc.mode == MODE_ENDLESS) {
+		// mini-algo: while( alarm < now ) alarm += ival
+		now = rtc_get_now();
+		a = rtc_time2seconds(&rc.next_alarm);
+		i = rtc_time2seconds(&rc.ival);
+		n = rtc_time2seconds(&now.time);
+		while (a < n){ a += i; }
+		new = rtc_seconds2time(a);
+		new.Hours -= new.Hours > 24 ? 24 : 0;
+	}
+	rtc_set_alarmA(&new);
+	rc.next_alarm = rtc_get_alermAtime();
 
 	debug(2, "(alarm): next: %02i:%02i:%02i\n", rc.next_alarm.Hours, rc.next_alarm.Minutes, rc.next_alarm.Seconds);
 }
