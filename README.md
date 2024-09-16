@@ -12,13 +12,12 @@
 Micro Spectrometer Firmware for STM32
 =====================================
 
-This repository provide the firmware for the *Nucleo Board* by ST, 
-which is used by the *Microspectrometer Sensor Board*. This firmware can 
-be used for the hardware version 2.1. The older HW is no longer supported.
+This repository provide the firmware for the *Nucleo Board* by ST. 
+Together with the custom PCB (version `2.1`) this firmware can 
+be used to control a Hamamatsu C12880MA Mini-Spectrometer.  
 
-The hardware development is done in its own repositories:
-https://git.ufz.de/MET/WG6/Sensornetworks/Micro_Spectrometer/microspecsensorboard_v2_1
-
+The hardware development of the cutom PCB can be found here:
+https://github.com/Helmholtz-UFZ/MiniSpecHardware
 
 Feature Overview
 ----------------
